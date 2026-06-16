@@ -8,3 +8,9 @@ xgboost>=2.0
 onnx>=1.15
 onnxmltools>=1.12
 onnxruntime>=1.17
+
+# 1D CNN training (CUDA build -- install separately to get GPU support)
+# pip install torch --index-url https://download.pytorch.org/whl/cu124
+# CPU-only fallback (slower but works without a GPU):
+# pip install torch
+torch>=2.1

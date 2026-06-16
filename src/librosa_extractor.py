@@ -256,10 +256,11 @@ def load_all_recordings_librosa(
     all_groups : list[np.ndarray]
     skipped    : list[tuple(name, reason)]
     """
+    from tqdm import tqdm
     wav_files  = sorted(glob.glob(os.path.join(data_dir, "*.wav")))
     all_X, all_y, all_groups, skipped = [], [], [], []
 
-    for rec_idx, wav_path in enumerate(wav_files):
+    for rec_idx, wav_path in enumerate(tqdm(wav_files, desc="  Loading/Extracting features", leave=False)):
         wav_name = os.path.basename(wav_path)
         X_rec, y_rec, reason = load_recording_librosa(wav_path, ann, use_cache)
 

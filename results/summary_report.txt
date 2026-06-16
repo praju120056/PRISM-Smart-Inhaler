@@ -1,0 +1,40 @@
+pMDI Inhaler Event Classification -- Results Summary
+=======================================================
+Recordings loaded       : 361
+Total frames            : 170,323
+Features per frame      : 3100
+Cross-validation        : GroupKFold, 5 folds (recording-level)
+
+Model Performance
+----------------------------------------
+Random Forest  -- mean acc: nan +/- nan
+SVM            -- mean acc: nan +/- nan
+XGBoost        -- mean acc: 0.8902 +/- 0.0044
+
+Label Distribution
+----------------------------------------
+  Drug      :  36,531  (21.4%)
+  Exhale    :  36,531  (21.4%)
+  Inhale    :  24,681  (14.5%)
+  Noise     :  72,580  (42.6%)
+
+Feature Set  (librosa_extractor.py)
+----------------------------------------
+  MFCC               40 coefficients  (N_FFT=256, HOP=64, N_MELS=128)
+  Delta-MFCC         40  (HTK regression filter, width=9)
+  Delta-delta MFCC   40
+  Spectral centroid   1  (normalised by Nyquist)
+  Spectral flatness   1
+  Spectral rolloff    1  (normalised by Nyquist, roll_percent=0.85)
+  ZCR                 1
+  ─────────────────────
+  Per-frame total   124
+
+  Windowing (feature_extractor.py)
+  Window size : 7 frames = 56 ms  (HOP=64, SR=8000)
+  Stride      : 1 frame
+  Label       : majority vote over window
+  Per-window  : 7 × 124 = 868 features
+
+Skipped recordings
+----------------------------------------

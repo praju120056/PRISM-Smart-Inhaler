@@ -73,16 +73,19 @@ _parser.add_argument("--xgb-only", action="store_true",
                      help="5-fold CV, XGBoost only (skip RF and SVM)")
 _parser.add_argument("--no-svm",   action="store_true",
                      help="5-fold CV, RF + XGBoost (skip SVM)")
+_parser.add_argument("--cnn",      action="store_true",
+                     help="5-fold CV, 1D CNN instead of XGBoost (requires torch)")
 _args, _ = _parser.parse_known_args()
 
 FAST_MODE = _args.fast
-XGB_ONLY  = _args.xgb_only or FAST_MODE   # --fast implies --xgb-only
-NO_SVM    = _args.no_svm   or XGB_ONLY    # --xgb-only implies --no-svm
+USE_CNN   = _args.cnn
+XGB_ONLY  = (_args.xgb_only or FAST_MODE) and not USE_CNN
+NO_SVM    = _args.no_svm   or XGB_ONLY or USE_CNN
 N_FOLDS   = 3 if FAST_MODE else config.N_SPLITS
 
-RUN_RF  = not XGB_ONLY
+RUN_RF  = not XGB_ONLY and not USE_CNN
 RUN_SVM = not NO_SVM
-RUN_XGB = True   # always run -- it is the deployment model
+RUN_XGB = not USE_CNN   # XGBoost off when CNN is selected
 
 
 def main():
@@ -200,26 +203,35 @@ def main():
     print(f"  Encoding: {dict(zip(le.classes_, le.transform(le.classes_)))}")
 
     # ── Step 4: cross-validation ──────────────────────────────────
-    models_str = " + ".join(
+    models_str = "1D CNN (CUDA)" if USE_CNN else " + ".join(
         m for m, on in [("RF", RUN_RF), ("SVM", RUN_SVM), ("XGBoost", RUN_XGB)] if on
     )
     print("\n" + "=" * 60)
     print(f"STEP 4 -- Cross-validation (GroupKFold {N_FOLDS}-fold)")
     print(f"          Models: {models_str}")
     print("=" * 60)
-    cv = run_cross_validation(
-        X_win_all, y_int, groups, le,
-        run_rf=RUN_RF, run_svm=RUN_SVM, run_xgb=RUN_XGB,
-        n_splits=N_FOLDS,
-    )
+
+    if USE_CNN:
+        from train_cnn import run_cnn_cv
+        cv = run_cnn_cv(
+            X_win_all, y_int, groups, le,
+            n_splits = N_FOLDS,
+        )
+    else:
+        cv = run_cross_validation(
+            X_win_all, y_int, groups, le,
+            run_rf=RUN_RF, run_svm=RUN_SVM, run_xgb=RUN_XGB,
+            n_splits=N_FOLDS,
+        )
 
     # ── Step 5: aggregate metrics ─────────────────────────────────
     print("\n" + "=" * 60)
     print("STEP 5 -- Results summary")
     print("=" * 60)
+    model_label = "CNN" if USE_CNN else "XGBoost"
     rf_summary  = aggregate_metrics(cv["rf_results"],  "Random Forest", le) if RUN_RF  else None
     svm_summary = aggregate_metrics(cv["svm_results"], "SVM",           le) if RUN_SVM else None
-    xgb_summary = aggregate_metrics(cv["xgb_results"], "XGBoost",       le)
+    xgb_summary = aggregate_metrics(cv["xgb_results"], model_label,     le)
 
     # ── Step 6: visualizations ────────────────────────────────────
     print("\n" + "=" * 60)

@@ -45,7 +45,7 @@ LIBROSA_HOP_LENGTH  = 64
 LIBROSA_N_FEATURES  = 124   # [MFCC(40)|dMFCC(40)|ddMFCC(40)|centroid|flatness|rolloff|zcr]
 
 # ── Windowed dataset parameters (feature_extractor.py) ────────
-WINDOW_SIZE     = 7     # frames per window (56 ms at HOP=64, 8 kHz)
+WINDOW_SIZE     = 25     # frames per window (56 ms at HOP=64, 8 kHz)
 WINDOW_STRIDE   = 2     # step between successive windows  [was 1 → 2× faster]
 NOISE_BUFFER    = 20    # Noise frames to keep around each event (trim_to_events)
 DRUG_MULTIPLIER = 3.0   # Drug target = multiplier × Inhale count
