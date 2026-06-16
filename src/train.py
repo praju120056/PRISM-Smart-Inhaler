@@ -70,28 +70,35 @@ def _make_xgb_classifier(n_classes: int):
 # Public API
 # ──────────────────────────────────────────────────────────────
 
-def run_cross_validation(X, y, groups, le):
+def run_cross_validation(X, y, groups, le,
+                         run_rf=True, run_svm=True, run_xgb=True,
+                         n_splits=None):
     """
-    Run GroupKFold CV, fitting RF, SVM, and XGBoost on each fold.
+    Run GroupKFold CV, optionally fitting RF, SVM, and/or XGBoost per fold.
 
     Parameters
     ----------
     X, y, groups : as returned by dataset.build_dataset()
     le           : fitted LabelEncoder
+    run_rf       : bool  include Random Forest
+    run_svm      : bool  include SVM
+    run_xgb      : bool  include XGBoost  (always True by default)
+    n_splits     : int | None  override config.N_SPLITS (e.g. 3 for fast mode)
 
     Returns
     -------
     dict with keys:
-        rf_results    : list[dict]  per-fold RF metrics
-        svm_results   : list[dict]  per-fold SVM metrics
-        xgb_results   : list[dict]  per-fold XGBoost metrics
-        rf_cm_total   : np.ndarray  summed confusion matrix (RF)
-        svm_cm_total  : np.ndarray  summed confusion matrix (SVM)
-        xgb_cm_total  : np.ndarray  summed confusion matrix (XGBoost)
-        rf_fi_folds   : list[np.ndarray]  per-fold feature importances (RF)
-        xgb_fi_folds  : list[np.ndarray]  per-fold feature importances (XGBoost)
+        rf_results    : list[dict]  per-fold RF metrics      (empty if run_rf=False)
+        svm_results   : list[dict]  per-fold SVM metrics     (empty if run_svm=False)
+        xgb_results   : list[dict]  per-fold XGBoost metrics (empty if run_xgb=False)
+        rf_cm_total   : np.ndarray  summed CM (RF)  or zeros
+        svm_cm_total  : np.ndarray  summed CM (SVM) or zeros
+        xgb_cm_total  : np.ndarray  summed CM (XGB) or zeros
+        rf_fi_folds   : list[np.ndarray]  per-fold RF importances
+        xgb_fi_folds  : list[np.ndarray]  per-fold XGB importances
     """
-    gkf          = GroupKFold(n_splits=config.N_SPLITS)
+    k_splits     = n_splits if n_splits is not None else config.N_SPLITS
+    gkf          = GroupKFold(n_splits=k_splits)
     n_classes    = len(le.classes_)
     rf_results   = []
     svm_results  = []
@@ -101,85 +108,94 @@ def run_cross_validation(X, y, groups, le):
     xgb_cm_total = np.zeros((n_classes, n_classes), dtype=int)
     rf_fi_folds  = []
     xgb_fi_folds = []
-    label_order  = le.transform(le.classes_)   # for consistent CM axis order
+    label_order  = le.transform(le.classes_)
 
     for fold, (train_idx, test_idx) in enumerate(
         gkf.split(X, y, groups=groups)
     ):
         print(
-            f"\n  Fold {fold + 1}/{config.N_SPLITS} -- "
+            f"\n  Fold {fold + 1}/{k_splits} -- "
             f"train={len(train_idx):,} | test={len(test_idx):,} frames"
         )
 
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
 
-        # ── normalise INSIDE fold — no leakage ──────────────────
+        # normalise INSIDE fold -- no leakage
         scaler      = StandardScaler()
         X_train_sc  = scaler.fit_transform(X_train)
         X_test_sc   = scaler.transform(X_test)
 
-        # ── Random Forest ────────────────────────────────────────
-        rf      = RandomForestClassifier(**config.RF_PARAMS)
-        rf.fit(X_train_sc, y_train)
-        rf_pred = rf.predict(X_test_sc)
+        # ── Random Forest ─────────────────────────────────────────
+        if run_rf:
+            rf      = RandomForestClassifier(**config.RF_PARAMS)
+            rf.fit(X_train_sc, y_train)
+            rf_pred = rf.predict(X_test_sc)
 
-        rf_acc = accuracy_score(y_test, rf_pred)
-        rf_rep = classification_report(
-            y_test, rf_pred,
-            target_names=le.classes_,
-            output_dict=True,
-            zero_division=0,
-        )
-        rf_cm_total += confusion_matrix(y_test, rf_pred, labels=label_order)
-        rf_fi_folds.append(rf.feature_importances_)
-        rf_results.append({
-            "fold": fold + 1, "model": "RF",
-            "accuracy": rf_acc, "report": rf_rep,
-        })
-        print(f"    RF  accuracy: {rf_acc:.4f}")
+            rf_acc = accuracy_score(y_test, rf_pred)
+            rf_rep = classification_report(
+                y_test, rf_pred,
+                target_names=le.classes_,
+                output_dict=True,
+                zero_division=0,
+            )
+            rf_cm_total += confusion_matrix(y_test, rf_pred, labels=label_order)
+            rf_fi_folds.append(rf.feature_importances_)
+            rf_results.append({
+                "fold": fold + 1, "model": "RF",
+                "accuracy": rf_acc, "report": rf_rep,
+            })
+            print(f"    RF  accuracy: {rf_acc:.4f}")
+        else:
+            print(f"    RF  skipped")
 
-        # ── SVM on balanced subsample ────────────────────────────
-        sub_idx    = _subsample_balanced(
-            X_train_sc, y_train, config.SVM_SUBSAMPLE
-        )
-        svm        = LinearSVC(**config.SVM_PARAMS)
-        svm.fit(X_train_sc[sub_idx], y_train[sub_idx])
-        svm_pred   = svm.predict(X_test_sc)
+        # ── SVM on balanced subsample ─────────────────────────────
+        if run_svm:
+            sub_idx    = _subsample_balanced(
+                X_train_sc, y_train, config.SVM_SUBSAMPLE
+            )
+            svm        = LinearSVC(**config.SVM_PARAMS)
+            svm.fit(X_train_sc[sub_idx], y_train[sub_idx])
+            svm_pred   = svm.predict(X_test_sc)
 
-        svm_acc    = accuracy_score(y_test, svm_pred)
-        svm_rep    = classification_report(
-            y_test, svm_pred,
-            target_names=le.classes_,
-            output_dict=True,
-            zero_division=0,
-        )
-        svm_cm_total += confusion_matrix(y_test, svm_pred, labels=label_order)
-        svm_results.append({
-            "fold": fold + 1, "model": "SVM",
-            "accuracy": svm_acc, "report": svm_rep,
-        })
-        print(f"    SVM accuracy: {svm_acc:.4f}")
+            svm_acc    = accuracy_score(y_test, svm_pred)
+            svm_rep    = classification_report(
+                y_test, svm_pred,
+                target_names=le.classes_,
+                output_dict=True,
+                zero_division=0,
+            )
+            svm_cm_total += confusion_matrix(y_test, svm_pred, labels=label_order)
+            svm_results.append({
+                "fold": fold + 1, "model": "SVM",
+                "accuracy": svm_acc, "report": svm_rep,
+            })
+            print(f"    SVM accuracy: {svm_acc:.4f}")
+        else:
+            print(f"    SVM skipped")
 
         # ── XGBoost ───────────────────────────────────────────────
-        xgb      = _make_xgb_classifier(n_classes)
-        xgb.fit(X_train, y_train)
-        xgb_pred = xgb.predict(X_test)
+        if run_xgb:
+            xgb      = _make_xgb_classifier(n_classes)
+            xgb.fit(X_train, y_train)
+            xgb_pred = xgb.predict(X_test)
 
-        xgb_acc = accuracy_score(y_test, xgb_pred)
-        xgb_rep = classification_report(
-            y_test, xgb_pred,
-            target_names=le.classes_,
-            output_dict=True,
-            zero_division=0,
-        )
-        xgb_cm_total += confusion_matrix(y_test, xgb_pred, labels=label_order)
-        xgb_fi_folds.append(xgb.feature_importances_)
-        xgb_results.append({
-            "fold": fold + 1, "model": "XGBoost",
-            "accuracy": xgb_acc, "report": xgb_rep,
-        })
-        print(f"    XGB accuracy: {xgb_acc:.4f}")
+            xgb_acc = accuracy_score(y_test, xgb_pred)
+            xgb_rep = classification_report(
+                y_test, xgb_pred,
+                target_names=le.classes_,
+                output_dict=True,
+                zero_division=0,
+            )
+            xgb_cm_total += confusion_matrix(y_test, xgb_pred, labels=label_order)
+            xgb_fi_folds.append(xgb.feature_importances_)
+            xgb_results.append({
+                "fold": fold + 1, "model": "XGBoost",
+                "accuracy": xgb_acc, "report": xgb_rep,
+            })
+            print(f"    XGB accuracy: {xgb_acc:.4f}")
+        else:
+            print(f"    XGB skipped")
 
     return {
         "rf_results":    rf_results,

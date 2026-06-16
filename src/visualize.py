@@ -23,17 +23,23 @@ import config
 # Public API
 # ──────────────────────────────────────────────────────────────
 
-def plot_confusion_matrices(rf_cm: np.ndarray, svm_cm: np.ndarray, xgb_cm: np.ndarray, le):
+def plot_confusion_matrices(rf_cm, svm_cm, xgb_cm, le,
+                            run_rf=True, run_svm=True):
     """
-    Plot RF, SVM, and XGBoost confusion matrices side by side and save to results/.
+    Plot confusion matrices for enabled models side by side.
     """
-    fig, axes = plt.subplots(1, 3, figsize=(20, 6))
+    models = []
+    if run_rf:
+        models.append((rf_cm, "Random Forest (all folds)"))
+    if run_svm:
+        models.append((svm_cm, "SVM (all folds)"))
+    models.append((xgb_cm, "XGBoost (all folds)"))
 
-    for ax, cm, title in zip(
-        axes,
-        [rf_cm, svm_cm, xgb_cm],
-        ["Random Forest (all folds)", "SVM (all folds)", "XGBoost (all folds)"],
-    ):
+    fig, axes = plt.subplots(1, len(models), figsize=(7 * len(models), 6))
+    if len(models) == 1:
+        axes = [axes]
+
+    for ax, (cm, title) in zip(axes, models):
         disp = ConfusionMatrixDisplay(
             confusion_matrix=cm, display_labels=le.classes_
         )
@@ -49,20 +55,21 @@ def plot_confusion_matrices(rf_cm: np.ndarray, svm_cm: np.ndarray, xgb_cm: np.nd
     print(f"  Saved: {path}")
 
 
-def plot_feature_importance(rf_fi_folds: list, top_n: int = 15):
+def plot_feature_importance(fi_folds: list, top_n: int = 15, title_prefix: str = "RF"):
     """
-    Compute mean RF feature importance across folds and save a bar chart.
+    Compute mean feature importance across folds and save a bar chart.
 
     Parameters
     ----------
-    rf_fi_folds : list[np.ndarray]   feature_importances_ per fold
-    top_n       : int                how many features to display
+    fi_folds     : list[np.ndarray]   feature_importances_ per fold
+    top_n        : int                how many features to display
+    title_prefix : str                model name label in the chart title
     """
     feature_names = config.FEATURE_NAMES
-    mean_fi       = np.mean(rf_fi_folds, axis=0)
+    mean_fi       = np.mean(fi_folds, axis=0)
     top_idx       = np.argsort(mean_fi)[-top_n:][::-1]
 
-    print(f"\n  Top {top_n} features:")
+    print(f"\n  Top {top_n} {title_prefix} features:")
     for rank, idx in enumerate(top_idx):
         print(
             f"  {rank + 1:2d}. {feature_names[idx]:20s}"
@@ -83,38 +90,41 @@ def plot_feature_importance(rf_fi_folds: list, top_n: int = 15):
     )
     ax.set_xlabel("Mean feature importance (across folds)")
     ax.set_title(
-        f"Top {top_n} RF Feature Importances\n(blue=raw, orange=delta)",
+        f"Top {top_n} {title_prefix} Feature Importances\n(blue=raw, orange=delta)",
         fontweight="bold",
     )
     ax.axvline(0, color="black", linewidth=0.5)
     plt.tight_layout()
 
-    path = os.path.join(config.RESULTS_DIR, "feature_importance.png")
+    path = os.path.join(config.RESULTS_DIR, f"feature_importance_{title_prefix.lower()}.png")
     plt.savefig(path, dpi=150, bbox_inches="tight")
     plt.close()
     print(f"  Saved: {path}")
 
 
-def plot_class_metrics(rf_summary: dict, svm_summary: dict, xgb_summary: dict, le):
+def plot_class_metrics(rf_summary, svm_summary, xgb_summary, le,
+                       run_rf=True, run_svm=True):
     """
-    Plot per-class precision, recall, and F1-score for RF vs SVM vs XGBoost.
+    Plot per-class precision, recall, and F1-score for enabled models.
     """
     classes = le.classes_
     metrics = ['precision', 'recall', 'f1']
-    
+
+    active = []
+    if run_rf  and rf_summary:  active.append(('RF',      rf_summary,  '#4C72B0'))
+    if run_svm and svm_summary: active.append(('SVM',     svm_summary, '#DD8452'))
+    active.append(('XGBoost', xgb_summary, '#55A868'))
+
     fig, axes = plt.subplots(1, 3, figsize=(16, 5))
     x = np.arange(len(classes))
-    width = 0.25
-    
+    n = len(active)
+    width = 0.7 / n
+    offsets = np.linspace(-(n - 1) / 2, (n - 1) / 2, n) * width
+
     for ax, metric, title in zip(axes, metrics, ['Precision', 'Recall', 'F1-Score']):
-        rf_vals = [rf_summary[c][metric] for c in classes]
-        svm_vals = [svm_summary[c][metric] for c in classes]
-        xgb_vals = [xgb_summary[c][metric] for c in classes]
-        
-        ax.bar(x - width, rf_vals, width, label='RF', color='#4C72B0')
-        ax.bar(x, svm_vals, width, label='SVM', color='#DD8452')
-        ax.bar(x + width, xgb_vals, width, label='XGBoost', color='#55A868')
-        
+        for (label, summary, color), offset in zip(active, offsets):
+            vals = [summary[c][metric] for c in classes]
+            ax.bar(x + offset, vals, width, label=label, color=color)
         ax.set_title(title, fontweight='bold')
         ax.set_xticks(x)
         ax.set_xticklabels(classes)
@@ -129,26 +139,37 @@ def plot_class_metrics(rf_summary: dict, svm_summary: dict, xgb_summary: dict, l
     print(f"  Saved: {path}")
 
 
-def plot_drug_stats(rf_summary: dict, svm_summary: dict, xgb_summary: dict):
+def plot_drug_stats(rf_summary, svm_summary, xgb_summary,
+                    run_rf=True, run_svm=True):
     """
-    Plot Drug-specific metrics (Precision, Recall, F1) for RF vs SVM vs XGBoost.
+    Plot Drug-specific metrics for enabled models.
     """
-    if 'Drug' not in rf_summary or 'Drug' not in svm_summary or 'Drug' not in xgb_summary:
-        print("  [WARN] 'Drug' class not found in summary, skipping drug stats plot.")
+    if 'Drug' not in xgb_summary:
+        print("  [WARN] 'Drug' class not found in XGB summary, skipping drug stats plot.")
         return
 
     metrics = ['precision', 'recall', 'f1']
-    rf_vals = [rf_summary['Drug'][m] for m in metrics]
-    svm_vals = [svm_summary['Drug'][m] for m in metrics]
-    xgb_vals = [xgb_summary['Drug'][m] for m in metrics]
-    
+    active = []
+    if run_rf  and rf_summary  and 'Drug' in rf_summary:  active.append(('RF',      rf_summary,  '#4C72B0'))
+    if run_svm and svm_summary and 'Drug' in svm_summary: active.append(('SVM',     svm_summary, '#DD8452'))
+    active.append(('XGBoost', xgb_summary, '#55A868'))
+
     x = np.arange(len(metrics))
-    width = 0.25
-    
+    n = len(active)
+    width = 0.6 / n
+    offsets = np.linspace(-(n - 1) / 2, (n - 1) / 2, n) * width
+
     fig, ax = plt.subplots(figsize=(6, 5))
-    bars1 = ax.bar(x - width, rf_vals, width, label='RF', color='#4C72B0')
-    bars2 = ax.bar(x, svm_vals, width, label='SVM', color='#DD8452')
-    bars3 = ax.bar(x + width, xgb_vals, width, label='XGBoost', color='#55A868')
+    for (label, summary, color), offset in zip(active, offsets):
+        vals = [summary['Drug'][m] for m in metrics]
+        bars = ax.bar(x + offset, vals, width, label=label, color=color)
+        for bar in bars:
+            height = bar.get_height()
+            ax.annotate(f'{height:.2f}',
+                        xy=(bar.get_x() + bar.get_width() / 2, height),
+                        xytext=(0, 3),
+                        textcoords="offset points",
+                        ha='center', va='bottom', fontsize=9)
     
     ax.set_title("Drug Class Performance", fontweight='bold')
     ax.set_xticks(x)
@@ -156,17 +177,7 @@ def plot_drug_stats(rf_summary: dict, svm_summary: dict, xgb_summary: dict):
     ax.set_ylim(0, 1.05)
     ax.legend()
     ax.grid(axis='y', linestyle='--', alpha=0.7)
-    
-    # Add value labels
-    for bars in [bars1, bars2, bars3]:
-        for bar in bars:
-            height = bar.get_height()
-            ax.annotate(f'{height:.2f}',
-                        xy=(bar.get_x() + bar.get_width() / 2, height),
-                        xytext=(0, 3),  # 3 points vertical offset
-                        textcoords="offset points",
-                        ha='center', va='bottom', fontsize=9)
-    
+
     plt.tight_layout()
     path = os.path.join(config.RESULTS_DIR, "drug_stats.png")
     plt.savefig(path, dpi=150, bbox_inches="tight")
@@ -174,9 +185,10 @@ def plot_drug_stats(rf_summary: dict, svm_summary: dict, xgb_summary: dict):
     print(f"  Saved: {path}")
 
 
-def plot_noise_confusion(rf_cm: np.ndarray, svm_cm: np.ndarray, xgb_cm: np.ndarray, le):
+def plot_noise_confusion(rf_cm, svm_cm, xgb_cm, le,
+                         run_rf=True, run_svm=True):
     """
-    Plot Noise confusion breakdown (what Noise is predicted as, and what is falsely predicted as Noise).
+    Plot Noise confusion breakdown for enabled models.
     """
     if "Noise" not in le.classes_:
         print("  [WARN] 'Noise' class not found, skipping noise confusion plot.")
@@ -186,42 +198,35 @@ def plot_noise_confusion(rf_cm: np.ndarray, svm_cm: np.ndarray, xgb_cm: np.ndarr
     classes = le.classes_
     other_classes = [c for c in classes if c != "Noise"]
     other_idx = [i for i, c in enumerate(classes) if c != "Noise"]
-    
-    # 1. What Noise is predicted as (True: Noise, Pred: Other)
-    rf_noise_as_other = rf_cm[noise_idx, other_idx]
-    svm_noise_as_other = svm_cm[noise_idx, other_idx]
-    xgb_noise_as_other = xgb_cm[noise_idx, other_idx]
-    
-    # 2. What is predicted as Noise (True: Other, Pred: Noise)
-    rf_other_as_noise = rf_cm[other_idx, noise_idx]
-    svm_other_as_noise = svm_cm[other_idx, noise_idx]
-    xgb_other_as_noise = xgb_cm[other_idx, noise_idx]
-    
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+    active = []
+    if run_rf:  active.append(("RF",      rf_cm,  "#4C72B0"))
+    if run_svm: active.append(("SVM",     svm_cm, "#DD8452"))
+    active.append(("XGBoost", xgb_cm, "#55A868"))
+
+    n = len(active)
     x = np.arange(len(other_classes))
-    width = 0.25
-    
-    # Plot 1
-    axes[0].bar(x - width, rf_noise_as_other, width, label='RF', color='#4C72B0')
-    axes[0].bar(x, svm_noise_as_other, width, label='SVM', color='#DD8452')
-    axes[0].bar(x + width, xgb_noise_as_other, width, label='XGBoost', color='#55A868')
-    axes[0].set_title("True = Noise, Predicted as Other", fontweight='bold')
-    axes[0].set_xticks(x)
-    axes[0].set_xticklabels(other_classes)
-    axes[0].set_ylabel("Number of instances")
-    axes[0].legend()
-    axes[0].grid(axis='y', linestyle='--', alpha=0.7)
-    
-    # Plot 2
-    axes[1].bar(x - width, rf_other_as_noise, width, label='RF', color='#4C72B0')
-    axes[1].bar(x, svm_other_as_noise, width, label='SVM', color='#DD8452')
-    axes[1].bar(x + width, xgb_other_as_noise, width, label='XGBoost', color='#55A868')
-    axes[1].set_title("True = Other, Predicted as Noise", fontweight='bold')
-    axes[1].set_xticks(x)
-    axes[1].set_xticklabels(other_classes)
-    axes[1].set_ylabel("Number of instances")
-    axes[1].legend()
-    axes[1].grid(axis='y', linestyle='--', alpha=0.7)
+    width = 0.6 / n
+    offsets = np.linspace(-(n - 1) / 2, (n - 1) / 2, n) * width
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+    for ax, (row_sel, col_sel, panel_title) in zip(
+        axes,
+        [
+            (noise_idx, other_idx, "True = Noise, Predicted as Other"),
+            (other_idx, noise_idx, "True = Other, Predicted as Noise"),
+        ],
+    ):
+        for (label, cm, color), offset in zip(active, offsets):
+            vals = cm[row_sel, col_sel]
+            ax.bar(x + offset, vals, width, label=label, color=color)
+        ax.set_title(panel_title, fontweight="bold")
+        ax.set_xticks(x)
+        ax.set_xticklabels(other_classes)
+        ax.set_ylabel("Number of instances")
+        ax.legend()
+        ax.grid(axis="y", linestyle="--", alpha=0.7)
     
     plt.suptitle("Noise Confusion Breakdown", fontsize=14, fontweight='bold')
     plt.tight_layout()

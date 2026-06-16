@@ -57,11 +57,21 @@ FEATURE_NAMES = (
 )
 N_FEATURES = len(FEATURE_NAMES)   # 124
 
-# ── Paths (resolved relative to this file) ────────────────────────────────────
-_SRC_DIR      = os.path.dirname(os.path.abspath(__file__))
-_ROOT_DIR     = os.path.dirname(_SRC_DIR)
-_DATA_DIR     = os.path.join(_ROOT_DIR, "data")
-_CACHE_DIR    = os.path.join(_DATA_DIR, "extracted")
+# ── Paths (resolved via config so DATA_DIR is always the authoritative source) ──
+_SRC_DIR  = os.path.dirname(os.path.abspath(__file__))
+_ROOT_DIR = os.path.dirname(_SRC_DIR)
+
+# Import config to get the correct DATA_DIR (handles local vs. legacy dataset path)
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
+try:
+    import config as _config
+    _DATA_DIR  = _config.DATA_DIR
+    _CACHE_DIR = os.path.join(_DATA_DIR, "extracted")
+except Exception:
+    # Fallback for very early / standalone import before config is available
+    _DATA_DIR  = os.path.join(_ROOT_DIR, "data")
+    _CACHE_DIR = os.path.join(_DATA_DIR, "extracted")
 
 
 # ──────────────────────────────────────────────────────────────────────────────

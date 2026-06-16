@@ -6,10 +6,10 @@ Main entry point. Orchestrates the full pipeline per ARCHITECTURE.md:
     Step 0 -- Load annotation CSV
     Step 1 -- Extract features with librosa (124 features/frame, cached .npy)
     Step 2 -- Build windowed dataset
-               trim_to_events → (stack_features) → create_windows
-               → balance_dataset (Noise cap + Drug oversample)
+               trim_to_events -> create_windows
+               -> balance_dataset (Noise cap + Drug oversample)
     Step 3 -- Encode string labels with LabelEncoder (fixed LABEL_NAMES order)
-    Step 4 -- Cross-validation (GroupKFold: RF + SVM)
+    Step 4 -- Cross-validation (GroupKFold: RF + SVM + XGBoost)
     Step 5 -- Aggregate and print metrics
     Step 6 -- Save confusion matrix plot
     Step 7 -- Save feature importance plot
@@ -18,28 +18,36 @@ Main entry point. Orchestrates the full pipeline per ARCHITECTURE.md:
 
 Extraction path  : data/       *.wav
                    data/extracted/<base>/features.npy  (cache; auto-created)
-Feature vector   : 124 per frame  [MFCC(40)|Δ(40)|ΔΔ(40)|centroid|flatness|rolloff|zcr]
-Window vector    : 7 × 124 = 868 features  (sliding window, majority-vote label)
+Feature vector   : 124 per frame  [MFCC(40)|d(40)|dd(40)|centroid|flatness|rolloff|zcr]
+Window vector    : 7 x 124 = 868 features  (sliding window, majority-vote label)
 
 Usage:
-    python src/run_pipeline.py
+    python src/run_pipeline.py              # full 5-fold, RF + SVM + XGBoost
+    python src/run_pipeline.py --fast       # 3-fold, XGBoost only  (fastest)
+    python src/run_pipeline.py --xgb-only   # 5-fold, XGBoost only  (skip RF + SVM)
+    python src/run_pipeline.py --no-svm     # 5-fold, RF + XGBoost  (skip slow SVM)
+
+NOTE -- training vs. inference
+    This script trains models for research/comparison on your PC.
+    The mobile device only ever runs *inference* via ONNX Runtime on a
+    pre-exported model file.  XGBoost inference on one 868-feature window
+    takes ~0.1 ms on a mid-range phone -- not even measurable by the user.
 """
 
 import sys
 import os
-sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+import argparse
 
-# ── ensure src/ is on the path so sibling imports work when
-#    this script is run from the project root OR from src/
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 
 import config
-from loader             import load_annotation                    # annotation only
-from librosa_extractor  import load_all_recordings_librosa        # 124-feature extraction
-from feature_extractor  import build_windowed_dataset             # trim+window+balance
+from loader             import load_annotation
+from librosa_extractor  import load_all_recordings_librosa
+from feature_extractor  import trim_to_events, create_windows, balance_dataset
 from train              import run_cross_validation
 from evaluate           import (
     aggregate_metrics,
@@ -55,10 +63,41 @@ from visualize          import (
     plot_noise_confusion,
 )
 
+# ---------------------------------------------------------------------------
+# CLI flags
+# ---------------------------------------------------------------------------
+_parser = argparse.ArgumentParser(add_help=True)
+_parser.add_argument("--fast",     action="store_true",
+                     help="3-fold CV, XGBoost only -- fastest iteration")
+_parser.add_argument("--xgb-only", action="store_true",
+                     help="5-fold CV, XGBoost only (skip RF and SVM)")
+_parser.add_argument("--no-svm",   action="store_true",
+                     help="5-fold CV, RF + XGBoost (skip SVM)")
+_args, _ = _parser.parse_known_args()
+
+FAST_MODE = _args.fast
+XGB_ONLY  = _args.xgb_only or FAST_MODE   # --fast implies --xgb-only
+NO_SVM    = _args.no_svm   or XGB_ONLY    # --xgb-only implies --no-svm
+N_FOLDS   = 3 if FAST_MODE else config.N_SPLITS
+
+RUN_RF  = not XGB_ONLY
+RUN_SVM = not NO_SVM
+RUN_XGB = True   # always run -- it is the deployment model
+
 
 def main():
-    # ── Step 0: annotation ────────────────────────────────────────
+    mode_str = (
+        "FAST (3-fold, XGBoost only)" if FAST_MODE else
+        "XGBoost only (5-fold)"        if XGB_ONLY  else
+        "RF + XGBoost (5-fold)"        if NO_SVM    else
+        "Full (RF + SVM + XGBoost, 5-fold)"
+    )
     print("=" * 60)
+    print(f"run_pipeline.py  --  {mode_str}")
+    print("=" * 60)
+
+    # ── Step 0: annotation ────────────────────────────────────────
+    print("\n" + "=" * 60)
     print("STEP 0 -- Load annotation")
     print("=" * 60)
     ann = load_annotation()
@@ -99,19 +138,10 @@ def main():
     print(f"         balance=True (drug_multiplier={config.DRUG_MULTIPLIER})")
     print("=" * 60)
 
-    # NOTE: librosa_extractor already computes delta and delta-delta MFCC.
-    # build_windowed_dataset would add another stack_features() pass on top,
-    # which doubles deltas unnecessarily.  We skip the extra stacking by
-    # passing the full 124-feature arrays directly to create_windows.
-    # We do this by monkey-patching the stack step: pass all_X directly,
-    # let trim_to_events and create_windows run, but disable stack_features
-    # by using the same width=1 delta trick — actually easiest is to call
-    # trim + create_windows manually per recording to avoid double-delta.
-    from feature_extractor import trim_to_events, create_windows, balance_dataset
-
+    # NOTE: librosa_extractor already contains delta and delta-delta MFCC.
+    # We call trim + create_windows directly to avoid a redundant stacking pass.
     Xs, ys, gs = [], [], []
     for rec_idx, (X_rec, y_rec) in enumerate(zip(all_X, all_y)):
-        # trim excess Noise frames far from annotated events
         X_rec, y_rec = trim_to_events(
             X_rec, y_rec,
             noise_label   = "Noise",
@@ -119,7 +149,6 @@ def main():
         )
         if X_rec.shape[0] < config.WINDOW_SIZE:
             continue
-        # sliding window + majority-vote labels (no extra delta stacking)
         X_win, y_win = create_windows(
             X_rec, y_rec,
             window_size = config.WINDOW_SIZE,
@@ -130,7 +159,7 @@ def main():
         gs.append(np.full(X_win.shape[0], rec_idx, dtype=int))
 
     if not Xs:
-        raise RuntimeError("No windows generated — check recordings have enough frames.")
+        raise RuntimeError("No windows generated -- check recordings have enough frames.")
 
     X_win_all = np.vstack(Xs)
     y_win_all = np.concatenate(ys)
@@ -151,10 +180,10 @@ def main():
     X_win_all = X_aug[:, :-1].astype(np.float32)
 
     n_windows   = X_win_all.shape[0]
-    window_fdim = X_win_all.shape[1]   # WINDOW_SIZE * 124 = 868
+    window_fdim = X_win_all.shape[1]
     print(f"\n  Windows  : {n_windows:,}")
     print(f"  Features : {window_fdim}  per window  "
-          f"({config.WINDOW_SIZE} frames × {config.LIBROSA_N_FEATURES})")
+          f"({config.WINDOW_SIZE} frames x {config.LIBROSA_N_FEATURES})")
 
     unique_y, cnt_y = np.unique(y_win_all, return_counts=True)
     print("\n  Label distribution (after balancing):")
@@ -166,23 +195,30 @@ def main():
     print("STEP 3 -- Encode labels")
     print("=" * 60)
     le = LabelEncoder()
-    le.fit(config.LABEL_NAMES)      # fixed order — deterministic across runs
+    le.fit(config.LABEL_NAMES)
     y_int = le.transform(y_win_all)
     print(f"  Encoding: {dict(zip(le.classes_, le.transform(le.classes_)))}")
 
     # ── Step 4: cross-validation ──────────────────────────────────
+    models_str = " + ".join(
+        m for m, on in [("RF", RUN_RF), ("SVM", RUN_SVM), ("XGBoost", RUN_XGB)] if on
+    )
     print("\n" + "=" * 60)
-    print("STEP 4 -- Cross-validation (GroupKFold, recording-level)")
-    print("          Models: Random Forest, SVM, XGBoost")
+    print(f"STEP 4 -- Cross-validation (GroupKFold {N_FOLDS}-fold)")
+    print(f"          Models: {models_str}")
     print("=" * 60)
-    cv = run_cross_validation(X_win_all, y_int, groups, le)
+    cv = run_cross_validation(
+        X_win_all, y_int, groups, le,
+        run_rf=RUN_RF, run_svm=RUN_SVM, run_xgb=RUN_XGB,
+        n_splits=N_FOLDS,
+    )
 
     # ── Step 5: aggregate metrics ─────────────────────────────────
     print("\n" + "=" * 60)
     print("STEP 5 -- Results summary")
     print("=" * 60)
-    rf_summary  = aggregate_metrics(cv["rf_results"],  "Random Forest", le)
-    svm_summary = aggregate_metrics(cv["svm_results"], "SVM",           le)
+    rf_summary  = aggregate_metrics(cv["rf_results"],  "Random Forest", le) if RUN_RF  else None
+    svm_summary = aggregate_metrics(cv["svm_results"], "SVM",           le) if RUN_SVM else None
     xgb_summary = aggregate_metrics(cv["xgb_results"], "XGBoost",       le)
 
     # ── Step 6: visualizations ────────────────────────────────────
@@ -190,30 +226,36 @@ def main():
     print("STEP 6 -- Visualizations")
     print("=" * 60)
     plot_confusion_matrices(
-        cv["rf_cm_total"], cv["svm_cm_total"], cv["xgb_cm_total"], le
+        cv["rf_cm_total"], cv["svm_cm_total"], cv["xgb_cm_total"], le,
+        run_rf=RUN_RF, run_svm=RUN_SVM,
     )
-    plot_class_metrics(rf_summary, svm_summary, xgb_summary, le)
-    plot_drug_stats(rf_summary, svm_summary, xgb_summary)
+    plot_class_metrics(rf_summary, svm_summary, xgb_summary, le,
+                       run_rf=RUN_RF, run_svm=RUN_SVM)
+    plot_drug_stats(rf_summary, svm_summary, xgb_summary,
+                    run_rf=RUN_RF, run_svm=RUN_SVM)
     plot_noise_confusion(
-        cv["rf_cm_total"], cv["svm_cm_total"], cv["xgb_cm_total"], le
+        cv["rf_cm_total"], cv["svm_cm_total"], cv["xgb_cm_total"], le,
+        run_rf=RUN_RF, run_svm=RUN_SVM,
     )
 
-    # ── Step 7: feature importance ────────────────────────────────
+    # ── Step 7: feature importance (RF or XGBoost) ────────────────
     print("\n" + "=" * 60)
     print("STEP 7 -- Feature importance")
     print("=" * 60)
-    # Override FEATURE_NAMES in config temporarily so visualize.py uses
-    # the windowed librosa names (868 features) rather than the legacy 40.
     _orig_fn = config.FEATURE_NAMES
     config.FEATURE_NAMES = config.LIBROSA_FEATURE_NAMES
-    plot_feature_importance(cv["rf_fi_folds"])
+    if RUN_RF and cv["rf_fi_folds"]:
+        plot_feature_importance(cv["rf_fi_folds"], title_prefix="RF")
+    if cv["xgb_fi_folds"]:
+        plot_feature_importance(cv["xgb_fi_folds"], title_prefix="XGBoost")
     config.FEATURE_NAMES = _orig_fn
 
     # ── Step 8: misclassification analysis ────────────────────────
     print("\n" + "=" * 60)
     print("STEP 8 -- Misclassification analysis")
     print("=" * 60)
-    print_misclassification_analysis(cv["rf_cm_total"], le)
+    cm_for_analysis = cv["xgb_cm_total"]   # use XGB (deployment model)
+    print_misclassification_analysis(cm_for_analysis, le)
 
     # ── Step 9: save outputs ──────────────────────────────────────
     print("\n" + "=" * 60)
@@ -221,7 +263,9 @@ def main():
     print("=" * 60)
     save_cv_csv(cv["rf_results"], cv["svm_results"], cv["xgb_results"], le)
     report = save_summary_report(
-        rf_summary, svm_summary, xgb_summary,
+        rf_summary  or {"mean_acc": float("nan"), "std_acc": float("nan")},
+        svm_summary or {"mean_acc": float("nan"), "std_acc": float("nan")},
+        xgb_summary,
         X_win_all.shape, y_win_all,
         loaded  = len(all_X),
         skipped = skipped,

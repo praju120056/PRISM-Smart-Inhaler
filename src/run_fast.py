@@ -26,20 +26,14 @@ def make_xgb_classifier(n_classes):
             "XGBoost is not installed. Install it with: pip install xgboost"
         ) from exc
 
-    return XGBClassifier(
-        objective="multi:softprob",
-        eval_metric="mlogloss",
-        num_class=n_classes,
-        n_estimators=CONFIG["xgb_estimators"],
-        max_depth=CONFIG["xgb_max_depth"],
-        learning_rate=CONFIG["xgb_learning_rate"],
-        subsample=0.85,
-        colsample_bytree=0.85,
-        reg_lambda=1.0,
-        random_state=42,
-        n_jobs=-1,
-        tree_method="hist",
-    )
+    params = dict(config.XGB_PARAMS)   # sync with config.py — single source of truth
+    params["num_class"] = n_classes
+    # Dev-mode overrides: smaller/faster for iteration
+    if DEV_MODE:
+        params["n_estimators"] = CONFIG["xgb_estimators"]
+        params["max_depth"]    = CONFIG["xgb_max_depth"]
+        params["learning_rate"] = CONFIG["xgb_learning_rate"]
+    return XGBClassifier(**params)
 
 # =========================
 # CONFIG
@@ -129,6 +123,13 @@ def build_dataset(all_X, all_y):
         ys.append(y_win)
         gs.append(np.full(len(X_win), rec_idx))
 
+    if not Xs:
+        raise RuntimeError(
+            f"No windows generated from {len(all_X)} recordings. "
+            "All recordings were either too short or had no valid frames after "
+            "noise trimming.  Check that DATA_DIR is pointing at the right "
+            "folder and that recordings have annotated events."
+        )
     X = np.vstack(Xs)
     y_str = np.concatenate(ys)
     groups = np.concatenate(gs)
@@ -229,7 +230,18 @@ def main():
     print("Running pipeline...")
 
     ann = load_annotation()
-    all_X, all_y, _, _ = load_all_recordings_librosa(ann)
+    all_X, all_y, all_groups, skipped = load_all_recordings_librosa(
+        ann,
+        data_dir=config.DATA_DIR,   # explicit — never falls back to wrong path
+    )
+    print(f"[INFO] Loaded {len(all_X)} recordings, skipped {len(skipped)}")
+    for name, reason in skipped:
+        print(f"  [SKIP] {name}: {reason}")
+    if not all_X:
+        raise RuntimeError(
+            f"No recordings loaded from DATA_DIR='{config.DATA_DIR}'.\n"
+            "Check that the path exists and contains .wav files."
+        )
 
     X, y_enc, groups, le = build_dataset(all_X, all_y)
 
