@@ -14,7 +14,13 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 _SRC_DIR    = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR    = os.path.dirname(_SRC_DIR)
 
-DATA_DIR          = os.path.join(ROOT_DIR, "data")
+_LOCAL_DATA_DIR   = os.path.join(ROOT_DIR, "data")
+_LEGACY_DATA_DIR  = r"D:\project\dataset\pmdi_inhaler_dataset\data"
+
+DATA_DIR          = os.environ.get(
+    "PRISM_DATA_DIR",
+    _LOCAL_DATA_DIR if os.path.exists(_LOCAL_DATA_DIR) else _LEGACY_DATA_DIR,
+)
 PRECOMPUTED_DIR   = os.path.join(DATA_DIR, "precomputed")   # per-recording CSV subdirs
 RESULTS_DIR       = os.path.join(ROOT_DIR, "results")
 ANNOTATION_CSV    = os.path.join(DATA_DIR, "annotation.csv")

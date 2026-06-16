@@ -66,7 +66,7 @@ CONFIG = {
 # =========================
 _cfg_hash = hashlib.md5(json.dumps(CONFIG, sort_keys=True).encode()).hexdigest()[:8]
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CACHE_PATH = os.path.join(ROOT, "data", f"windowed_cache_{_cfg_hash}.npz")
+CACHE_PATH = os.path.join(config.DATA_DIR, f"windowed_cache_{_cfg_hash}.npz")
 
 # =========================
 # FEATURE REDUCTION
