@@ -239,15 +239,15 @@ def main():
     print("=" * 60)
     plot_confusion_matrices(
         cv["rf_cm_total"], cv["svm_cm_total"], cv["xgb_cm_total"], le,
-        run_rf=RUN_RF, run_svm=RUN_SVM,
+        run_rf=RUN_RF, run_svm=RUN_SVM, model_label=model_label,
     )
     plot_class_metrics(rf_summary, svm_summary, xgb_summary, le,
-                       run_rf=RUN_RF, run_svm=RUN_SVM)
+                       run_rf=RUN_RF, run_svm=RUN_SVM, model_label=model_label)
     plot_drug_stats(rf_summary, svm_summary, xgb_summary,
-                    run_rf=RUN_RF, run_svm=RUN_SVM)
+                    run_rf=RUN_RF, run_svm=RUN_SVM, model_label=model_label)
     plot_noise_confusion(
         cv["rf_cm_total"], cv["svm_cm_total"], cv["xgb_cm_total"], le,
-        run_rf=RUN_RF, run_svm=RUN_SVM,
+        run_rf=RUN_RF, run_svm=RUN_SVM, model_label=model_label,
     )
 
     # ── Step 7: feature importance (RF or XGBoost) ────────────────

@@ -24,7 +24,7 @@ import config
 # ──────────────────────────────────────────────────────────────
 
 def plot_confusion_matrices(rf_cm, svm_cm, xgb_cm, le,
-                            run_rf=True, run_svm=True):
+                            run_rf=True, run_svm=True, model_label="XGBoost"):
     """
     Plot confusion matrices for enabled models side by side.
     """
@@ -33,7 +33,7 @@ def plot_confusion_matrices(rf_cm, svm_cm, xgb_cm, le,
         models.append((rf_cm, "Random Forest (all folds)"))
     if run_svm:
         models.append((svm_cm, "SVM (all folds)"))
-    models.append((xgb_cm, "XGBoost (all folds)"))
+    models.append((xgb_cm, f"{model_label} (all folds)"))
 
     fig, axes = plt.subplots(1, len(models), figsize=(7 * len(models), 6))
     if len(models) == 1:
@@ -103,7 +103,7 @@ def plot_feature_importance(fi_folds: list, top_n: int = 15, title_prefix: str =
 
 
 def plot_class_metrics(rf_summary, svm_summary, xgb_summary, le,
-                       run_rf=True, run_svm=True):
+                       run_rf=True, run_svm=True, model_label="XGBoost"):
     """
     Plot per-class precision, recall, and F1-score for enabled models.
     """
@@ -113,7 +113,7 @@ def plot_class_metrics(rf_summary, svm_summary, xgb_summary, le,
     active = []
     if run_rf  and rf_summary:  active.append(('RF',      rf_summary,  '#4C72B0'))
     if run_svm and svm_summary: active.append(('SVM',     svm_summary, '#DD8452'))
-    active.append(('XGBoost', xgb_summary, '#55A868'))
+    active.append((model_label, xgb_summary, '#55A868'))
 
     fig, axes = plt.subplots(1, 3, figsize=(16, 5))
     x = np.arange(len(classes))
@@ -140,19 +140,19 @@ def plot_class_metrics(rf_summary, svm_summary, xgb_summary, le,
 
 
 def plot_drug_stats(rf_summary, svm_summary, xgb_summary,
-                    run_rf=True, run_svm=True):
+                    run_rf=True, run_svm=True, model_label="XGBoost"):
     """
     Plot Drug-specific metrics for enabled models.
     """
     if 'Drug' not in xgb_summary:
-        print("  [WARN] 'Drug' class not found in XGB summary, skipping drug stats plot.")
+        print(f"  [WARN] 'Drug' class not found in {model_label} summary, skipping drug stats plot.")
         return
 
     metrics = ['precision', 'recall', 'f1']
     active = []
     if run_rf  and rf_summary  and 'Drug' in rf_summary:  active.append(('RF',      rf_summary,  '#4C72B0'))
     if run_svm and svm_summary and 'Drug' in svm_summary: active.append(('SVM',     svm_summary, '#DD8452'))
-    active.append(('XGBoost', xgb_summary, '#55A868'))
+    active.append((model_label, xgb_summary, '#55A868'))
 
     x = np.arange(len(metrics))
     n = len(active)
@@ -186,7 +186,7 @@ def plot_drug_stats(rf_summary, svm_summary, xgb_summary,
 
 
 def plot_noise_confusion(rf_cm, svm_cm, xgb_cm, le,
-                         run_rf=True, run_svm=True):
+                         run_rf=True, run_svm=True, model_label="XGBoost"):
     """
     Plot Noise confusion breakdown for enabled models.
     """
@@ -202,7 +202,7 @@ def plot_noise_confusion(rf_cm, svm_cm, xgb_cm, le,
     active = []
     if run_rf:  active.append(("RF",      rf_cm,  "#4C72B0"))
     if run_svm: active.append(("SVM",     svm_cm, "#DD8452"))
-    active.append(("XGBoost", xgb_cm, "#55A868"))
+    active.append((model_label, xgb_cm, "#55A868"))
 
     n = len(active)
     x = np.arange(len(other_classes))
