@@ -1,0 +1,40 @@
+pMDI Inhaler Event Classification — Results Summary
+=======================================================
+Recordings loaded       : 350
+Total frames            : 264,620
+Features per frame      : 40
+Cross-validation        : GroupKFold, 5 folds (recording-level)
+
+Model Performance
+----------------------------------------
+Random Forest  — mean acc: 0.8908 ± 0.0073
+SVM            — mean acc: 0.8381 ± 0.0088
+
+Label Distribution
+----------------------------------------
+  Drug      :   3,815  (1.4%)
+  Exhale    :  36,119  (13.6%)
+  Inhale    :  24,295  (9.2%)
+  Noise     : 200,391  (75.7%)
+
+Feature Set
+----------------------------------------
+  MFCC (19 coefficients)
+  ZCR  (1 feature)
+  RMS  (1 feature, computed from raw audio)
+  delta-MFCC (19 features)
+  Total: 40 features per frame
+
+Skipped recordings
+----------------------------------------
+  rec2018-02-01_17h36m45.706s.wav: NaN or Inf in feature CSV
+  rec2018-02-02_00h26m49.779s.wav: NaN or Inf in feature CSV
+  rec2018-02-02_00h38m38.571s.wav: NaN or Inf in feature CSV
+  rec2018-02-02_00h39m43.100s.wav: NaN or Inf in feature CSV
+  rec2018-02-02_01h31m43.090s.wav: NaN or Inf in feature CSV
+  rec2018-02-02_01h40m26.773s.wav: NaN or Inf in feature CSV
+  rec2018-02-02_01h58m20.818s.wav: NaN or Inf in feature CSV
+  rec2018-02-08_15h08m45.803s.wav: NaN or Inf in feature CSV
+  rec2018-02-09_11h04m27.369s.wav: NaN or Inf in feature CSV
+  rec2018-05-02_17h40m15.391s.wav: NaN or Inf in feature CSV
+  rec2018-05-03_09h32m39.426s.wav: NaN or Inf in feature CSV
