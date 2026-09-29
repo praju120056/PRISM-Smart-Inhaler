@@ -78,18 +78,13 @@ except Exception:
 # Core extraction
 # ──────────────────────────────────────────────────────────────────────────────
 
-def extract_features(wav_path: str) -> np.ndarray | None:
-    """
-    Extract a (n_frames, N_FEATURES) float32 matrix from a WAV file.
+def extract_features_from_audio(audio: np.ndarray, sr: int) -> np.ndarray | None:
+    """Extract the trained 124-feature representation from an audio array.
 
-    Returns None on any load or computation failure.
-
-    Frame count:
-        n_frames = ceil( total_samples / HOP_LENGTH )
-
-    Spectral centroid and rolloff are normalised by SR/2 (Nyquist)
-    so all features share a comparable numerical range before any
-    external z-score normalisation.
+    The array is converted to mono and resampled to :data:`SR` before using the
+    same DSP settings as :func:`extract_features`.  This lets post-event code
+    preserve and later slice the caller's original waveform while ensuring CNN
+    input is identical to the training extractor.
     """
     try:
         import librosa
@@ -97,8 +92,16 @@ def extract_features(wav_path: str) -> np.ndarray | None:
         raise RuntimeError("librosa is required: pip install librosa soundfile")
 
     try:
-        audio, sr = librosa.load(wav_path, sr=SR, mono=True)
-    except Exception as exc:
+        audio = np.asarray(audio, dtype=np.float32)
+        if audio.ndim == 2:
+            # soundfile convention is (samples, channels); accept either axis.
+            audio = audio.mean(axis=1 if audio.shape[0] >= audio.shape[1] else 0)
+        if audio.ndim != 1 or audio.size == 0:
+            return None
+        if sr != SR:
+            audio = librosa.resample(audio, orig_sr=sr, target_sr=SR)
+        sr = SR
+    except Exception:
         return None
 
     # Shared magnitude spectrogram (avoids computing STFT twice)
@@ -141,6 +144,24 @@ def extract_features(wav_path: str) -> np.ndarray | None:
         return None
 
     return features.astype(np.float32)
+
+
+def load_audio(wav_path: str) -> tuple[np.ndarray, int] | tuple[None, None]:
+    """Load a mono waveform at its source sample rate for event slicing."""
+    try:
+        import librosa
+        audio, sr = librosa.load(wav_path, sr=None, mono=True)
+        return audio.astype(np.float32), int(sr)
+    except Exception:
+        return None, None
+
+
+def extract_features(wav_path: str) -> np.ndarray | None:
+    """Extract the 124-feature matrix from a WAV path using the shared DSP."""
+    audio, sr = load_audio(wav_path)
+    if audio is None or sr is None:
+        return None
+    return extract_features_from_audio(audio, sr)
 
 
 # ──────────────────────────────────────────────────────────────────────────────

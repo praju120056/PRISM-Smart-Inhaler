@@ -1,0 +1,15 @@
+{
+  "recordings_requested": 30,
+  "recordings_failed": 0,
+  "inhale_events": 32,
+  "model_path": "D:\\Code\\projects\\CAPSTONE\\PRISM smart inhaler\\results\\inhaler_cnn.onnx",
+  "grouping": {
+    "target_label": "Inhale",
+    "smoothing_window": 1,
+    "max_gap_s": 0.0,
+    "min_event_duration_s": 0.0,
+    "min_confidence": null
+  },
+  "csv": "inhalation_events.csv",
+  "failures": []
+}

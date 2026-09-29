@@ -76,6 +76,45 @@ python src/run_pipeline.py --xgb-only
 python src/run_pipeline.py --no-svm
 ```
 
+### Inspect Detected Inhalations
+
+The post-event layer reuses the exported CNN; it does not retrain or make
+technique-quality judgments.  It groups its overlapping window predictions
+into inhalation candidates and measures the matching original-waveform region.
+
+```bash
+python src/post_event.py data/your_recording.wav --plot results/your_recording_diagnostic.png
+```
+
+From a notebook or experiment script run from the project root:
+
+```python
+import sys
+sys.path.append("src")
+
+from post_event import detect_events, analyze_inhalation, plot_diagnostic
+
+events, predictions = detect_events("data/your_recording.wav", return_predictions=True)
+analysis = analyze_inhalation("data/your_recording.wav", events[0])
+figure, axes = plot_diagnostic("data/your_recording.wav", predictions, events)
+```
+
+`TemporalGroupingConfig` exposes optional label smoothing, gap allowance,
+minimum duration, and confidence controls.  Defaults apply no extra filtering;
+they are temporal-cleanup controls, not validated clinical thresholds.
+
+### Explore All Detected Inhalations
+
+Create an event-level CSV and distribution plots across every recording:
+
+```bash
+python src/explore_inhalations.py
+```
+
+This writes `results/post_event/inhalation_events.csv`, a run manifest, and
+histograms plus duration-versus-RMS/energy scatter plots. To persist each
+original-waveform event segment as a WAV file too, add `--export-segments`.
+
 ### Output
 
 ```

@@ -195,17 +195,10 @@ def create_windows(
             "no complete windows possible."
         )
 
-    # ── Build feature windows ─────────────────────────────────────────────────
-    # sliding_window_view returns a *view* (zero-copy):
-    # shape (n_windows_full, window_size, feature_dim)
-    feat_windows = np.lib.stride_tricks.sliding_window_view(
-        features, window_shape=(window_size, feature_dim)
-    )                                   # (n_frames - window_size + 1, 1, window_size, feature_dim)
-    # squeeze the redundant axis introduced by 2-D input
-    feat_windows = feat_windows[:, 0, :, :]   # (n_valid, window_size, feature_dim)
-
-    # Apply stride and flatten each window into a 1-D vector
-    feat_windows = feat_windows[::stride]            # (n_windows, window_size, feature_dim)
+    # Keep the unflattened windows available for inference paths such as the
+    # CNN/ONNX runtime. The historical training API below still returns the
+    # flattened representation it has always exposed.
+    feat_windows = create_feature_windows(features, window_size, stride)
     n_windows    = feat_windows.shape[0]
     X            = feat_windows.reshape(n_windows, window_size * feature_dim)
 
@@ -218,6 +211,38 @@ def create_windows(
     y = _majority_vote(lbl_windows)                  # (n_windows,)
 
     return X, y
+
+
+def create_feature_windows(
+    features: np.ndarray,
+    window_size: int = 7,
+    stride: int = 1,
+) -> np.ndarray:
+    """Return sliding feature windows without labels or flattening.
+
+    This is the shared inference counterpart of :func:`create_windows`.
+    It deliberately keeps the ``(window, frame, feature)`` layout required by
+    the CNN instead of duplicating window construction in deployment code.
+    """
+    if features.ndim != 2:
+        raise ValueError(
+            f"features must be 2-D (n_frames, feature_dim), got {features.shape}"
+        )
+    n_frames, feature_dim = features.shape
+    if window_size < 1:
+        raise ValueError(f"window_size must be >= 1, got {window_size}")
+    if stride < 1:
+        raise ValueError(f"stride must be >= 1, got {stride}")
+    if window_size > n_frames:
+        raise ValueError(
+            f"window_size ({window_size}) > n_frames ({n_frames}): "
+            "no complete windows possible."
+        )
+
+    windows = np.lib.stride_tricks.sliding_window_view(
+        features, window_shape=(window_size, feature_dim)
+    )
+    return windows[:, 0, :, :][::stride]
 
 
 def _majority_vote(label_matrix: np.ndarray) -> np.ndarray:
