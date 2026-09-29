@@ -1,0 +1,220 @@
+{
+  "stage": "Stage 2 - feature analysis and V1 feature selection",
+  "dataset": {
+    "path": "results/inhale_dataset/inhale_events_v1.csv",
+    "sha256": "0dbae978da146ed62aed21eccc251c621aa566e3c3bcd020ddfbf235bf367cf1",
+    "events": 364,
+    "usable": 318,
+    "calibration_events": 20
+  },
+  "provenance": {
+    "git": {
+      "head": "4c25e6d3559ba39fad8803a8ead6f5f81f32cf7f",
+      "dirty": true
+    },
+    "seed": 20260929,
+    "subsample_draws": 2000
+  },
+  "parameters": {
+    "mad_scale": 1.4826,
+    "extreme_robust_z": 3.5,
+    "min_group_size": 5,
+    "near_peak_fraction": 0.95,
+    "redundancy_rho_descriptive": 0.8
+  },
+  "redundancy": {
+    "groups_abs_rho_ge_0_8": [
+      [
+        "mean_rms",
+        "spectral_centroid_mean",
+        "spectral_rolloff_mean",
+        "zcr_mean"
+      ]
+    ],
+    "log_total_energy_from_log_duration_and_log_mean_rms_r2": 0.9806009888235936
+  },
+  "sessions": {
+    "gap_minutes": 25.0,
+    "largest_gap_within_session_min": 21.04713333333333,
+    "smallest_gap_between_sessions_min": 26.74318333333333,
+    "sessions_total": 23,
+    "sessions_with_usable_events": 18,
+    "sessions_tested": 12,
+    "dates_with_usable_events": 10,
+    "dates_tested": 8,
+    "calibration_sessions": [
+      "2018-01-22#1",
+      "2018-01-23#1"
+    ]
+  },
+  "edge_effect": {
+    "reproduction_max_abs_error": 4.440892098500626e-16,
+    "tests_all_events": {
+      "n_edge": 14,
+      "n_interior": 350,
+      "duration_s": {
+        "median_a": 0.42400000000000015,
+        "median_b": 1.5920000000000003,
+        "cliffs_delta": -0.8420408163265306,
+        "mannwhitney_p": 9.161869740625256e-08
+      },
+      "mean_rms": {
+        "median_a": 0.1947008520364761,
+        "median_b": 0.18351405113935465,
+        "cliffs_delta": 0.038367346938775526,
+        "mannwhitney_p": 0.808632271615177
+      },
+      "peak_rms": {
+        "median_a": 0.26821972429752344,
+        "median_b": 0.27505695819854736,
+        "cliffs_delta": 0.001224489795918382,
+        "mannwhitney_p": 0.9948331817414691
+      },
+      "time_to_peak_s": {
+        "median_a": 0.31599999964237213,
+        "median_b": 0.6880000233650208,
+        "cliffs_delta": -0.4340816326530612,
+        "mannwhitney_p": 0.005894985278156256
+      },
+      "crest_factor": {
+        "median_a": 1.6817474290398828,
+        "median_b": 1.4987435165017504,
+        "cliffs_delta": 0.25469387755102035,
+        "mannwhitney_p": 0.10630257601411115
+      },
+      "confidence": {
+        "median_a": 0.620848605445787,
+        "median_b": 0.945589714689661,
+        "cliffs_delta": -0.7555102040816326,
+        "mannwhitney_p": 1.6405432797260707e-06
+      }
+    },
+    "tests_usable_events": {
+      "n_edge": 3,
+      "n_interior": 315,
+      "duration_s": {
+        "median_a": 1.288,
+        "median_b": 1.64,
+        "cliffs_delta": -0.7746031746031746,
+        "mannwhitney_p": 0.021103011713508514
+      },
+      "mean_rms": {
+        "median_a": 0.2139564752578735,
+        "median_b": 0.1837848424911499,
+        "cliffs_delta": 0.6105820105820106,
+        "mannwhitney_p": 0.0689704274685277
+      },
+      "peak_rms": {
+        "median_a": 0.3259517252445221,
+        "median_b": 0.2749135494232178,
+        "cliffs_delta": 0.5407407407407407,
+        "mannwhitney_p": 0.11217536026713298
+      },
+      "time_to_peak_s": {
+        "median_a": 1.2640000581741333,
+        "median_b": 0.7440000176429749,
+        "cliffs_delta": 0.17354497354497345,
+        "mannwhitney_p": 0.6070922374089218
+      },
+      "crest_factor": {
+        "median_a": 1.7280613607241437,
+        "median_b": 1.4985009459803533,
+        "cliffs_delta": 0.2677248677248678,
+        "mannwhitney_p": 0.4456421747047907
+      },
+      "confidence": {
+        "median_a": 0.922130362711091,
+        "median_b": 0.953059500769565,
+        "cliffs_delta": -0.5259259259259259,
+        "mannwhitney_p": 0.1232020547300153
+      }
+    },
+    "near_peak_span_frac_usable": {
+      "count": 318.0,
+      "mean": 0.2638584364721048,
+      "std": 0.22035155015071248,
+      "min": 0.0,
+      "25%": 0.04799886327236891,
+      "50%": 0.23666523396968842,
+      "75%": 0.43011796474456787,
+      "max": 0.8219177722930908
+    },
+    "near_peak_span_s_usable_median": 0.3839999735355377,
+    "time_to_peak_scaled_mad_usable": 0.43884951728582344,
+    "peak_rms_extreme_high_usable": {
+      "n": 8,
+      "peak_positions": {
+        "interior": 7,
+        "first": 1
+      },
+      "crest_factor_median": 2.4418696281099637,
+      "crest_factor_min": 1.1022495041334746,
+      "crest_factor_max": 3.567711146923132,
+      "crest_factor_median_all_usable": 1.4987435165017504
+    },
+    "frame_edge_contribution_to_std_features": {
+      "spectral_centroid_std": {
+        "events_with_interior_frames": 318,
+        "spearman_all_vs_interior": 0.9769053902038597,
+        "median_ratio_interior_over_all": 0.9791595353566129,
+        "median_interior_frame_fraction": 0.9804873405672949
+      },
+      "spectral_flatness_std": {
+        "events_with_interior_frames": 318,
+        "spearman_all_vs_interior": 0.9776069456979255,
+        "median_ratio_interior_over_all": 0.9716075693802748,
+        "median_interior_frame_fraction": 0.9804873405672949
+      },
+      "spectral_rolloff_std": {
+        "events_with_interior_frames": 318,
+        "spearman_all_vs_interior": 0.9924631296204008,
+        "median_ratio_interior_over_all": 0.9916141328279624,
+        "median_interior_frame_fraction": 0.9804873405672949
+      },
+      "zcr_std": {
+        "events_with_interior_frames": 318,
+        "spearman_all_vs_interior": 0.7599090515398864,
+        "median_ratio_interior_over_all": 0.44780567407760563,
+        "median_interior_frame_fraction": 0.843898724538359
+      }
+    }
+  },
+  "decisions": {
+    "keep": [
+      "duration_s",
+      "mean_rms",
+      "spectral_centroid_mean",
+      "spectral_centroid_std",
+      "spectral_flatness_mean",
+      "spectral_flatness_std",
+      "spectral_rolloff_std"
+    ],
+    "exclude": [
+      "total_energy",
+      "zcr_std"
+    ],
+    "defer": [
+      "peak_rms",
+      "time_to_peak_s",
+      "spectral_rolloff_mean",
+      "zcr_mean"
+    ]
+  },
+  "outputs": [
+    "annotation_context.csv",
+    "calibration_vs_rest.csv",
+    "date_shift_heatmap.png",
+    "edge_effect_analysis.csv",
+    "edge_effect_events.csv",
+    "feature_analysis_summary.json",
+    "feature_correlations.csv",
+    "feature_distributions.png",
+    "feature_selection_v1.csv",
+    "feature_selection_v1.json",
+    "feature_spearman.png",
+    "feature_summary.csv",
+    "session_group_medians.csv",
+    "session_shift_heatmap.png",
+    "session_stability.csv"
+  ]
+}

@@ -133,6 +133,25 @@ writes the following to `results/inhale_dataset/`:
 "Usable" means eligible for baseline modeling. It is not a technique-quality
 label. See `PRISM_RESEARCH_LOG.md` Entry 3 for the rule and its evidence.
 
+### Feature Analysis and V1 Feature Selection (anomaly detection, Stage 2)
+
+```bash
+python src/feature_analysis.py
+```
+
+This reads the Stage 1 table and re-reads the original WAVs for the RMS-envelope
+edge check. It writes the following to `results/feature_analysis/`:
+
+- distribution and robust-scale summaries for the 13 candidate features
+- Spearman redundancy, overall and within sessions
+- date and session stability
+- calibration-set representativeness
+- edge-effect tables and figures
+- `feature_selection_v1.json`: the KEEP / EXCLUDE / DEFER decision that later
+  stages read
+
+See `PRISM_RESEARCH_LOG.md` Entry 4.
+
 ### Output
 
 ```
@@ -449,6 +468,7 @@ Raw audio does not cross any system boundary:
 | ONNX export (inhaler_cnn.onnx, opset 17) | ✅ Complete |
 | Cross-validation results (89.0% mean accuracy) | ✅ Complete |
 | Inhale-event dataset + usability rule (anomaly Stage 1) | ✅ Implemented |
+| Feature analysis + V1 feature selection (anomaly Stage 2) | ✅ Implemented |
 | V1 global baseline / anomaly scoring | 🔲 Not started |
 | ESP32 firmware | 🔲 Not started |
 | BLE protocol implementation | 🔲 Not started |

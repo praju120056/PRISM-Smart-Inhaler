@@ -1,0 +1,109 @@
+{
+  "version": "v1",
+  "dataset": {
+    "path": "results/inhale_dataset/inhale_events_v1.csv",
+    "sha256": "0dbae978da146ed62aed21eccc251c621aa566e3c3bcd020ddfbf235bf367cf1",
+    "population": "usable == True"
+  },
+  "keep": [
+    "duration_s",
+    "mean_rms",
+    "spectral_centroid_mean",
+    "spectral_centroid_std",
+    "spectral_flatness_mean",
+    "spectral_flatness_std",
+    "spectral_rolloff_std"
+  ],
+  "transforms": {
+    "duration_s": "none",
+    "mean_rms": "none",
+    "spectral_centroid_mean": "none",
+    "spectral_centroid_std": "none",
+    "spectral_flatness_mean": "none",
+    "spectral_flatness_std": "none",
+    "spectral_rolloff_std": "none"
+  },
+  "exclude": [
+    "total_energy",
+    "zcr_std"
+  ],
+  "defer": [
+    "peak_rms",
+    "time_to_peak_s",
+    "spectral_rolloff_mean",
+    "zcr_mean"
+  ],
+  "never_features": [
+    "confidence",
+    "max_confidence",
+    "window_count"
+  ],
+  "decisions": {
+    "duration_s": {
+      "decision": "KEEP",
+      "transform": "none",
+      "reason": "Acoustic inhalation length as segmented by the detector (16 ms resolution = 8% of its MAD). Non-degenerate MAD, near-symmetric body (Bowley 0.08), 13/318 events beyond |z| 3.5 on both sides; little of it is predictable from the other kept features (rank R2 0.32). Strong between-date/session variation is flagged, not used for exclusion."
+    },
+    "mean_rms": {
+      "decision": "KEEP",
+      "transform": "none",
+      "reason": "Sustained loudness (mean of 32 ms frame RMS). Symmetric body (Bowley -0.02), 2 extremes; log compared (skew 1.25 -> -0.31, extremes 2 -> 3) and not adopted. Relative level only: depends on gain and distance. Strongly anti-correlated with spectral_centroid_mean (rho -0.84, -0.76 within sessions): kept as a distinct construct, flagged for double counting in a univariate aggregate."
+    },
+    "peak_rms": {
+      "decision": "DEFER",
+      "transform": "none",
+      "reason": "Loudest single 32 ms frame. Heaviest tail of all candidates (skew 2.90, max |z| 10.9; the 5 most extreme events carry 49% of the squared robust deviation) and log does not remove it (skew 1.04). The 8 extreme events are mostly interior transients (median crest factor 2.44 vs 1.50) of unidentified source; 77% of its rank variation is explained by the kept features. Investigate the transients; revisit as a crest-factor descriptor."
+    },
+    "total_energy": {
+      "decision": "EXCLUDE",
+      "transform": "none",
+      "reason": "Derived quantity (integral of squared amplitude = duration x mean power): log duration_s and log mean_rms explain 98.1% of log total_energy. Information lost: <2% of its log variance (within-event amplitude modulation). Keeping it would double-count duration and loudness."
+    },
+    "time_to_peak_s": {
+      "decision": "DEFER",
+      "transform": "none",
+      "reason": "Argmax of a flat-topped RMS envelope: frames within 5% of the peak span a median 0.38 s, close to the feature's own robust spread (0.44 s), so much of its between-event variation may be peak-location noise; it also inherits the detector's start boundary. The segment-edge effect is rare in usable events (3/318). Revisit with a smoothed-envelope or energy-centroid timing."
+    },
+    "spectral_centroid_mean": {
+      "decision": "KEEP",
+      "transform": "none",
+      "reason": "Representative spectral-brightness measure: smallest relative MAD (5%), symmetric (skew 0.15), 1 extreme. Preferred over spectral_rolloff_mean and zcr_mean, which estimate the same construct (rho 0.81, 0.85). See mean_rms for the loudness-brightness flag."
+    },
+    "spectral_centroid_std": {
+      "decision": "KEEP",
+      "transform": "none",
+      "reason": "Within-event variability of brightness: weakly related to every other feature (max |rho| 0.36, rank R2 from the other kept 0.23), most session-stable feature (session eps2 0.04), zero-padded edge frames contribute ~2% (interior/all ratio 0.98)."
+    },
+    "spectral_flatness_mean": {
+      "decision": "KEEP",
+      "transform": "none",
+      "reason": "Noise-likeness (tonality), a construct distinct from brightness and loudness (strongest partner is the deferred rolloff, rho 0.73); symmetric body, 1 extreme. Strong between-date variation (eps2 0.17) and calibration shift (+1.08 rest MAD) flagged."
+    },
+    "spectral_flatness_std": {
+      "decision": "KEEP",
+      "transform": "none",
+      "reason": "Within-event variability of noise-likeness: moderate correlations only (max |rho| 0.50), 2 extremes, not edge-driven (interior/all ratio 0.97)."
+    },
+    "spectral_rolloff_mean": {
+      "decision": "DEFER",
+      "transform": "none",
+      "reason": "Third estimator of spectral brightness: rho 0.81 with the centroid (0.80 within sessions), 79% of its rank variation explained by the kept features; asymmetric, bounded body (Bowley -0.34); largest date effect (eps2 0.21). Information lost: upper-band spectral extent beyond the centroid. Revisit in the multivariate V2."
+    },
+    "spectral_rolloff_std": {
+      "decision": "KEEP",
+      "transform": "none",
+      "reason": "Within-event variability of spectral extent: low redundancy (max |rho| 0.37), no extremes, session-stable (session eps2 0.04), not edge-driven (interior/all ratio 0.99)."
+    },
+    "zcr_mean": {
+      "decision": "DEFER",
+      "transform": "none",
+      "reason": "Time-domain brightness proxy: rho 0.85 with spectral_centroid_mean (0.84 within sessions), 83% of its rank variation explained by the kept features; computed on 256 ms frames. Information lost: crossing rate beyond the centroid. Revisit in V2."
+    },
+    "zcr_std": {
+      "decision": "EXCLUDE",
+      "transform": "none",
+      "reason": "Measurement artifact as defined: ZCR uses 256 ms frames edge-padded at both event boundaries, and the std over unpadded frames is a median 0.45x the stored value (rank agreement 0.76). A ZCR-variability feature would need a new definition."
+    }
+  },
+  "rationale": "PRISM_RESEARCH_LOG.md Entry 4"
+}

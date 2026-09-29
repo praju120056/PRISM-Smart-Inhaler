@@ -401,3 +401,226 @@ For the 13 features, on usable events, with all events reported for context:
 - Quantify measurement issues, including RMS peaks at envelope edges for `time_to_peak_s`/`peak_rms`.
 - Decide whether the detection columns stay out of the feature set (default: yes, because they describe the CNN).
 - Choose and document the initial V1 feature subset without silently dropping any feature.
+
+---
+
+# Research Entry 4 — 2026-09-30: Feature Analysis and V1 Feature Selection (Stage 2)
+
+## Question
+Which of the 13 acoustic/timing features of an inhale event are appropriate for the V1 global robust (median/MAD) baseline? Each feature is classified KEEP, EXCLUDE or DEFER with evidence. Anomaly scoring, thresholds and personalization are out of scope for this stage.
+
+## Data
+- **Dataset:** `results/inhale_dataset/inhale_events_v1.csv` (Stage 1, commit `4c25e6d`, SHA-256 `0dbae978…7cf1`), not modified.
+- **Population:** the 318 usable events (usability rule v1); all 364 events are reported for context only.
+- **Calibration set:** the 20 events with `usable_order` 1–20, i.e. the locked V1 calibration set.
+- **Detection columns:** the CNN detection columns (`confidence`, `max_confidence`, `window_count`) are never candidate features.
+- **Annotations:** used only to interpret measurements (`annotation_context.csv`), never to select features.
+
+## Feature Definitions (as computed upstream by `post_event.analyze_inhalation` on the event segment sliced from the original 8 kHz waveform)
+- **`duration_s`:** event end − start. Start is the first Inhale window's start. End is the last Inhale window's start + 0.2 s, clamped at the recording end. Resolution is 16 ms.
+- **`mean_rms` / `peak_rms`:** mean / maximum of an RMS envelope computed over 256-sample (32 ms) frames starting every 64 samples (8 ms). The envelope includes 3–4 partial frames at the tail of the segment.
+- **`total_energy`:** Σx² / sample rate (amplitude²·s).
+- **`time_to_peak_s`:** start time, relative to event start, of the envelope frame with the maximum RMS.
+- **`spectral_{centroid,flatness,rolloff}_{mean,std}`:** mean / std over frames of librosa features on the segment alone: STFT n_fft 256, hop 64, Hann, `center=True` with zero padding. Centroid and 85% rolloff are divided by 4 kHz.
+- **`zcr_{mean,std}`:** librosa zero-crossing rate with its default 2048-sample (256 ms) frames, hop 64, `center=True` with edge padding.
+
+## Methods
+Implementation: `src/feature_analysis.py`, command `python src/feature_analysis.py`. Tests: `tests/test_feature_analysis.py` (23 tests). Outputs are in `results/feature_analysis/`. The run is deterministic, with seed 20260929 and 2,000 subsample draws.
+
+1. **Distributions:**
+   - Summary statistics: percentiles, mean/SD, and MAD.
+   - Robust z = (x − median) / (1.4826·MAD).
+   - Extremes defined as |z| > 3.5, the Iglewicz & Hoaglin (1993) modified-z convention (external literature).
+   - Shape: skewness and Bowley quartile skewness.
+   - Tail dominance: the share of Σz² carried by the top 1 and top 5 events.
+   - Measurement resolution relative to the MAD.
+   - A log-scale comparison for every strictly positive feature.
+2. **Numerical stability at n = 20:** medians and MADs of 2,000 random 20-event subsets of the usable events.
+3. **Redundancy:**
+   - Spearman ρ (primary measure) and Pearson r.
+   - Within-session Spearman: pooled correlation of within-session percentile ranks, which removes between-session offsets.
+   - Rank R²: normal scores of one feature regressed on the others, both all 12 others and the kept set.
+   - A log-scale identity check for `total_energy`.
+   - Groups with |ρ| ≥ 0.8 are reported descriptively only; they are never an exclusion rule on their own.
+4. **Stability:**
+   - Kruskal–Wallis test and ε² = (H − k + 1)/(n − k) across dates and across sessions, restricted to groups with ≥ 5 usable events (8 dates, 12 sessions).
+   - Group medians expressed in pooled robust-z units.
+   - Sessions are split wherever consecutive recordings are more than 25 min apart. Across all 361 WAVs, the largest gap inside a session is 21.05 min and the smallest gap between sessions is 26.74 min, so any threshold in [21.05, 26.74) gives the same 23 sessions. 18 sessions contain usable events.
+5. **Calibration set:**
+   - First 20 usable events vs the remaining 298, compared with Mann–Whitney, Cliff's δ, KS, the median shift in rest-MAD units, the MAD ratio, and the fraction of the rest outside the calibration range. Under exchangeability that fraction is expected to be 2/21 = 0.095.
+   - The calibration median and MAD are also placed within the distribution of random 20-event subsets.
+6. **Edge effect:**
+   - Every event (364) is recomputed from the audio.
+   - Measurements: the position of the RMS-envelope peak (first frame, last frame, partial tail frame or interior), the peak without partial frames, the RMS just before and after the event, and near-peak ambiguity (the time span of frames within 5% of the peak).
+   - The same pass also measures how much frames touched by padding contribute to the `*_std` features (std over unpadded frames vs all frames).
+
+## Results
+
+### Reproduction check and an upstream precision note
+- **Precision loss:** the upstream CSV stores event times with limited precision (e.g. `3.792` for the detector's `3.7920000000000003`). Slicing audio from the CSV value can move a boundary by one sample, which adds a partial envelope frame. This changes `mean_rms` by up to 0.0087 for a 0.2 s event.
+- **Fix used here:** `exact_event_bounds` rebuilds the detector's exact float bounds from the window indices. All stored `mean_rms`, `peak_rms`, `time_to_peak_s` and spectral std values then reproduce within 4.4×10⁻¹⁶.
+- **Scope:** this is a reproducibility note for anyone re-slicing audio from CSV times. It is not a Stage 1 bug, and no Stage 1 logic was changed.
+
+### 1–2. Distributions and robust-scale suitability (usable events, raw scale)
+| Feature | Median | 1.4826·MAD | MAD/median | Skew | Bowley | Extremes low/high | max abs z | Top-5 share of Σz² |
+|---|---|---|---|---|---|---|---|---|
+| `duration_s` | 1.632 | 0.297 | 0.123 | 0.36 | 0.08 | 6/7 | 5.6 | 0.19 |
+| `mean_rms` | 0.1838 | 0.0291 | 0.107 | 1.25 | -0.02 | 1/1 | 8.9 | 0.27 |
+| `peak_rms` | 0.2751 | 0.0393 | 0.096 | 2.90 | 0.00 | 0/8 | 10.9 | 0.49 |
+| `total_energy` | 0.06424 | 0.0253 | 0.266 | 0.66 | 0.13 | 0/1 | 3.9 | 0.14 |
+| `time_to_peak_s` | 0.744 | 0.439 | 0.398 | 1.03 | 0.14 | 0/3 | 4.4 | 0.23 |
+| `spectral_centroid_mean` | 0.3705 | 0.0279 | 0.051 | 0.15 | -0.03 | 1/0 | 4.0 | 0.15 |
+| `spectral_centroid_std` | 0.0394 | 0.00898 | 0.154 | 0.48 | 0.13 | 0/3 | 3.9 | 0.13 |
+| `spectral_flatness_mean` | 0.1322 | 0.0297 | 0.152 | -0.44 | 0.04 | 1/0 | 3.6 | 0.16 |
+| `spectral_flatness_std` | 0.05567 | 0.0133 | 0.161 | 0.49 | -0.03 | 0/2 | 3.9 | 0.16 |
+| `spectral_rolloff_mean` | 0.6465 | 0.0472 | 0.049 | -0.78 | -0.34 | 3/0 | 3.9 | 0.15 |
+| `spectral_rolloff_std` | 0.08071 | 0.0169 | 0.141 | -0.25 | -0.01 | 0/0 | 3.1 | 0.12 |
+| `zcr_mean` | 0.3578 | 0.0418 | 0.079 | -0.32 | 0.10 | 1/0 | 4.9 | 0.16 |
+| `zcr_std` | 0.05903 | 0.0177 | 0.202 | 0.48 | 0.06 | 0/0 | 2.6 | 0.12 |
+
+- **MAD health:** no feature has a zero or near-zero MAD (relative MAD 0.05–0.40). Ties at the median are negligible, the largest being 0.6% for `time_to_peak_s`. Quantisation is at most 8% of the MAD, for `duration_s` with its 16 ms step.
+- **Numerical stability at n = 20:**
+  - MAD: random 20-event subsets give MADs of 0.54–0.60× the population MAD at the 5th percentile and 1.30–1.57× at the 95th, depending on the feature.
+  - Median: the 95th-percentile median shift is 0.49–0.58 robust SD.
+  - Zero MAD: P(MAD = 0) is 0 for every feature.
+  - Interpretation: median/MAD at n = 20 is numerically stable but imprecise, with a MAD uncertainty of roughly ±50%.
+- **Tail-dominated feature:** `peak_rms`. Its five most extreme events carry 49% of Σz², and the maximum |z| is 10.9. Its 8 high extremes:
+  - Position: 7 have an interior envelope peak and 1 peaks at the first frame.
+  - Crest factor (peak/mean): median 2.44 (range 1.10–3.57), against 1.50 across usable events.
+  - Interpretation: these are short loud transients inside the events, of unidentified source.
+  - Drug bursts are not the explanation. Only 11 of 289 annotated usable events overlap a Drug annotation, over a median 4.1% of the event, and their `peak_rms` does not differ (δ −0.13, p 0.48).
+- **Log transform:** compared for all positive features and adopted for none.
+  - `mean_rms`: skew 1.25 → −0.31, maximum |z| 8.9 → 5.7, top-1 share of Σz² 0.18 → 0.07. The extreme count rises from 2 to 3 and the body is symmetric on both scales (Bowley −0.02 / −0.07).
+  - `peak_rms`: skew 2.90 → 1.04, extremes 8 → 9.
+  - For duration, flatness, rolloff, ZCR mean and the std features, log creates left skew and more extremes (e.g. `duration_s` 13 → 17, `spectral_flatness_mean` 1 → 5, `spectral_rolloff_std` 0 → 6).
+
+### 3. Redundancy (Spearman, usable events; within-session ρ in brackets)
+- **Strongest pairs:**
+  - Brightness estimators: centroid–ZCR mean 0.85 (0.84), centroid–rolloff 0.81 (0.80), rolloff–ZCR mean 0.76 (0.77).
+  - Loudness with brightness: `mean_rms`–centroid −0.84 (−0.76), `peak_rms`–centroid −0.78 (−0.68).
+  - Amplitude measures: `mean_rms`–`peak_rms` 0.79 (0.73), `mean_rms`–`total_energy` 0.73 (0.70).
+  - Flatness–rolloff 0.73 (0.67).
+- **Descriptive |ρ| ≥ 0.8 group:** {mean_rms, spectral_centroid_mean, spectral_rolloff_mean, zcr_mean}, linked through the centroid.
+- **`total_energy` is essentially derived.** Log `duration_s` and log `mean_rms` explain 98.1% of the variance of log `total_energy`.
+- **Rank R² from the other 12 features:** 0.95 total_energy, 0.93 mean_rms and centroid mean, 0.88 duration and ZCR mean, 0.83 rolloff mean, 0.82 peak_rms, 0.78 flatness mean, 0.64 ZCR std, 0.62 flatness std, 0.61 rolloff std, 0.38 centroid std, 0.26 time-to-peak.
+- **Rank R² from the final kept set:** rolloff mean 0.79, ZCR mean 0.83, peak_rms 0.77, total_energy 0.93, time-to-peak 0.20, ZCR std 0.48.
+- **Within-session correlations** stay close to the overall ones. The loudness–brightness coupling is therefore not only a between-session effect.
+
+### 4. Date and session stability (ε², date / session)
+- **Session effects are strong for level features:**
+  - duration 0.17 / 0.39
+  - mean_rms 0.04 / 0.55
+  - total_energy 0.06 / 0.56
+  - centroid mean 0.06 / 0.51
+  - rolloff mean 0.21 / 0.40
+  - ZCR mean 0.14 / 0.40
+  - peak_rms 0.004 / 0.36
+  - flatness mean 0.17 / 0.32
+- **Within-event variability features are the most stable:** centroid std 0.02 / 0.04, rolloff std 0.03 / 0.04, flatness std 0.02 / 0.17, time-to-peak 0.10 / 0.15, ZCR std 0.10 / 0.22.
+- **Dates hide session differences.** In `mean_rms`, dates barely differ (ε² 0.04) while sessions differ strongly (0.55). Example: on 2018-05-03, session #2 sits at `mean_rms` +1.14 and centroid −0.91 robust z, while session #3 sits at −1.44 and +1.34. So loudness and brightness shift together between sessions on the same day.
+- **Duration outlier session:** session 2018-02-06#3 has median duration −2.62 robust z.
+- **Interpretation limit:** what differs between sessions is unknown (subject, device, placement or protocol), so these are not subject differences. Figures: `date_shift_heatmap.png`, `session_shift_heatmap.png`.
+
+### 5. Calibration Set (first 20 usable events; 9 from session 2018-01-22#1, 11 from 2018-01-23#1)
+KEEP features: calibration median shift (rest-MAD units), MAD ratio (calibration/rest), fraction of random 20-subsets with a MAD at least as small, subset p of the median shift, and fraction of the rest outside the calibration range (0.095 expected):
+
+| Feature | Shift | MAD ratio | Subsets with MAD ≤ calib. | Subset p (shift) | Rest outside range |
+|---|---|---|---|---|---|
+| `duration_s` | +0.23 | 0.73 | 0.244 | 0.39 | 0.215 |
+| `mean_rms` | -0.26 | 0.42 | 0.009 | 0.33 | 0.490 |
+| `spectral_centroid_mean` | +0.49 | 0.42 | 0.006 | 0.084 | 0.413 |
+| `spectral_centroid_std` | -0.02 | 0.35 | 0.005 | 0.92 | 0.426 |
+| `spectral_flatness_mean` | +1.08 | 0.39 | 0.003 | <0.001 | 0.470 |
+| `spectral_flatness_std` | +0.24 | 0.50 | 0.030 | 0.34 | 0.326 |
+| `spectral_rolloff_std` | +0.03 | 0.82 | 0.310 | 0.88 | 0.198 |
+
+- **Location:** the calibration set is representative in location for 6 of the 7 kept features. The exception is `spectral_flatness_mean`, shifted by +1.08 rest-MAD (Cliff's δ 0.61). The deferred rolloff mean (+0.94), ZCR mean (+1.25) and ZCR std (+1.17) are also shifted.
+- **Spread:** the calibration set is **not representative in spread**. For 5 of the 7 kept features its MAD falls at or below the 3rd percentile of random 20-event subsets. 20–49% of the remaining usable events fall outside the calibration range, against the 9.5% expected.
+- **Why:** the two calibration sessions are internally homogeneous. 19 of the 20 events are annotation-matched (Entry 3).
+- **Hypothesis for Stage 6–7, not a result:** a median/MAD baseline fitted to these 20 events will have MADs about 2–3× too small relative to the whole corpus. Robust z of events from other sessions will therefore be inflated, and the held-out anomaly rate will partly reflect calibration homogeneity and session differences rather than inhalation deviations.
+
+### 6. RMS-envelope Edge Effect
+- **All 364 events:** the peak is at an edge in 14 events (3.8%): first frame 4, last frame 5, partial tail frame 5.
+  - These events are short (median 0.42 vs 1.59 s; δ −0.84, p < 10⁻⁷) and have low CNN confidence (0.62 vs 0.95; δ −0.76).
+  - Their `time_to_peak_s` is lower (0.32 vs 0.69 s; δ −0.43), and their `peak_rms` does not differ (δ 0.00, p 0.99).
+  - 11 of the 14 were already excluded by the Stage 1 usability rule.
+  - Dropping partial frames changes the peak for 10 of them. The largest change is 0.223, for last-frame peaks, all of which are in excluded events.
+  - 4 of the 14 have louder audio just outside the event boundary, meaning the event abuts a louder neighbouring sound.
+- **Usable events:** 3 of 318 (0.9%): first frame 1, partial tail 2, last frame 0.
+  - Dropping partial frames changes `peak_rms` for 2 of them, by at most 0.004.
+  - 1 has louder audio just outside the boundary.
+  - Edge peaks force `time_to_peak_s` to about 0 or to the end of the event (relative position ≥ 0.98).
+- **`time_to_peak_s` is ambiguous for another reason.** Among usable events, frames within 5% of the peak span a median 0.38 s (median 24% of the event; IQR 5–43%). That is close to the feature's robust spread of 0.44 s.
+- **Padding in the `*_std` features:**
+  - Spectral stds are barely affected. The unpadded-frame std over the stored value has median ratio 0.98 / 0.97 / 0.99 for centroid, flatness and rolloff, with rank agreement 0.977 / 0.978 / 0.992.
+  - `zcr_std` is strongly affected: ratio 0.45, rank agreement 0.76, and a median 84% of its 256 ms frames are unpadded.
+- **Decision on the edge effect:** after Stage 1 filtering it affects too few usable events (0.9%) to drive a V1 decision. It is recorded as a V1 limitation. The envelope's partial tail frames are an upstream design point to revisit if the envelope features are redefined.
+
+## Feature Decisions (V1)
+Principles:
+- Features are excluded or deferred only for measurement validity, for being derived from or duplicating an already-represented construct, or for being numerically unsuitable for a median/MAD scale.
+- Date/session instability and calibration representativeness are **flagged, not used for exclusion**. Using them would let the held-out distribution drive selection, and session effects may be user or device effects that personalization (V3) should absorb.
+- The machine-readable decision is `results/feature_analysis/feature_selection_v1.json`, with evidence in `feature_selection_v1.csv`.
+
+| Feature | Decision | Reason |
+|---|---|---|
+| `duration_s` | KEEP | Interpretable detector-segmented length. Healthy MAD, symmetric body (Bowley 0.08), 13 extremes on both sides, little predicted by the other kept features (R² 0.32). Session variation flagged. |
+| `mean_rms` | KEEP | Sustained loudness. Symmetric body; log compared and not adopted. Relative level only (depends on gain and distance). Coupled to centroid (ρ −0.84, −0.76 within sessions): kept as a distinct construct and flagged. |
+| `peak_rms` | DEFER | Loudest 32 ms frame. Heaviest tail (skew 2.90, max abs z 10.9, top-5 share 0.49), not fixed by log, driven by interior transients of unknown source (crest 2.44 vs 1.50). R² 0.77 from the kept features. Investigate the transients; revisit as crest factor. |
+| `total_energy` | EXCLUDE | Derived: log duration + log mean_rms explain 98.1% of log energy. Loses < 2% (within-event amplitude modulation), and keeping it would double-count duration and loudness. |
+| `time_to_peak_s` | DEFER | Argmax of a flat-topped envelope. Near-peak ambiguity (median 0.38 s) is close to its own spread (0.44 s), and it inherits the detector's start boundary. The edge effect is rare (3/318). Revisit with a smoothed-envelope or energy-centroid timing. |
+| `spectral_centroid_mean` | KEEP | Representative brightness measure: relative MAD 5%, skew 0.15, 1 extreme. Preferred over rolloff and ZCR mean. |
+| `spectral_centroid_std` | KEEP | Within-event brightness variability. Nearly independent (max abs ρ 0.36, R² 0.23), most session-stable (ε² 0.04), padding contributes about 2%. |
+| `spectral_flatness_mean` | KEEP | Noise-likeness, a distinct construct (max ρ 0.73 with the deferred rolloff). Well-behaved. Date/session variation and calibration shift (+1.08) flagged. |
+| `spectral_flatness_std` | KEEP | Within-event variability of noise-likeness. Moderate correlations (max abs ρ 0.50), 2 extremes, not padding-driven. |
+| `spectral_rolloff_mean` | DEFER | Third brightness estimator (ρ 0.81 with centroid, R² 0.79 from the kept set), asymmetric bounded body (Bowley −0.34), largest date effect (0.21). Loses the upper-band extent beyond the centroid. Revisit in V2. |
+| `spectral_rolloff_std` | KEEP | Within-event variability of spectral extent. Low redundancy (max abs ρ 0.37), no extremes, session-stable (0.04), not padding-driven. |
+| `zcr_mean` | DEFER | Time-domain brightness proxy (ρ 0.85 with centroid, 0.84 within sessions; R² 0.83), 256 ms frames. Loses the crossing rate beyond the centroid. Revisit in V2. |
+| `zcr_std` | EXCLUDE | Measurement artifact as defined: dominated by edge-padded 256 ms frames (unpadded std 0.45× the stored value, ρ 0.76). Would need a new definition. |
+
+V1 feature set (7), on the raw scale:
+- `duration_s`
+- `mean_rms`
+- `spectral_centroid_mean`
+- `spectral_centroid_std`
+- `spectral_flatness_mean`
+- `spectral_flatness_std`
+- `spectral_rolloff_std`
+
+EXCLUDE (2): `total_energy`, `zcr_std`. DEFER (4): `peak_rms`, `time_to_peak_s`, `spectral_rolloff_mean`, `zcr_mean`.
+
+## Interpretation
+- The kept set covers five constructs: duration, sustained loudness, brightness, noise-likeness, and within-event spectral variability (three measures).
+- **Loudness–brightness pair:** `mean_rms` and `spectral_centroid_mean` share a strong joint component. A univariate aggregate will count a combined "loud and dark" or "quiet and bright" deviation twice. V2 (multivariate) is the principled fix. V1 must at least report per-feature robust z so the double counting stays visible.
+- **Session-sensitive features:** the features most sensitive to session are the level and brightness features. The most stable are the within-event variability features.
+
+## Limitations
+- **No held-out data was reserved for selection.** Stage 2 used all 318 usable events (unlabeled), so later "held-out" evaluation on these same events is not fully independent of feature selection. Decisions deliberately did not depend on held-out consistency, which limits but does not remove this dependence.
+- **Sessions are inferred.** They are defined from recording-time gaps, and what they represent (subject, device, placement, protocol) is unknown.
+- **Unknown sources remain.** The mechanism behind the loudness–brightness coupling is unknown; one hypothesis is the share of a broadband noise floor in quieter events. The source of the `peak_rms` transients is also unknown.
+- **Unmeasured padding effect:** `zcr_mean` also uses edge-padded 256 ms frames, but its padding contribution was not measured.
+- **Log comparison limits:** the log comparison covers skew and tails only. Its effect on a particular aggregate is a Stage 4 question.
+- **CNN in-sample:** the CNN detector is in-sample for about two-thirds of the recordings (Entry 3).
+
+## Unresolved
+1. The loudness–brightness coupling: its mechanism, and how V1 aggregation should treat it.
+2. Source of the interior transients behind the extreme `peak_rms` values.
+3. A better-defined timing feature: smoothed-envelope peak or energy centroid.
+4. Whether the upstream envelope should drop partial tail frames. This matters for a future revision; it has negligible effect on usable events.
+5. The calibration set's narrow spread, and how it interacts with the locked first-20 design.
+
+## Next Step — Stage 3 recommendation (robust baseline implementation only)
+1. **Baseline:**
+   - Implement a per-feature median / 1.4826·MAD baseline on the 7 KEEP features, raw scale.
+   - Read the feature list and transforms from `feature_selection_v1.json`.
+   - Fit it to the locked calibration set (usable_order 1–20).
+   - The baseline object stores the calibration event IDs, n, medians, MADs, feature-set version and dataset hash.
+   - Define explicit behaviour for MAD = 0 (none observed) and for missing or non-finite inputs.
+2. **Output:** per-feature robust z for every usable event. No aggregation, threshold or NORMAL/ANOMALY yet; those are Stages 4–5.
+3. **Adaptation:** frozen baseline with a documented update hook. Adaptation policy comes later.
+4. **Descriptive checks, reported in the Stage 3 log entry:** distributions of per-feature robust z for (a) the calibration events, (b) the other events of the calibration sessions, and (c) other sessions. These make the effect of calibration homogeneity visible before any threshold is chosen.
+5. **Sensitivity baselines to prepare, not decide:**
+   - baselines fitted to random 20-event subsets;
+   - baselines fitted to the first 20 events of each session with ≥ 20 usable events (session-wise, not personalized).
+
+   Their purpose is to separate calibration-homogeneity effects from deviation detection in later stages. Adopting any of them would change the locked design and needs the project owner's approval.
