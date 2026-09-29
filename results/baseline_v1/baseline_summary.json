@@ -1,0 +1,202 @@
+{
+  "stage": "Stage 3 - V1 robust baseline",
+  "dataset": {
+    "path": "results/inhale_dataset/inhale_events_v1.csv",
+    "sha256": "0dbae978da146ed62aed21eccc251c621aa566e3c3bcd020ddfbf235bf367cf1",
+    "usable_events": 318
+  },
+  "feature_selection": {
+    "path": "results/feature_analysis/feature_selection_v1.json",
+    "sha256": "ef2ed51d22e3f4bf9a4d7dafcee2cc2b4aee12930d904135170a0561e7bd4443",
+    "features": [
+      "duration_s",
+      "mean_rms",
+      "spectral_centroid_mean",
+      "spectral_centroid_std",
+      "spectral_flatness_mean",
+      "spectral_flatness_std",
+      "spectral_rolloff_std"
+    ]
+  },
+  "calibration": {
+    "definition": "usable_order 1..20",
+    "sessions": {
+      "2018-01-23#1": 11,
+      "2018-01-22#1": 9
+    },
+    "groups": {
+      "other_session": 259,
+      "calibration_session_other": 39,
+      "calibration": 20
+    }
+  },
+  "provenance": {
+    "git": {
+      "head": "22f8f4c9f34dfa451cf5962d6a8e9149a0016b72",
+      "dirty": true
+    },
+    "sensitivity_seed": 20260930,
+    "sensitivity_draws": 2000,
+    "session_spread_random_seed": 20260931,
+    "mad_scale": 1.4826
+  },
+  "consistency_checks": {
+    "max_abs_diff_vs_stage2_calibration_median": 5.551115123125783e-17,
+    "max_abs_diff_vs_stage2_calibration_scale": 9.627715291671279e-17,
+    "session_counts_match_stage2": true
+  },
+  "single_session_designs": [
+    "2018-01-23#1",
+    "2018-05-03#2",
+    "2018-05-03#3"
+  ],
+  "same_vs_other_session_median_abs_z": {
+    "primary_first_20": {
+      "features_closer_within_session": 6,
+      "median_abs_z": {
+        "duration_s": {
+          "same_session": 0.8164888141032486,
+          "other_session": 0.9584868687299005
+        },
+        "mean_rms": {
+          "same_session": 0.8223443773316966,
+          "other_session": 2.0103813772554684
+        },
+        "spectral_centroid_mean": {
+          "same_session": 0.8249026354292397,
+          "other_session": 2.116555369080328
+        },
+        "spectral_centroid_std": {
+          "same_session": 1.8408175717931932,
+          "other_session": 2.010594164103837
+        },
+        "spectral_flatness_mean": {
+          "same_session": 1.2872437994069261,
+          "other_session": 2.9747135033234042
+        },
+        "spectral_flatness_std": {
+          "same_session": 0.6543761844632136,
+          "other_session": 1.6808617012426943
+        },
+        "spectral_rolloff_std": {
+          "same_session": 0.899676678444721,
+          "other_session": 0.8079524588109757
+        }
+      }
+    },
+    "single_session_first_20:2018-01-23#1": {
+      "features_closer_within_session": 5,
+      "median_abs_z": {
+        "duration_s": {
+          "same_session": 0.5058680696074462,
+          "other_session": 0.6463869778317384
+        },
+        "mean_rms": {
+          "same_session": 1.0962706656278338,
+          "other_session": 2.0436345191362917
+        },
+        "spectral_centroid_mean": {
+          "same_session": 0.4807836328159162,
+          "other_session": 1.6378673681221474
+        },
+        "spectral_centroid_std": {
+          "same_session": 1.3817918789591601,
+          "other_session": 1.3396536906385332
+        },
+        "spectral_flatness_mean": {
+          "same_session": 0.49062425616328015,
+          "other_session": 0.7888134174485413
+        },
+        "spectral_flatness_std": {
+          "same_session": 0.6255505038643729,
+          "other_session": 1.709261051535525
+        },
+        "spectral_rolloff_std": {
+          "same_session": 1.2890786051963306,
+          "other_session": 1.0843857413356828
+        }
+      }
+    },
+    "single_session_first_20:2018-05-03#2": {
+      "features_closer_within_session": 6,
+      "median_abs_z": {
+        "duration_s": {
+          "same_session": 0.6226068549014676,
+          "other_session": 1.971588373854661
+        },
+        "mean_rms": {
+          "same_session": 1.768586632515891,
+          "other_session": 3.2866690528773153
+        },
+        "spectral_centroid_mean": {
+          "same_session": 1.749811226819703,
+          "other_session": 3.7882626148055993
+        },
+        "spectral_centroid_std": {
+          "same_session": 0.9299655465682133,
+          "other_session": 0.8235052435106828
+        },
+        "spectral_flatness_mean": {
+          "same_session": 1.205612912809022,
+          "other_session": 3.348611511382629
+        },
+        "spectral_flatness_std": {
+          "same_session": 0.8582195210754641,
+          "other_session": 1.4428543444514528
+        },
+        "spectral_rolloff_std": {
+          "same_session": 0.7945938276660203,
+          "other_session": 0.8604708136476975
+        }
+      }
+    },
+    "single_session_first_20:2018-05-03#3": {
+      "features_closer_within_session": 4,
+      "median_abs_z": {
+        "duration_s": {
+          "same_session": 1.461396645532628,
+          "other_session": 3.147623544224114
+        },
+        "mean_rms": {
+          "same_session": 1.2544739294623481,
+          "other_session": 4.315613496116065
+        },
+        "spectral_centroid_mean": {
+          "same_session": 1.1749424333031755,
+          "other_session": 3.1041866200530563
+        },
+        "spectral_centroid_std": {
+          "same_session": 1.7842182316443436,
+          "other_session": 1.223665361889072
+        },
+        "spectral_flatness_mean": {
+          "same_session": 0.6170918619716653,
+          "other_session": 0.7431651188751789
+        },
+        "spectral_flatness_std": {
+          "same_session": 1.1092316411659486,
+          "other_session": 1.1092024057453156
+        },
+        "spectral_rolloff_std": {
+          "same_session": 1.5173962355576571,
+          "other_session": 1.3005317961261684
+        }
+      }
+    }
+  },
+  "outputs": [
+    "baseline_parameters.csv",
+    "baseline_summary.json",
+    "baseline_v1.json",
+    "calibration_events.csv",
+    "calibration_scale_sensitivity.png",
+    "calibration_sensitivity.csv",
+    "calibration_summary.csv",
+    "group_z_summary.csv",
+    "robust_z_scores.csv",
+    "sensitivity_draws.csv",
+    "session_decomposition.csv",
+    "session_z_summary.csv",
+    "z_by_group.png"
+  ]
+}

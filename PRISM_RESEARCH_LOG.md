@@ -624,3 +624,156 @@ EXCLUDE (2): `total_energy`, `zcr_std`. DEFER (4): `peak_rms`, `time_to_peak_s`,
    - baselines fitted to the first 20 events of each session with ≥ 20 usable events (session-wise, not personalized).
 
    Their purpose is to separate calibration-homogeneity effects from deviation detection in later stages. Adopting any of them would change the locked design and needs the project owner's approval.
+
+---
+
+# Research Entry 5 — 2026-09-30: V1 Robust Baseline and Calibration Dependence (Stage 3)
+
+## Question
+How does the per-feature median/MAD baseline behave when fitted to the locked first-20 calibration set? How much do its robust z-scores for the other usable events depend on which 20 events are used for calibration?
+
+Out of scope: anomaly scores, thresholds, NORMAL/ANOMALY labels and multivariate modelling. Large z-scores below are calibration deviations, not anomalies. Without anomaly ground truth nothing here is a false positive.
+
+## Definitions
+- **Data:** the 318 usable events in `results/inhale_dataset/inhale_events_v1.csv` (SHA-256 `0dbae978…7cf1`).
+- **Features:** the KEEP list of `results/feature_analysis/feature_selection_v1.json`, read at run time rather than hard-coded:
+  - `duration_s`
+  - `mean_rms`
+  - `spectral_centroid_mean`
+  - `spectral_centroid_std`
+  - `spectral_flatness_mean`
+  - `spectral_flatness_std`
+  - `spectral_rolloff_std`
+
+  All seven use transform `none`. The loader rejects detection columns, unknown or duplicate features, non-`none` transforms, and a selection whose recorded dataset hash differs from the dataset in use.
+- **Primary calibration set:** usable events with `usable_order` 1–20:
+  - 9 events from session 2018-01-22#1 (all of that session's usable events)
+  - 11 events from session 2018-01-23#1 (50 usable events)
+
+  Sessions follow Entry 4: recordings more than 25 min apart start a new session.
+- **Robust statistics**, per feature j, over the calibration events only:
+  - median_j = median(x)
+  - MAD_j = median(|x − median_j|)
+  - scale_j = 1.4826 · MAD_j. The factor 1.4826 ≈ 1/Φ⁻¹(0.75) makes the MAD a consistent estimate of the SD for normal data.
+  - z_j = (x − median_j) / scale_j
+- **Failure behaviour:** fitting fails with an explicit error if any calibration value is non-finite or any MAD is zero or non-finite. Scoring fails if an input feature value is non-finite.
+- **Baseline object:** the baseline is frozen and has no adaptation. An update means fitting a new baseline, which keeps the update mechanism replaceable for a later stage.
+- **Implementation:** `src/baseline_v1.py`, command `python src/baseline_v1.py`. Tests: `tests/test_baseline_v1.py` (20 tests; full suite 69 passing). Outputs are in `results/baseline_v1/`.
+
+## Consistency Checks
+- The primary medians and scales equal the Stage 2 calibration statistics within 1×10⁻¹⁶ (`calibration_vs_rest.csv`).
+- Per-session usable-event counts equal Stage 2's.
+
+## Results
+
+### 1. Primary baseline parameters (`baseline_parameters.csv`, `calibration_summary.csv`, `baseline_v1.json`)
+| Feature | Median | MAD | Scale (1.4826·MAD) | All-usable median | All-usable scale | Scale ratio | Median shift (all-usable SD) | Random-20 percentile of scale |
+|---|---|---|---|---|---|---|---|---|
+| `duration_s` | 1.696 | 0.152 | 0.2254 | 1.632 | 0.2965 | 0.76 | +0.22 | 24.0% |
+| `mean_rms` | 0.1772 | 0.008594 | 0.01274 | 0.1838 | 0.02909 | 0.44 | -0.23 | 0.9% |
+| `spectral_centroid_mean` | 0.38355 | 0.00808 | 0.01198 | 0.37053 | 0.02787 | 0.43 | +0.47 | 0.4% |
+| `spectral_centroid_std` | 0.039185 | 0.002298 | 0.003407 | 0.039401 | 0.008977 | 0.38 | -0.02 | 0.2% |
+| `spectral_flatness_mean` | 0.16155 | 0.007428 | 0.01101 | 0.13224 | 0.02971 | 0.37 | +0.99 | 0.3% |
+| `spectral_flatness_std` | 0.058829 | 0.004633 | 0.006868 | 0.055673 | 0.01327 | 0.52 | +0.24 | 3.2% |
+| `spectral_rolloff_std` | 0.081281 | 0.0095 | 0.01408 | 0.08071 | 0.01691 | 0.83 | +0.03 | 30.8% |
+
+The random-20 percentile is the share of 2,000 random 20-event calibration sets with a scale no larger than the primary one. For 5 of 7 features the primary calibration scale is narrower than 96.8–99.8% of random 20-event sets.
+
+### 2. Robust z by comparison group (`robust_z_scores.csv`, `group_z_summary.csv`, `z_by_group.png`)
+Groups:
+- **Calibration:** 20 events. By construction their median z is 0 and robust SD of z is 1. These z-scores are in-sample.
+- **Same sessions, not calibration:** 39 events, all from 2018-01-23#1.
+- **Other sessions:** 259 events.
+
+Each cell gives median z / robust SD of z / median |z| / % with |z| > 3.5. The 3.5 cut-off is the Stage 2 descriptive convention, not a threshold. Under normality the median |z| would be 0.67.
+
+| Feature | Same sessions (n=39) | Other sessions (n=259) |
+|---|---|---|
+| `duration_s` | +0.75 / 1.79 / 0.82 / 26% | -0.46 / 1.37 / 0.96 / 8% |
+| `mean_rms` | -0.42 / 1.29 / 0.82 / 3% | +0.74 / 2.55 / 2.01 / 22% |
+| `spectral_centroid_mean` | +0.35 / 1.13 / 0.82 / 0% | -1.61 / 2.25 / 2.12 / 19% |
+| `spectral_centroid_std` | -0.44 / 3.01 / 1.84 / 18% | +0.21 / 2.93 / 2.01 / 27% |
+| `spectral_flatness_mean` | -1.07 / 2.37 / 1.29 / 21% | -2.97 / 2.41 / 2.97 / 40% |
+| `spectral_flatness_std` | -0.46 / 0.93 / 0.65 / 5% | -0.51 / 2.26 / 1.68 / 11% |
+| `spectral_rolloff_std` | +0.01 / 1.32 / 0.90 / 0% | -0.04 / 1.21 / 0.81 / 0% |
+
+- **Outside the calibration range:** 5–38% of same-session events and 20–54% of other-session events fall outside the calibration events' own z range for a feature. The largest single deviation is `mean_rms` z = 20.9.
+- **Session decomposition** (`session_decomposition.csv`, 11 sessions with ≥ 5 non-calibration events):
+  - **Within-session robust SD of z** (median across sessions): duration 1.26, mean_rms 1.40, centroid mean 1.37, centroid std 2.87, flatness mean 1.89, flatness std 1.54, rolloff std 1.16.
+  - **Between-session robust SD of session-median z:** 0.74, 1.21, 0.96, 0.89, 1.00, 0.84, 0.35 respectively.
+  - **Range of session-median z:** duration −3.73 to +0.75, mean_rms −2.77 to +3.11, centroid mean −3.19 to +2.03, and flatness mean −6.62 to −1.07. Every session's median flatness is below the calibration median.
+
+### 3. Sensitivity A: random 20-event calibration sets (`calibration_sensitivity.csv`, `sensitivity_draws.csv`)
+**Method:** 2,000 random 20-event sets drawn without replacement from the 318 usable events (seed 20260930). Each is fitted like the primary baseline and applied to its own 298 non-calibration events.
+
+**Results:**
+- **Scale ratio (calibration scale / all-usable scale), 5th–95th percentile:**
+  - duration 0.56–1.56
+  - mean_rms 0.57–1.50
+  - centroid mean 0.59–1.35
+  - centroid std 0.56–1.57
+  - flatness mean 0.55–1.36
+  - flatness std 0.56–1.45
+  - rolloff std 0.60–1.40
+
+  Medians are 0.92–0.99. This extends Stage 2's 0.54–1.57 range to the kept features.
+- **Median shift:** −0.47 to +0.46 all-usable SD (5th–95th percentile).
+- **Implied z-scores for the non-calibration events:** robust SD of z has a median of 1.01–1.09 (5th–95th percentile 0.62–1.86), and median |z| is 0.73–0.75.
+- **Primary set by comparison:** robust SD of z is 1.23–2.83 and median |z| 0.82–2.86. So a typical 20-event calibration gives z-scores on roughly the intended scale. The first-20 set does not, and a single random set still has a ±50% scale uncertainty.
+
+### 4. Sensitivity B: session-aware calibration sets
+Subject identity is unknown. Sessions are recording sittings, not people.
+
+- **B1, session-spread (random):** 2,000 sets (seed 20260931). Sessions are visited in random order, and each pass takes one random unused event from every session until 20 are chosen. All 18 sessions with usable events are represented in every set; sessions with fewer events are relatively over-represented. Results by feature:
+
+  | Feature | Scale ratio, median (5th–95th pct.) | Robust SD of non-calibration z |
+  |---|---|---|
+  | duration | 1.12 (0.64–1.68) | 0.90 |
+  | mean_rms | 0.73 (0.44–1.04) | 1.40 |
+  | centroid mean | 0.76 (0.49–1.04) | 1.34 |
+  | centroid std | 1.17 (0.70–1.67) | 0.85 |
+  | flatness mean | 0.82 (0.50–1.15) | 1.23 |
+  | flatness std | 0.79 (0.50–1.13) | 1.31 |
+  | rolloff std | 1.04 (0.70–1.47) | 0.95 |
+
+  Median |z| is 0.61–0.99. Spreading calibration across sessions removes most of the inflation seen with the primary set. The level features still sit below 1, most likely because the all-usable scale includes large sessions at opposite offsets (e.g. `mean_rms` in 2018-05-03#2 vs #3, Entry 4). This explanation has not been tested.
+- **B1', session-spread (chronological, one set):** the same round-robin using each session's earliest events. Scale ratios are 0.63–1.07 and the robust SD of non-calibration z is 0.93–1.59.
+- **B2, single-session first 20:** for each session with ≥ 40 usable events (2018-01-23#1 n=50, 2018-05-03#2 n=57, 2018-05-03#3 n=52), fit on its first 20 usable events. Compare the rest of that session (30, 37 and 32 events) with all other sessions.
+  - **Scale ratios:** 0.24–1.92. 20 of the 21 feature/session values are below 1; the exception is duration in 2018-01-23#1 at 1.92. The first 20 consecutive events of one sitting are generally narrower than the corpus. This is not specific to the primary set.
+  - **Same session vs other sessions:** the remainder of the calibration session has a smaller median |z| than other sessions for 5/7, 6/7 and 4/7 features respectively. The primary baseline gives 6/7. Counted over all four single-set designs:
+    - the level features (duration, mean_rms, centroid mean, flatness mean) are closer within the session in all four;
+    - flatness std is closer in three (a tie in 2018-05-03#3);
+    - centroid std is closer only in the primary design;
+    - rolloff std is closer only in 2018-05-03#2.
+  - **Within-session drift:** in 2018-05-03#2, the 37 events after the first 20 have median z −1.72 (`mean_rms`), +1.65 (centroid mean) and +1.10 (flatness mean) relative to their own session's first 20.
+  - **Weakness:** only three sessions qualify, so B2 is descriptive.
+
+## Interpretation
+1. **The calibration set is unusually narrow.** For 5 of 7 features its scale lies in the bottom 0.2–3.2% of random 20-event sets. Consequently, other-session events have z-scores spread 2.3–2.9× wider than intended for `mean_rms`, centroid mean, centroid std, flatness mean and flatness std. The inflation is smallest for rolloff std (1.21) and duration (1.37).
+2. **Both mechanisms operate, with different weight per feature.**
+   - **Narrow spread:** even within a session, spread is 1.16–2.87× the calibration spread. This dominates `spectral_centroid_std`: within-session 2.87 against between-session 0.89, and other-session median z only +0.21.
+   - **Session offsets:** these dominate `spectral_flatness_mean` (all sessions below the calibration median; other-session median z −2.97) and contribute strongly to `mean_rms` and `spectral_centroid_mean`, whose session medians spread 1.21 and 0.96 robust SD.
+   - **Resistant features:** `spectral_rolloff_std` and `duration_s` are least affected.
+3. **Within-session vs other sessions:** later events in the calibration session are closer to calibration than other sessions for the level features, and mostly for flatness std. They are not reliably closer for centroid std and rolloff std. Those are the most session-stable features (Entry 4), and their inflation comes from the narrow calibration spread rather than from sessions.
+4. **General property of single sittings:** narrowness is expected from any calibration made of consecutive events in one or two sittings (B2), and recordings drift within a sitting. This matters for the future personalised design (V3). A user who calibrates in one sitting would face the same problem.
+5. **Adequacy of the first-20 calibration.** It is adequate as a reference for consistency *within its own sessions*. It is **not adequate as a corpus-wide V1 baseline in its current form**: deviations of events from other sessions are dominated by calibration narrowness and session offsets, not by inhalation-level differences between events. The primary design is still the locked V1 design. Changing it (larger N, session-spread calibration or any other rule) is a decision for the project owner.
+
+## Limitations
+- **Calibration z-scores are in-sample:** each calibration event helped define the median and MAD it is scored against, so its own z-scores look better than a new event's would.
+- **Sessions are inferred** from recording gaps. Session effects cannot be attributed to subject, device, placement or protocol.
+- **B1 is diagnostic only.** Its sets draw on all sessions, including ones recorded after the primary calibration, so they are not a deployable calibration protocol.
+- **B2 covers only three sessions.**
+- **No held-out data was reserved.** All 318 usable events were also used in Stage 2 feature selection (Entry 4).
+- **Pooling:** the robust SD of z pools events whose sessions differ in size; large sessions dominate pooled statistics.
+
+## Next Step — Stage 4 recommendation (anomaly scoring, no threshold)
+1. **Candidate aggregates:**
+   - Define a small set of candidates over the 7 per-feature z-scores: mean |z|, root-mean-square z, and max |z|.
+   - Compute them for all usable events against the primary baseline, reporting per group and per session, with per-feature contribution shares.
+   - Under the primary baseline the features' z scales are not comparable (other-session robust SD 1.21–2.93). The `mean_rms` / `spectral_centroid_mean` coupling (Entry 4) also double-counts.
+   - Choose the aggregate on documented properties, not on how many events it flags.
+2. **Leave-one-out calibration scores:** compute them for the 20 calibration events, refitting on the other 19. In-sample calibration scores are optimistically small, and Stage 5 derives the threshold percentile from calibration scores.
+3. **Owner decision before Stage 5:** a percentile threshold taken from this narrow calibration set will mark a large share of other-session events as deviating, for reasons unrelated to the individual inhalation. Options:
+   - keep first-20 and report all Stage 6–7 results per session;
+   - approve a revised calibration design, e.g. more events or session-spread;
+   - run both, with first-20 as primary and one pre-specified alternative as sensitivity.

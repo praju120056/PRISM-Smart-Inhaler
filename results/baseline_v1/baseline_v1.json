@@ -1,0 +1,145 @@
+{
+  "baseline": {
+    "version": "v1",
+    "mad_scale": 1.4826,
+    "features": [
+      "duration_s",
+      "mean_rms",
+      "spectral_centroid_mean",
+      "spectral_centroid_std",
+      "spectral_flatness_mean",
+      "spectral_flatness_std",
+      "spectral_rolloff_std"
+    ],
+    "parameters": {
+      "duration_s": {
+        "median": 1.6960000000000006,
+        "mad": 0.1519999999999998,
+        "scale": 0.2253551999999997
+      },
+      "mean_rms": {
+        "median": 0.17719706892967224,
+        "mad": 0.008593559265136788,
+        "scale": 0.012740810966491802
+      },
+      "spectral_centroid_mean": {
+        "median": 0.38354530930519104,
+        "mad": 0.008080348372459384,
+        "scale": 0.011979924497008281
+      },
+      "spectral_centroid_std": {
+        "median": 0.03918514773249625,
+        "mad": 0.0022981259971857487,
+        "scale": 0.0034072016034275908
+      },
+      "spectral_flatness_mean": {
+        "median": 0.161550723016262,
+        "mad": 0.007428005337715149,
+        "scale": 0.011012760713696479
+      },
+      "spectral_flatness_std": {
+        "median": 0.05882907472550865,
+        "mad": 0.004632586613297449,
+        "scale": 0.0068682729128747965
+      },
+      "spectral_rolloff_std": {
+        "median": 0.0812807828187942,
+        "mad": 0.009499672800302499,
+        "scale": 0.014084214893728483
+      }
+    },
+    "n_calibration": 20,
+    "calibration_events": [
+      [
+        "rec2018-01-22_17h41m33.475s.wav",
+        0
+      ],
+      [
+        "rec2018-01-22_17h41m49.809s.wav",
+        0
+      ],
+      [
+        "rec2018-01-22_17h42m07.718s.wav",
+        0
+      ],
+      [
+        "rec2018-01-22_17h42m23.769s.wav",
+        0
+      ],
+      [
+        "rec2018-01-22_17h44m03.761s.wav",
+        0
+      ],
+      [
+        "rec2018-01-22_17h44m21.408s.wav",
+        0
+      ],
+      [
+        "rec2018-01-22_17h44m39.521s.wav",
+        0
+      ],
+      [
+        "rec2018-01-22_17h44m56.745s.wav",
+        0
+      ],
+      [
+        "rec2018-01-22_17h45m12.839s.wav",
+        0
+      ],
+      [
+        "rec2018-01-23_10h42m07.256s.wav",
+        0
+      ],
+      [
+        "rec2018-01-23_10h42m23.823s.wav",
+        0
+      ],
+      [
+        "rec2018-01-23_10h42m45.728s.wav",
+        0
+      ],
+      [
+        "rec2018-01-23_10h43m05.349s.wav",
+        0
+      ],
+      [
+        "rec2018-01-23_10h43m22.564s.wav",
+        0
+      ],
+      [
+        "rec2018-01-23_10h43m40.126s.wav",
+        0
+      ],
+      [
+        "rec2018-01-23_10h43m56.234s.wav",
+        0
+      ],
+      [
+        "rec2018-01-23_10h44m12.634s.wav",
+        0
+      ],
+      [
+        "rec2018-01-23_10h44m30.273s.wav",
+        0
+      ],
+      [
+        "rec2018-01-23_10h45m25.926s.wav",
+        0
+      ],
+      [
+        "rec2018-01-23_10h45m44.127s.wav",
+        0
+      ]
+    ]
+  },
+  "calibration_definition": "usable == True and usable_order in 1..20 (Stage 1 table)",
+  "robust_z": "z = (x - median) / (mad_scale * MAD), MAD = median(|x - median|) over calibration events",
+  "feature_selection": {
+    "path": "results/feature_analysis/feature_selection_v1.json",
+    "sha256": "ef2ed51d22e3f4bf9a4d7dafcee2cc2b4aee12930d904135170a0561e7bd4443"
+  },
+  "dataset": {
+    "path": "results/inhale_dataset/inhale_events_v1.csv",
+    "sha256": "0dbae978da146ed62aed21eccc251c621aa566e3c3bcd020ddfbf235bf367cf1"
+  }
+}

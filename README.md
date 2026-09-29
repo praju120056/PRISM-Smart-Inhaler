@@ -152,6 +152,24 @@ edge check. It writes the following to `results/feature_analysis/`:
 
 See `PRISM_RESEARCH_LOG.md` Entry 4.
 
+### V1 Robust Baseline (anomaly detection, Stage 3)
+
+```bash
+python src/baseline_v1.py
+```
+
+This fits a per-feature median / MAD baseline on the first 20 usable events.
+The features come from `feature_selection_v1.json`. It writes the following to
+`results/baseline_v1/`:
+
+- the baseline itself (`baseline_v1.json`, loadable with `baseline_v1.load_baseline`)
+- a per-feature robust z-score for every usable event
+- group and session summaries of those z-scores
+- calibration-sensitivity analyses (random and session-aware calibration sets)
+
+No anomaly score, threshold or NORMAL/ANOMALY label is produced yet. See
+`PRISM_RESEARCH_LOG.md` Entry 5.
+
 ### Output
 
 ```
@@ -469,7 +487,8 @@ Raw audio does not cross any system boundary:
 | Cross-validation results (89.0% mean accuracy) | ✅ Complete |
 | Inhale-event dataset + usability rule (anomaly Stage 1) | ✅ Implemented |
 | Feature analysis + V1 feature selection (anomaly Stage 2) | ✅ Implemented |
-| V1 global baseline / anomaly scoring | 🔲 Not started |
+| V1 robust baseline + per-feature robust z (anomaly Stage 3) | ✅ Implemented |
+| Anomaly score, threshold, NORMAL / ANOMALY output | 🔲 Not started |
 | ESP32 firmware | 🔲 Not started |
 | BLE protocol implementation | 🔲 Not started |
 | React Native mobile app | 🔲 Not started |
