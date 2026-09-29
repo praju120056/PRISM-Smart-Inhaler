@@ -170,6 +170,23 @@ The features come from `feature_selection_v1.json`. It writes the following to
 No anomaly score, threshold or NORMAL/ANOMALY label is produced yet. See
 `PRISM_RESEARCH_LOG.md` Entry 5.
 
+### V1 Candidate Combined Scores (anomaly detection, Stage 4)
+
+```bash
+python src/scoring_v1.py
+```
+
+This combines the seven Stage 3 robust z-scores of every usable event into
+three candidate scores: `mean_abs_z`, `rms_z` and `max_abs_z`. It also scores
+the 20 calibration events leave-one-out. It writes the following to
+`results/scoring_v1/`:
+
+- per-event scores and feature contributions
+- group, session and feature-dominance summaries
+
+No threshold is applied and no event is labelled NORMAL or ANOMALY. See
+`PRISM_RESEARCH_LOG.md` Entry 6.
+
 ### Output
 
 ```
@@ -488,7 +505,8 @@ Raw audio does not cross any system boundary:
 | Inhale-event dataset + usability rule (anomaly Stage 1) | ✅ Implemented |
 | Feature analysis + V1 feature selection (anomaly Stage 2) | ✅ Implemented |
 | V1 robust baseline + per-feature robust z (anomaly Stage 3) | ✅ Implemented |
-| Anomaly score, threshold, NORMAL / ANOMALY output | 🔲 Not started |
+| Candidate combined scores, no threshold (anomaly Stage 4) | ✅ Implemented |
+| Threshold, NORMAL / ANOMALY output | 🔲 Not started |
 | ESP32 firmware | 🔲 Not started |
 | BLE protocol implementation | 🔲 Not started |
 | React Native mobile app | 🔲 Not started |

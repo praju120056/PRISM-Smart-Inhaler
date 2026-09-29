@@ -777,3 +777,202 @@ Subject identity is unknown. Sessions are recording sittings, not people.
    - keep first-20 and report all Stage 6–7 results per session;
    - approve a revised calibration design, e.g. more events or session-spread;
    - run both, with first-20 as primary and one pre-specified alternative as sensitivity.
+
+---
+
+# Research Entry 6 — 2026-09-30: V1 Candidate Combined Scores (Stage 4)
+
+**No anomaly threshold or NORMAL/ANOMALY classification was introduced in Stage 4.** Large scores are standardized calibration deviations, not anomalies.
+
+## Question
+How do three candidate ways of combining the seven Stage 3 robust z-scores differ?
+- Which features drive each score?
+- How much do the scores increase outside the calibration sessions?
+- How optimistic are the in-sample calibration scores compared with leave-one-out scores?
+
+The design is frozen as in Entries 3–5: 318 usable events, the 7 features from `feature_selection_v1.json`, primary calibration = first 20 usable events, per-feature median + 1.4826·MAD. There is no multivariate model, personalization, adaptation or calibration change.
+
+## Score and Contribution Definitions
+For an event with robust z-scores z_1..z_7 (d = 7), the scores are:
+- mean_abs_z = mean_j |z_j|
+- rms_z = sqrt(mean_j z_j²)
+- max_abs_z = max_j |z_j|
+
+There is no weighting and no re-normalization.
+
+Each score has its own contribution definition, and the three are not interchangeable:
+- **mean_abs_z:** |z_j|. The share |z_j| / Σ|z| is also reported so events can be compared; it is derived from |z_j| and does not replace it.
+- **rms_z:** z_j² / Σ z_k².
+- **max_abs_z:** the feature(s) attaining the maximum. Every tied feature is listed; no ties occurred.
+
+## Implementation
+`src/scoring_v1.py`, command `python src/scoring_v1.py`. Tests: `tests/test_scoring_v1.py` (18 tests; full suite 87 passing).
+
+**Traceability:** the saved Stage 3 baseline (`results/baseline_v1/baseline_v1.json`, SHA-256 `d6fb5457…b2c5`) is used unchanged. The run checks that:
+- the baseline's features equal the feature selection;
+- refitting the first 20 events reproduces its parameters exactly (difference 0);
+- its z-scores reproduce the Stage 3 file within 3.6×10⁻¹⁵.
+
+**Leave-one-out (LOO):** for each of the 20 calibration events, median/MAD is refitted on the other 19 events (`n_training` = 19 for every event, with a check that the held-out event is absent). The held-out event is then scored. LOO parameters are saved in `leave_one_out_parameters.csv`, and the primary baseline is not altered.
+
+**Decisions:**
+1. **Two calibration views:** calibration events are reported both in-sample (primary baseline, which they helped define) and LOO.
+2. **Sessions exclude calibration events:** session distributions exclude calibration events, so session 2018-01-22#1, whose 9 usable events are all calibration events, has no session row values.
+3. **Normal reference:** a reference for d independent N(0,1) z-scores is simulated (100,000 draws, seed 20261001) to indicate scale only. The real z-scores are neither independent nor normal.
+4. **"Isolated-extreme" events** are defined descriptively as events whose largest |z| is at least 2× the second largest.
+5. **Exact decomposition of group-mean increases:**
+   - mean(mean_abs_z) = (1/d) Σ_j mean|z_j|
+   - mean(rms_z²) = (1/d) Σ_j mean z_j²
+
+   The increase in either group mean therefore splits exactly over features. Medians do not decompose.
+
+Outputs in `results/scoring_v1/`:
+- `event_scores.csv`: all Stage 3 event metadata, 7 z-scores, 3 scores, the max feature, |z_j|, RMS shares, and single-feature influence.
+- `leave_one_out_scores.csv`
+- `leave_one_out_parameters.csv`
+- `group_summary.csv`
+- `session_summary.csv`
+- `feature_contributions.csv`
+- `inflation_decomposition.csv`
+- `single_feature_influence.csv`
+- `scoring_summary.json`
+- `score_distributions.png`
+- `feature_dominance.png`
+
+## Results
+
+### 1. Score distributions (`group_summary.csv`)
+| Group | n | mean_abs_z median [p05, p95] (max) | rms_z median [p05, p95] (max) | max_abs_z median [p05, p95] (max) |
+|---|---|---|---|---|
+| Calibration, in-sample | 20 | 0.86 [0.41, 1.68] (1.77) | 1.07 [0.51, 1.93] (2.11) | 2.05 [0.80, 3.07] (3.11) |
+| Calibration, leave-one-out | 20 | 0.96 [0.48, 1.91] (1.95) | 1.18 [0.59, 2.20] (2.30) | 2.31 [0.91, 3.28] (3.71) |
+| Same sessions, not calibration | 39 | 1.20 [0.66, 3.18] (3.70) | 1.42 [0.85, 3.87] (4.76) | 2.61 [1.51, 7.54] (9.40) |
+| Other sessions | 259 | 1.98 [1.04, 3.39] (9.54) | 2.44 [1.28, 4.16] (10.99) | 4.28 [2.18, 7.87] (20.92) |
+| Independent N(0,1) reference | — | 0.78 [0.45, 1.20] | 0.95 [0.56, 1.42] | 1.67 [0.94, 2.68] |
+
+**Per-session medians** (non-calibration events; mean_abs_z / rms_z / max_abs_z):
+- 2018-01-23#1: 1.20 / 1.42 / 2.61 (n=39)
+- 2018-01-23#2: 1.55 / 1.85 / 3.44 (n=27)
+- 2018-01-23#3: 1.46 / 1.90 / 3.35 (n=29)
+- 2018-02-05#1: 2.15 / 2.72 / 4.34 (n=27)
+- 2018-02-06#3: 2.32 / 2.71 / 4.51 (n=13)
+- 2018-05-02#1: 2.95 / 3.74 / 6.87 (n=11)
+- 2018-05-03#2: 2.43 / 2.89 / 5.28 (n=57)
+- 2018-05-03#3: 1.92 / 2.43 / 4.33 (n=52)
+
+Sessions with fewer than 5 events are in `session_summary.csv`. Later sittings on the calibration day (2018-01-23#2, #3) sit closer to calibration than sittings on later dates.
+
+### 2. How the three scores differ
+- **Rank agreement** (Spearman, all 318 events): mean_abs–rms 0.977, rms–max 0.948, mean_abs–max 0.881. Within other sessions the values are 0.968, 0.926 and 0.832.
+- **Relationship:** mean_abs_z and rms_z are almost interchangeable for ranking. max_abs_z departs most, and it sits on a larger scale (2.2–2.4× mean_abs_z, depending on the group).
+- **Sensitivity to one feature:**
+  - **Share held by the largest feature:** median 0.31 of mean_abs_z (as |z| share), 0.46 of rms_z (as z² share), and 1 of max_abs_z by definition. The p95 values are 0.48 and 0.78.
+  - **Marginal effect of increasing the largest |z| by one unit:** 1/d = 0.14 for mean_abs_z, at most 1/√d ≈ 0.38 for rms_z, and 1 for max_abs_z.
+- **Isolated extremes:** 37 of 318 events are isolated-extreme; the isolated feature is flatness mean in 19, centroid std in 15, flatness std in 2 and duration in 1.
+  - Median percentile rank of these events: 0.68 under max_abs_z, 0.46 under rms_z, 0.42 under mean_abs_z.
+  - For the other 281 events: 0.47, 0.51 and 0.51.
+  - max_abs_z is therefore the score most driven by a single isolated feature. rms_z reduces that influence, and mean_abs_z reduces it most.
+- **The single largest deviation** (`rec2018-05-03_11h22m05.830s.wav` event 1, session 2018-05-03#2) comes from `mean_rms` (z = 20.9). It ranks first under all three scores: mean_abs_z 9.54, rms_z 10.99, max_abs_z 20.92.
+
+### 3. Feature dominance (`feature_contributions.csv`, `feature_dominance.png`)
+| Feature | argmax share: LOO calib / same sess. / other | mean RMS share: LOO calib / same sess. / other | median abs z: LOO calib / same sess. / other |
+|---|---|---|---|
+| `duration_s` | 0.15 / 0.21 / 0.06 | 0.14 / 0.18 / 0.08 | 0.74 / 0.82 / 0.96 |
+| `mean_rms` | 0.10 / 0.05 / 0.10 | 0.11 / 0.10 / 0.14 | 0.68 / 0.82 / 2.01 |
+| `spectral_centroid_mean` | 0.15 / 0.05 / 0.05 | 0.15 / 0.08 / 0.14 | 0.80 / 0.83 / 2.12 |
+| `spectral_centroid_std` | 0.15 / 0.36 / 0.26 | 0.14 / 0.24 / 0.20 | 0.68 / 1.84 / 2.01 |
+| `spectral_flatness_mean` | 0.25 / 0.18 / 0.43 | 0.20 / 0.21 / 0.28 | 0.80 / 1.29 / 2.98 |
+| `spectral_flatness_std` | 0.05 / 0.05 / 0.08 | 0.12 / 0.09 / 0.11 | 0.69 / 0.65 / 1.68 |
+| `spectral_rolloff_std` | 0.15 / 0.10 / 0.02 | 0.13 / 0.10 / 0.05 | 0.84 / 0.90 / 0.81 |
+
+- **Calibration events (LOO):** shares are close to equal (1/7 ≈ 0.14 each).
+- **Other sessions:** `spectral_flatness_mean` dominates every score (largest |z| in 43% of events, mean RMS share 0.28), followed by `spectral_centroid_std`.
+- **Rest of the calibration sessions:** `spectral_centroid_std` dominates (largest in 36% of events), followed by flatness mean and duration.
+- **`spectral_rolloff_std`** contributes least outside calibration.
+- **Overall (all 318 events):** the max feature is flatness mean in 122 events, centroid std 83, mean_rms 30, duration 27, flatness std 25, centroid mean 19, rolloff std 12.
+
+### 4. Cross-session increase (`scoring_summary.json`, `inflation_decomposition.csv`)
+**Median ratios:**
+
+| Comparison | mean_abs_z | rms_z | max_abs_z |
+|---|---|---|---|
+| Other sessions / LOO calibration | 2.07 | 2.07 | 1.85 |
+| Other sessions / same sessions | 1.66 | 1.72 | 1.64 |
+| Same sessions / LOO calibration | 1.25 | 1.20 | 1.13 |
+| Other sessions / in-sample calibration | 2.30 | 2.28 | 2.09 |
+
+**Other sessions − LOO calibration.** Exact per-feature shares of the increase in group-mean mean_abs_z (and in mean rms_z²):
+- flatness mean 28% (31%)
+- centroid std 22% (23%)
+- mean_rms 20% (19%)
+- centroid mean 16% (14%)
+- flatness std 12% (9%)
+- duration 4% (4%)
+- rolloff std 0% (0%)
+
+The four features flagged in Stage 3 carry 84% (mean_abs_z) and 88% (rms_z²) of the increase. For max_abs_z, the share of events whose maximum is flatness mean rises from 0.25 to 0.43, and centroid std from 0.15 to 0.26.
+
+**Other sessions − same sessions** (mean_abs_z / rms_z² shares):
+- centroid mean 30% / 28%
+- mean_rms 29% / 34%
+- flatness mean 23% / 25%
+- flatness std 20% / 15%
+- centroid std 13% / 20%
+- duration −15% / −22%
+
+Same-session events deviate more in duration.
+
+**Same sessions − LOO calibration:** flatness mean 34%, centroid std 33% and duration 28% (mean_abs_z). Within the calibration session, later events move mainly in these features.
+
+### 5. In-sample vs leave-one-out calibration
+- **All 20 events:** the LOO score exceeds the in-sample score for all 20 calibration events on all three scores (Wilcoxon signed-rank p = 1.9×10⁻⁶).
+- **Medians:** mean_abs_z 0.86 → 0.96 (paired median ratio 1.11); rms_z 1.07 → 1.18 (1.08); max_abs_z 2.05 → 2.31 (1.06).
+- **p95:** 1.68 → 1.91, 1.93 → 2.20, 3.07 → 3.28.
+- **Maxima:** 1.77 → 1.95, 2.11 → 2.30, 3.11 → 3.71.
+
+### 6. The correlated pair `mean_rms` / `spectral_centroid_mean`
+- **Correlation of z:** Spearman −0.84 in other sessions, −0.78 in LOO calibration and −0.68 in the same sessions. The two z-scores have opposite signs in 82% of other-session events.
+- **Per-event domination:** the pair does not dominate individual events.
+  - Median joint share in other sessions: 0.26 of RMS and 0.30 of |z|, against an equal-share reference of 2/7 = 0.29.
+  - The pair are the two largest |z| in 7.7% of other-session events, against 4.8% if features were exchangeable.
+  - The pair contains the maximum feature in 15% of other-session events, against 29% for exchangeable features.
+- **Cross-session difference:** here the double counting is visible. The pair accounts for 59% (mean_abs_z) and 62% (rms_z²) of the other-sessions-minus-same-sessions increase. It also accounts for 35% and 33% of the other-sessions-minus-LOO increase.
+
+## Answers to the Stage 4 Questions
+1. **How different are the three scores?** mean_abs_z and rms_z rank events almost identically (ρ 0.97–0.98). max_abs_z differs more (ρ 0.83–0.95 with the others) and sits on a scale 2.2–2.4× larger.
+2. **Most sensitive to isolated extremes:** max_abs_z. Isolated-extreme events reach median percentile 0.68 under it, against 0.46 (rms_z) and 0.42 (mean_abs_z).
+3. **Dominant features:**
+   - **Other sessions:** `spectral_flatness_mean`, then `spectral_centroid_std`, under all three scores.
+   - **Rest of the calibration session:** `spectral_centroid_std`.
+   - **Everywhere:** `spectral_rolloff_std` contributes least.
+4. **Increase for other sessions:** relative to LOO calibration, the median rises about 2.1× for mean_abs_z and rms_z and 1.85× for max_abs_z. The rest of the calibration session rises only 1.13–1.25×.
+5. **In-sample vs LOO:** in-sample calibration scores are lower for every calibration event, by a median 6–11%.
+6. **Does LOO prove the baseline narrow?** Only partly. LOO confirms that in-sample calibration scores are optimistic, but only modestly. It does not remove the narrowness: other-session scores remain about 2× the LOO calibration scores. Even LOO calibration scores exceed the independent-normal reference medians by about 1.2–1.4×. In-sample optimism is not the main reason for the cross-session gap.
+7. **Same features behind the increase?** Yes. The four features flagged in Stage 3 (flatness mean, centroid std, mean_rms, centroid mean) account for 84–88% of the other-sessions-over-calibration increase, consistent with Entry 5.
+8. **Do RMS or mean_abs_z reduce single-feature influence compared with max_abs_z?** Yes. The largest feature's median share is 0.31 (mean_abs_z) and 0.46 (rms_z), against 1 for max_abs_z. Isolated-extreme events are ranked lower by both.
+9. **Double counting from the correlated pair?** Not within single events: the pair's joint share is about equal to two features' fair share. It is visible across sessions, where the pair jointly carries about 60% of the difference between other sessions and the calibration session.
+
+## Implications of the Narrow First-20 Calibration
+- **Scores reflect session membership:** all three candidate scores inherit the Stage 3 problem, so their level is driven largely by session membership. The median other-session score is about 2× the LOO calibration score, and 84–88% of that increase comes from four features whose calibration spread is unusually narrow or whose sessions sit at offsets.
+- **Choosing a score won't fix it:** the three scores differ mainly in how they treat single extreme features, not in how they respond to this calibration problem.
+- **Thresholds would be dominated by session effects:** any threshold taken from the 20 calibration scores would be driven mainly by session differences. This holds even using the LOO scores, which are only 6–11% higher.
+
+## Limitations
+- **Few calibration scores:** 20 calibration scores support only coarse percentiles (5% steps).
+- **Sessions are inferred** and not attributable to subject, device or setup (Entries 4–5).
+- **Normal reference is descriptive:** the independent-normal reference only indicates scale.
+- **Descriptive definitions:** the isolated-extreme 2× rule and the exchangeable-feature references are descriptive choices, not tests.
+- **Exact decomposition covers group means only:** it does not apply to medians or to max_abs_z.
+- **No held-out data:** all 318 events were used in Stage 2 feature selection (Entry 4).
+- **No ground truth:** no anomaly ground truth exists, so nothing here measures detection performance.
+
+## Next Step — Stage 5 recommendation (future experiment; no threshold chosen here)
+1. **Primary score:**
+   - Pre-register one primary candidate score before any threshold work, chosen on properties, not on the distribution it produces.
+   - `rms_z` is a reasonable middle ground: it ranks events almost like `mean_abs_z` but still responds to a single strongly deviating feature. `max_abs_z` is the most exposed to the narrowly calibrated features.
+   - The choice belongs to the project owner.
+2. **Percentile-threshold experiment:**
+   - Derive candidate percentiles only from calibration LOO scores (n = 20), stating the percentile resolution this allows.
+   - Report the resulting calibration-deviation rates per group and per session as descriptions.
+   - Show threshold sensitivity across several percentiles, without calling exceedances anomalies or error rates.
+3. **Calibration design decision:** the Stage 5 experiment should run only after the owner decides whether the first-20 calibration stays primary (Entry 5). Otherwise the threshold will mostly encode session differences.
