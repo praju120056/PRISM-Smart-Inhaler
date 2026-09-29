@@ -976,3 +976,217 @@ Same-session events deviate more in duration.
    - Report the resulting calibration-deviation rates per group and per session as descriptions.
    - Show threshold sensitivity across several percentiles, without calling exceedances anomalies or error rates.
 3. **Calibration design decision:** the Stage 5 experiment should run only after the owner decides whether the first-20 calibration stays primary (Entry 5). Otherwise the threshold will mostly encode session differences.
+
+---
+
+# Research Entry 7 — 2026-09-30: Baseline Strategy Experiment Across Sessions (Stage 5)
+
+**No anomaly threshold or NORMAL/ANOMALY classification was introduced in Stage 5.** Scores are standardized deviations from a baseline. NORMAL/ANOMALY terminology (baseline-consistent / substantial deviation from the established baseline) is unchanged, and no clinical or technique-quality claim is made.
+
+## Question
+Which baseline produces stable standardized scores on sessions that were **not** used to fit it? The question is not which baseline produces the smallest scores.
+
+The 7 V1 features, the robust z definition and the three Stage 4 candidate scores are unchanged:
+- z_j = (x_j − center_j) / (1.4826·MAD_j)
+- mean_abs_z = mean|z_j|
+- rms_z = sqrt(mean z_j²)
+- max_abs_z = max|z_j|
+
+Stages 1–4 were not modified. This stage reads their outputs.
+
+## Data and Splits
+- **Events and sessions:** 318 usable events in 18 sessions. Sessions are sittings separated by > 25 min (Entry 4); they are not subjects.
+- **Session sizes:** 57, 52, 50, 29, 27, 27, 13, 11, 9, 9, 9, 8, 4, 4, 4, 2, 2, 1.
+- **Evaluation sets:** every strategy is compared only on events it scores in full.
+
+  | Set | Events | Sessions | Contents |
+  |---|---|---|---|
+  | `all_usable` | 318 | 18 | every usable event |
+  | `sessions_ge5` | 301 | 12 | sessions with ≥ 5 events |
+  | `sessions_ge20` | 242 | 6 | sessions with ≥ 20 events |
+  | `post_warmup_k3` | 268 | 15 | events after a session's first 3 |
+  | `post_warmup_k5` | 241 | 12 | events after a session's first 5 |
+  | `post_warmup_k10` | 186 | 8 | events after a session's first 10 |
+- **Pre-specified rules** (constants in `src/baseline_strategies.py`, fixed before any Stage 5 result was computed):
+  - **Session-location normalization** requires ≥ 5 events. This is the Stage 2 minimum group size; the leave-one-out session median then uses ≥ 4 other events.
+  - **Session-scale normalization** requires ≥ 20 events, so the session MAD comes from ≥ 19 other events. Normal-theory relative SE of the MAD is ≈ 1.166/√n, about 27% at n = 19.
+  - **Deployable warm-up:** k = 5 events. k = 3 and 10 are reported as sensitivity only and are not used to choose.
+  - **Resampling:** bootstrap 2,000 draws, permutations 2,000, seed 20261002.
+
+## Strategies
+| Id | Baseline | Status |
+|---|---|---|
+| A | First-20 calibration (Stage 3/4). Reproduced from Stage 4 outputs, with calibration events scored leave-one-out; scores match Stage 4 within 1.8×10⁻¹⁵. | Deployable; historical control |
+| B | median/MAD of all 318 events, scored on the same events | **Descriptive only (in-sample)** |
+| C | Leave-one-session-out (LOSO): for each session s, fit median/MAD on every usable event of the other sessions and score the events of s. Every event is scored once, by a baseline that never saw its session. | Deployable global baseline; main generalization test |
+| D1 | x′ = x − median(other events of the same session), all 7 features. Center/scale of x′ fitted LOSO on the other sessions (≥ 5 events). | **Offline diagnostic**: uses later events of the session |
+| D2 (k) | x′ = x − median(first k events of the session). Only later events are scored; center/scale as D1 (from other, complete sessions). | Deployable with a k-event cold start per session |
+| D3 | z = (x − median) / (1.4826·MAD), both from the other events of the same session (sessions ≥ 20). | **Offline diagnostic** |
+| D1L / D2L (k) | As D1 / D2, but session location removed from the LEVEL features only (duration, mean_rms, centroid mean, flatness mean). The WITHIN-EVENT VARIABILITY features (centroid std, flatness std, rolloff std) keep C-style global LOSO treatment. | Offline / deployable, as D1 / D2 |
+
+**Reference and generalization ratio:** for each strategy, "reference" is the median score of the events its baseline was fitted on (in-sample). For C/D this is per fold; for A it is the leave-one-out calibration scores (Entry 6); for D3 it is the session's own in-sample scores. The **generalization ratio** is the median score of unseen events divided by the reference median. It is 1 when unseen sessions look like the fitting data.
+
+**Session dependence:** measured by the Kruskal–Wallis ε² of scores (or per-feature z) across sessions with ≥ 5 scored events, together with the range of session medians.
+
+**Order of work (disclosure):** the level-only variants (D1L, D2L) and the joint all-feature scale-heterogeneity statistic were added after the all-feature D1/D2 results were seen. They follow from the task's LEVEL / WITHIN-EVENT VARIABILITY split and Stage 2's finding that centroid std and rolloff std are session-stable. They add no tunable parameter, and all variants are reported.
+
+Implementation: `src/baseline_strategies.py`, command `python src/baseline_strategies.py`. Tests: `tests/test_baseline_strategies.py` (19 tests; full suite 106 passing). Outputs in `results/baseline_strategies/`:
+- `heldout_scores.csv`
+- `strategy_summary.csv`
+- `feature_stability.csv`
+- `feature_contributions.csv`
+- `session_medians.csv`
+- `baseline_parameters.csv`
+- `parameter_variability.csv`
+- `session_scale_stability.csv`
+- `session_scale_heterogeneity.csv`
+- `experiment_summary.json`
+- `session_medians_rms_z.png`
+- `feature_session_effect.png`
+
+## Results
+
+### 1. Held-out score distributions, sessions with ≥ 5 events (301 events, 12 sessions)
+Median [5th–95th percentile], generalization ratio, range of session medians and session ε². Independent-N(0,1) medians for reference: 0.78 / 0.95 / 1.67.
+
+| Strategy | mean_abs_z | rms_z | max_abs_z | Ratio (rms_z) | rms_z session medians | ε² (rms_z) |
+|---|---|---|---|---|---|---|
+| A first-20 | 1.87 [0.75, 3.37] | 2.28 [0.89, 4.13] | 4.14 [1.64, 7.63] | 1.94 | 1.30–3.74 | 0.28 |
+| B pooled (in-sample) | 0.81 [0.38, 1.40] | 1.01 [0.47, 1.77] | 1.72 [0.81, 3.64] | 1.02 | 0.68–1.44 | 0.14 |
+| C LOSO global | 0.90 [0.41, 1.53] | 1.09 [0.51, 1.95] | 1.88 [0.89, 3.72] | 1.11 | 0.68–1.48 | 0.21 |
+| D1 offline location | 0.80 [0.34, 1.72] | 0.98 [0.45, 2.12] | 1.76 [0.78, 4.23] | 1.01 | 0.76–1.55 | 0.10 |
+| D1L offline level location | 0.82 [0.37, 1.75] | 0.99 [0.44, 2.11] | 1.77 [0.81, 4.15] | 1.02 | 0.68–1.43 | 0.10 |
+
+C on all 318 events (including the 6 small sessions): rms_z median 1.09 [0.51, 1.92], generalization ratio 1.10.
+
+**Per-feature held-out z under C** (robust SD of z / robust SD of session-median z / session ε²):
+
+| Feature | Family | Robust SD of z | Robust SD of session medians | Session ε² |
+|---|---|---|---|---|
+| duration | level | 1.15 | 0.65 | 0.45 |
+| mean_rms | level | 1.19 | 0.37 | 0.64 |
+| centroid mean | level | 1.17 | 0.51 | 0.62 |
+| flatness mean | level | 1.12 | 0.56 | 0.39 |
+| centroid std | within-event variability | 0.93 | 0.29 | 0.05 |
+| flatness std | within-event variability | 1.09 | 0.58 | 0.23 |
+| rolloff std | within-event variability | 1.01 | 0.35 | 0.05 |
+
+Under A the robust SDs of z were 1.23–2.73. Under D1, the session ε² of every feature is about 0 (−0.034 to −0.027), and the robust SD of session-median z is 0.01–0.07.
+
+### 2. Deployable warm-up vs offline location, events after the first k of each session
+rms_z median, generalization ratio and session ε²:
+
+| Set (events) | C LOSO | D1 offline | D1L offline | D2 warm-up | D2L warm-up |
+|---|---|---|---|---|---|
+| post-k5 (241), primary k = 5 | 1.10, 1.12, 0.14 | 0.96, 0.99, 0.08 | 1.00, 1.03, 0.06 | 1.16, 1.19, 0.11 | 1.12, 1.16, 0.14 |
+| post-k3 (268), k = 3 (sensitivity) | 1.10, 1.12, 0.17 | — | — | 1.64, 1.68, 0.47 | 1.51, 1.56, 0.49 |
+| post-k10 (186), k = 10 (sensitivity) | 1.14, 1.15, 0.11 | 0.94, 0.97, 0.06 | 0.99, 1.03, 0.03 | 1.07, 1.10, 0.05 | 1.06, 1.10, 0.02 |
+
+**Per-feature effect of the 5-event warm-up** (post-k5 set, session ε²; D2 → D2L → C):
+- **Level features** go from C's 0.40–0.70 to 0.33–0.53. Flatness mean rises from 0.40 under C to 0.53.
+- **Within-event variability features:**
+  - D2 raises rolloff std from 0.06 to 0.16 and centroid std from 0.05 to 0.08.
+  - D2L leaves them at C's values.
+- **Offline D1** brings every feature to about 0.
+
+### 3. Session location + scale, offline, 6 sessions with ≥ 20 events (242 events)
+rms_z session ε² and range of session medians:
+
+| Strategy | ε² | Session medians range (max/min) |
+|---|---|---|
+| A | 0.25 | 2.16× |
+| C | 0.16 | 1.81× |
+| D1 | 0.07 | 1.68× |
+| D1L | 0.05 | 1.72× |
+| D3 | −0.01 | 1.19× |
+
+### 4. Is session-scale normalization defensible? (`session_scale_stability.csv`, `session_scale_heterogeneity.csv`)
+- **Bootstrap CV of a session's robust scale** (median over features):
+  - 0.53–0.60 for sessions of 8–9 events
+  - 0.44–0.45 for 11–13 events
+  - 0.27–0.29 for 27–29 events
+  - 0.16–0.20 for 50–57 events
+  - These match normal theory (0.39–0.41, 0.32–0.35, 0.22, 0.15–0.17) and are somewhat worse for small sessions.
+  - Up to 5% of bootstrap draws gave a zero MAD in 9-event sessions.
+- **Heterogeneity test.** Residuals are taken from the session median, the statistic is the SD across 12 sessions of log session-MAD, and the permutation keeps session sizes. Per-feature p-values:
+
+  | Feature | p |
+  |---|---|
+  | duration | 0.19 |
+  | mean_rms | 0.055 |
+  | centroid mean | 0.45 |
+  | centroid std | 0.28 |
+  | flatness mean | 0.18 |
+  | flatness std | 0.11 |
+  | rolloff std | 0.079 |
+  | **All features jointly** | **0.013** |
+
+  Sessions do differ in spread overall, but no single feature's session scale is distinguishable from sampling noise at these sizes.
+
+### 5. Baseline parameter variability across LOSO folds (`parameter_variability.csv`)
+- **C (18 folds):**
+  - Feature centers move by at most 0.07–0.39 pooled SD across folds (duration 0.22, mean_rms 0.35, centroid mean 0.39, flatness mean 0.28, flatness std 0.26, centroid std 0.12, rolloff std 0.07).
+  - Scales stay within 0.84–1.20× the pooled scale, with CV 2–7%.
+  - The global baseline is stable to which session is left out.
+- **D1 (12 folds):** residual scales are 0.57–0.70× pooled (mean_rms), 0.66–0.72× (centroid mean), 0.72–0.79× (flatness mean) and 0.72–0.88× (duration). Removing session location removes about 12–43% of these features' spread. The variability features stay at 0.83–1.15×.
+
+### 6. Feature contributions under C (`feature_contributions.csv`, sessions ≥ 5)
+- **Mean RMS shares** are 0.12–0.20 per feature, roughly balanced, against A's single-feature dominance (flatness mean 0.27).
+- **max_abs_z argmax:** duration 0.25, mean_rms 0.19, the others 0.09–0.14.
+
+## Interpretation
+1. **The first-20 control's ~2× inflation is a calibration-design artefact.** A baseline fitted on many sessions (C) scores unseen sessions at about the level of its fitting data: generalization ratio 1.10–1.15 against 1.9–2.0 for A. Per-feature held-out z spread is also close to 1 (0.93–1.19).
+2. **A global baseline does not remove session dependence.**
+   - Under C, session membership still explains ε² = 0.21 of the held-out rms_z, and session medians span 0.68–1.48 (2.2×).
+   - The dependence sits in the **level** features (duration, mean_rms, centroid mean, flatness mean: ε² 0.39–0.64) and in `spectral_flatness_std` (0.23). `spectral_flatness_std` is labelled a variability feature but behaves like a level feature here, a finding recorded rather than acted on.
+   - `spectral_centroid_std` and `spectral_rolloff_std` are session-stable (0.05).
+3. **Location offsets are the main session effect.**
+   - Removing session location offline (D1/D1L) eliminates per-feature session effects and halves the combined-score session dependence (0.21 → 0.10), with a generalization ratio of about 1.0.
+   - The remaining dependence comes from sessions differing in spread. Only per-session scaling (D3) removes it, which is offline and partly true by construction.
+4. **The deployable form of location normalization does not help at the pre-specified k = 5.** D2/D2L on the same events show no material improvement over C.
+   - **k = 3:** clearly worse (ε² 0.47–0.49).
+   - **k = 10 (sensitivity):** D2L reaches ε² 0.02 against C's 0.11 on the same events.
+   - **Approximate explanation (normal theory):** the error of a k-event median is ≈ 1.25·σ_w/√k. Here σ_w is the within-session spread, about 0.57–0.88 of the global scale for level features (D1 residual scales). The error is therefore ≈ 0.32–0.49 global SD at k = 5, 0.23–0.35 at k = 10 and 0.41–0.64 at k = 3. That is comparable to the between-session offsets it is meant to remove (robust SD of session-median z under C, level features 0.37–0.65).
+   - **Within-session drift:** it also limits the gain. Early events are not representative of later ones (Entry 5).
+5. **Session-scale normalization is not defensible as a general method at these session sizes.**
+   - Joint spread differences exist (p = 0.013), but no single feature's is significant.
+   - Scale estimates are unreliable for the smaller sessions (bootstrap CV 0.44–0.60 for ≤ 13 events).
+   - Only 6 sessions have ≥ 20 events.
+
+## Answers to the Stage 5 Questions
+1. **Does a pooled global robust baseline generalize?** The pooled baseline (B) is in-sample and cannot show generalization. Its leave-one-session-out counterpart (C) does generalize in **scale**, but not in session-independence. Unseen sessions score about 1.1× the fitting data, against about 1.9× for first-20. Session membership still explains about 21% of score variation.
+2. **Does LOSO global normalization reduce session-dependent inflation?** Yes, materially.
+   - The about 2× calibration inflation disappears (ratio 1.94 → 1.11).
+   - Session dependence falls from ε² 0.28 to 0.21.
+   - Per-feature z spread returns to about 1.
+   - Level-feature session offsets remain.
+3. **Does simple session-location normalization reduce it further?**
+   - **Offline:** yes. Every feature's session effect goes to about 0, and combined ε² falls to 0.10.
+   - **Deployable, with the pre-specified 5-event warm-up:** no material improvement over C.
+   - **With 10 warm-up events** (sensitivity only, not confirmatory): it does improve.
+4. **Is session-scale normalization defensible?** Not at these session sizes. See Interpretation 5.
+5. **Candidate MVP baseline:** a **global robust baseline fitted on multiple sessions** (strategy C: per-feature median / 1.4826·MAD from a multi-session reference set, frozen), replacing the first-20 single-sitting calibration.
+   - **Evidence:** it is the only deployable strategy whose held-out scores are close to its fitting distribution, with parameters stable across folds.
+   - **Limitation:** it retains level-feature session dependence.
+   - **Decision owner:** replacing the locked first-20 primary design requires the project owner's approval.
+   - **Location normalization:** remains the most promising extension, but its deployable form needs a longer same-context reference period. That is not established here.
+6. **What next, before threshold selection?** See Decision.
+
+## Limitations
+- **Few, inferred sessions:** 18 sessions, 6 with fewer than 5 events. Sessions are recording sittings; whether session effects reflect subject, device, placement or protocol is unknown. That is decisive for how normalization would be done in deployment, where a user may record one or two inhalations per sitting.
+- **LOSO ignores time order:** training sessions can come after the held-out session.
+- **Offline strategies** (D1, D1L, D3) use later events of the same session and are not deployable.
+- **Warm-up sensitivity is not confirmatory:** the k = 10 result is sensitivity only, from this same dataset.
+- **Post-hoc variants:** the level-only variants and the joint heterogeneity test were added after seeing the all-feature D1/D2 results (disclosed above).
+- **ε² sensitivity:** ε² and session-median ranges rely on sessions with 8–57 events, so small sessions weigh as much as large ones.
+- **No held-out data for selection:** all 318 events were already used in Stage 2 feature selection.
+- **No ground truth:** nothing here measures detection of real deviations.
+
+## Decision and Next Step
+1. **Stop the first-20 path.** Do not proceed to threshold selection on the first-20 baseline. Recommend that the owner adopt the multi-session global baseline (C) as the candidate MVP baseline; this is the owner's decision.
+2. **Next experiment (Stage 6), before any threshold: controlled deviations under the LOSO global baseline.**
+   - Construct documented, known-magnitude deviations of held-out events, such as feature-level shifts in units of the global scale applied to one feature family at a time.
+   - Measure how the three scores respond, relative to the session-dependence noise floor measured here (unperturbed held-out session medians spanning 2.2×).
+   - This tells whether a threshold could separate deviations of a given size from session effects. The ground truth comes from the construction, not from clinical labels.
+3. **In parallel, request longitudinal data** with user/device/session identifiers. That is the only way to test location normalization in a deployable, personalized form (V3), with warm-up sizes set a priori.
+4. **No new features.** No new features are added at this point. `spectral_flatness_std`'s session sensitivity is recorded for the next feature review.

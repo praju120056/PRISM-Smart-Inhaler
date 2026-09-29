@@ -187,6 +187,26 @@ the 20 calibration events leave-one-out. It writes the following to
 No threshold is applied and no event is labelled NORMAL or ANOMALY. See
 `PRISM_RESEARCH_LOG.md` Entry 6.
 
+### Baseline Strategy Experiment (anomaly detection, Stage 5)
+
+```bash
+python src/baseline_strategies.py
+```
+
+This compares baselines on sessions that were not used to fit them, keeping the
+same 7 features, robust z-scores and candidate scores. The strategies are:
+
+- the first-20 control
+- a pooled in-sample baseline (descriptive only)
+- a leave-one-session-out global baseline
+- offline and warm-up session-location normalization
+- offline session location-and-scale normalization (a diagnostic)
+
+It writes held-out scores, per-strategy and per-feature stability, session
+medians, fold parameters and session-scale diagnostics to
+`results/baseline_strategies/`. No threshold is applied. See
+`PRISM_RESEARCH_LOG.md` Entry 7.
+
 ### Output
 
 ```
@@ -506,6 +526,7 @@ Raw audio does not cross any system boundary:
 | Feature analysis + V1 feature selection (anomaly Stage 2) | ✅ Implemented |
 | V1 robust baseline + per-feature robust z (anomaly Stage 3) | ✅ Implemented |
 | Candidate combined scores, no threshold (anomaly Stage 4) | ✅ Implemented |
+| Baseline strategy experiment across sessions (anomaly Stage 5) | ✅ Implemented |
 | Threshold, NORMAL / ANOMALY output | 🔲 Not started |
 | ESP32 firmware | 🔲 Not started |
 | BLE protocol implementation | 🔲 Not started |
