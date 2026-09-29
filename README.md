@@ -115,6 +115,24 @@ This writes `results/post_event/inhalation_events.csv`, a run manifest, and
 histograms plus duration-versus-RMS/energy scatter plots. To persist each
 original-waveform event segment as a WAV file too, add `--export-segments`.
 
+### Finalize the Inhale-Event Dataset (anomaly detection, Stage 1)
+
+```bash
+python src/inhale_dataset.py
+```
+
+This reads `results/post_event/inhalation_events.csv` without modifying it. It
+writes the following to `results/inhale_dataset/`:
+
+- `inhale_events_v1.csv`: every event, plus usability flags, `exclusion_reasons`
+  and a chronological `usable_order`
+- an audit against `data/annotation.csv`, used only to check the rule
+- a rule-sensitivity table
+- `dataset_summary.json`
+
+"Usable" means eligible for baseline modeling. It is not a technique-quality
+label. See `PRISM_RESEARCH_LOG.md` Entry 3 for the rule and its evidence.
+
 ### Output
 
 ```
@@ -430,6 +448,8 @@ Raw audio does not cross any system boundary:
 | ML research pipeline (RF, SVM, XGBoost, CNN) | ✅ Complete |
 | ONNX export (inhaler_cnn.onnx, opset 17) | ✅ Complete |
 | Cross-validation results (89.0% mean accuracy) | ✅ Complete |
+| Inhale-event dataset + usability rule (anomaly Stage 1) | ✅ Implemented |
+| V1 global baseline / anomaly scoring | 🔲 Not started |
 | ESP32 firmware | 🔲 Not started |
 | BLE protocol implementation | 🔲 Not started |
 | React Native mobile app | 🔲 Not started |

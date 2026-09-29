@@ -268,3 +268,136 @@ We hypothesized that the repository might contain accompanying metadata (e.g. su
 ## Next Step
 1. Benchmark temporal segmentation metrics (IoU, precision, recall) across the 301 annotated files under varying `min_event_duration_s` settings to establish the optimal cleanup threshold.
 2. Measure and report empirical actuation-inhalation coordination timing (actuation onset relative to inhale start and peak flow) for all dual-event recordings.
+
+---
+
+# Research Entry 3 — 2026-09-29: V1 Research Direction, Repository Audit, and Inhale-Event Dataset Finalization (Stages 0–1)
+
+## Research Direction Recorded (set by the project owner on 2026-09-29)
+- **V1 is a global, not personalized, baseline.** Recordings are not grouped by subject (Entry 2), so V1 models the whole available inhale-event dataset. Roadmap: V1 global robust univariate baseline (median / MAD robust z-scores aggregated into an anomaly score) → V2 multivariate baseline → V3 user-specific baseline (needs user/longitudinal grouping) → V4 adaptive personalization.
+- **Terminology:** outputs are `NORMAL` / `ANOMALY`. "An anomaly is an inhalation event whose acoustic characteristics deviate substantially from the established baseline." NORMAL means baseline-consistent. ANOMALY is not a clinical judgement of inhalation technique.
+- **Locked V1 choices:** calibrate on the first 20 *usable* inhale events. Set the threshold at an empirical percentile of calibration anomaly scores, with the percentile documented and justified. Use a conservative adaptation policy that stops anomalies from immediately contaminating the baseline. The output exposes at least status, anomaly score and deviating features.
+- **Legacy design not adopted:** `ARCHITECTURE.md` §9 (Mahalanobis on MFCCs, 0.5/0.3/0.2 weights, 1.5/3.0 thresholds, GOOD/POOR composite labels) is legacy documentation. It is not the V1 method, and its thresholds are not used.
+- Work proceeds in stages with one commit per completed stage on branch `anomaly-detection`.
+
+## Question
+Is the existing inhale-event table a correct, reproducible input for baseline modeling? Which detected events should be eligible ("usable") for baseline calibration and baseline-consistency evaluation?
+
+## Stage 0 — Repository Audit
+- The previously uncommitted post-event work was committed unchanged as checkpoint `5be5001` on new branch `anomaly-detection`. `main` was not modified and nothing was pushed. Compiled `.pyc` files are tracked in git but were left unstaged. Untracking them later is recommended.
+- `data/` is gitignored. Dataset identity is recorded by SHA-256 in `results/inhale_dataset/dataset_summary.json`: `data/annotation.csv` = `cdcd97c5…f88f1`, `results/post_event/inhalation_events.csv` = `b4f7bb3e…4722`.
+- **The event classifier was trained on part of this corpus.** `train_cnn.run_cnn_cv` exports the best cross-validation fold model, chosen by fold test accuracy. Per `results/cv_results.csv` (3 folds) that is fold 1 (accuracy 0.8954). The deployed ONNX model was therefore trained on roughly two-thirds of the 361 recordings it is now applied to, and which recordings were in its training fold was not saved. Event/annotation agreement below is mostly in-sample. It overstates how well the detector would segment unseen audio.
+- No baseline or anomaly-detection code or results existed. `README.md` and `ARCHITECTURE.md` list the baseline engine as not started.
+
+## Work Performed
+1. **Reproducibility:** regenerated the event table with the current code (`python src/explore_inhalations.py --output-dir <temp dir> --no-plots`, default `TemporalGroupingConfig`) and compared it column by column with the committed CSV.
+2. **Integrity checks** on the event table: shape, missing/non-finite values, keys, chronology, window structure.
+3. **Annotation audit** of `data/annotation.csv`: counts, duplicates, invalid intervals, overlapping Inhale labels.
+4. **Event ↔ annotation audit** using temporal IoU ≥ 0.5 as "matched".
+5. **Usability rule v1 and a rule-sensitivity grid.**
+
+Implementation: `src/inhale_dataset.py` (new). Tests: `tests/test_inhale_dataset.py` (21 tests on synthetic tables). Command: `python src/inhale_dataset.py --verify-against <regenerated CSV>`. Outputs in `results/inhale_dataset/`: `inhale_events_v1.csv`, `event_annotation_audit.csv`, `inhale_annotation_matches.csv`, `usability_sensitivity.csv`, `dataset_summary.json`, `reproducibility_check.json`. The upstream `results/post_event/inhalation_events.csv` was not modified.
+
+## Results
+
+### 1. Reproducibility
+The regenerated table is identical to the committed one: 364 × 23, maximum absolute difference 0 in every numeric column, all text columns equal, 0 failed recordings (`reproducibility_check.json`).
+
+### 2. Event Table Integrity (`results/post_event/inhalation_events.csv`)
+- 364 events, 23 columns. 322 recordings have ≥1 event and 39 have none. Events per recording: 1 → 287 recordings, 2 → 31, 3 → 2, 4 → 1, 5 → 1.
+- 0 missing values, 0 non-finite feature values, 0 duplicate `(recording_file, event_id)` keys. Every row has label `Inhale` and sample rate 8000 Hz. All 361 WAVs are 8 kHz mono, 6.46–12.51 s long (median 12.0 s).
+- The 13 acoustic/timing features are `duration_s`, `mean_rms`, `peak_rms`, `total_energy`, `time_to_peak_s`, and the mean and std of `spectral_centroid`, `spectral_flatness`, `spectral_rolloff` and `zcr`. `confidence`, `max_confidence` and `window_count` are CNN detection outputs, not inhalation measurements.
+- `recording_id` order equals chronological filename-timestamp order.
+- **Within-event bridging:** with `max_gap_s = 0`, overlapping 200 ms windows still join Inhale windows up to 12 strides (192 ms) apart. 47 events contain non-Inhale windows bridged this way, and the minimum Inhale-window fraction is 0.41 (`inhale_window_fraction` column).
+- **Time-to-peak rounding:** in 3 events `time_to_peak_s` exceeds `duration_s` by ≤ 2×10⁻⁸ s. This comes from sample rounding when the segment is sliced and has no practical effect. Some events have their RMS peak at the first or last envelope frame. This measurement issue is left for Stage 2 to quantify.
+
+### 3. Annotation File Audit (`data/annotation.csv`)
+- 1,162 data rows (the file has 1,163 lines, the last empty) across 301 recordings.
+- Invalid rows: 2 exact duplicate rows (one Inhale, one Noise) and 1 zero-length Noise interval, leaving 1,159 clean rows.
+- Clean label counts (rows / recordings): Inhale 260 / 255, Exhale 404 / 248, Noise 368 / 125, Drug 127 / 119.
+- Inhale annotations overlap each other in 2 recordings:
+  - `rec2018-02-05_10h56m11.262s`: 2 overlapping annotations.
+  - `rec2018-02-06_11h39m13.131s`: 3 nested annotations of 0.362, 0.559 and 0.789 s.
+
+  Outside these two recordings, the shortest annotated inhalation is 0.745 s.
+
+### 4. Event ↔ Annotation Agreement (IoU ≥ 0.5)
+- **Annotation side:** 259 of 260 unique Inhale annotations are matched (99.6%), with mean IoU 0.876 and median 0.887. The unmatched one is the nested 0.362 s annotation (best IoU 0.34).
+- **Event side**, the 312 events in annotated recordings:
+  - 257 matched.
+  - 0 partially overlap an Inhale annotation: every event that overlaps one has IoU ≥ 0.5.
+  - 9 lie outside the recording's Inhale annotations.
+  - 46 lie in annotated recordings that have no Inhale annotation.
+- **Unannotated recordings:** the 60 unannotated recordings contain 52 events.
+- **Shortest match:** the shortest matched event is 0.872 s.
+- **Short events:** 0 of the events shorter than 0.5 s overlap an Inhale annotation.
+
+### 5. Corrections to Earlier Entries (Entries 1–2 preserved unchanged)
+| Earlier statement | Entry | Verified now | Note |
+|---|---|---|---|
+| 1,164 annotations | 1 | 1,162 rows | Entry 2's 1,162 is correct |
+| 261 Inhale annotations | 2 | 261 rows, 260 unique | one exact duplicate row |
+| 257/261 (98.5%) of annotated inhalations detected, all IoU ≥ 0.5 | 2 | 259/260 unique (99.6%); 260/261 if the duplicate is kept | 257 is the number of *events* matched, so Entry 2 most likely counted events |
+| Mean IoU 0.879 | 2 | 0.876 over matched unique annotations | |
+| 36 unmatched long events are "secondary or split detected candidate segments" | 2 | 34 of the 36 are in annotated recordings with no Inhale annotation, 31 of them under no annotation of any label. No event partially overlaps an annotated inhalation | no event is a fragment of an annotated inhalation |
+| Secondary event "almost always" 0.2–0.4 s after the primary | 1 | 5 of 31 two-event recordings (9 < 0.2 s, 17 > 0.4 s, median 0.60 s) | from `gap_prev_s` in `inhale_events_v1.csv` |
+| Zero-event annotated recordings: "no inhalation was performed" | 1 | Not established | This assumes exhaustive annotation. Annotated recordings are not exhaustively annotated: high-confidence long events with no annotation under them exist, e.g. `rec2018-01-23_10h43m40.126s` (1.83 s, confidence 0.965) |
+
+### 6. Usability Rule v1
+An event is **usable** (eligible for baseline modeling) only if all of these hold:
+1. All 13 features are finite.
+2. `duration_s ≥ 0.5 s`.
+3. No other candidate in the same recording lies within a gap shorter than 0.2 s, i.e. one CNN analysis window.
+4. The event does not reach the recording's first or last analysis window (tolerance 0.008 s, half a stride).
+
+The rule uses only detector output and WAV headers, so it can be applied to unannotated data. Annotations are used only to audit it.
+
+Rationale for each criterion:
+- **(2) Minimum duration.** The 0.5 s value was proposed in Entry 1 before this audit. It is below the shortest valid annotated inhalation (0.745 s), so the rule cannot exclude a duration annotators ever labelled as an inhalation. It removes candidates that the annotations show are not inhalations.
+- **(3) Close neighbours.** Below one analysis window the detector cannot resolve whether two candidates are one interrupted inhalation or two inhalations. Fragment features (duration, energy, time-to-peak) would not describe a complete inhalation. Both candidates are excluded rather than merged, so no upstream value changes.
+- **(4) Recording boundary.** Such events are censored by the recording. Censoring will matter in deployment, where the hardware buffer is limited to 5 s.
+
+Outcome:
+- **Totals:** 318 usable, 46 excluded.
+- **Flags:** short 32, close neighbour 25, boundary 1, non-finite 0.
+- **Exclusion combinations:** short only 20; close neighbour only 14; short + close neighbour 11; short + boundary 1.
+- **Recordings:** 309 contribute usable events (301 with one, 7 with two, 1 with three).
+- **Annotation status of usable events:** 257 matched, 30 in recordings with no Inhale annotation, 2 outside Inhale annotations, 29 in unannotated recordings.
+- **Annotation status of excluded events:** 0 matched, 16, 7 and 23 respectively.
+
+Sensitivity (`usability_sensitivity.csv`, 7 duration × 4 gap settings):
+- No duration threshold from 0.0 to 0.8 s excludes an annotation-matched event.
+- At the chosen gap of 0.2 s no matched event is excluded. A 0.4 s gap would exclude 2.
+- Raising the duration threshold from 0.5 to 0.8 s would remove 11 more events (318 → 307). Of these, 8 are in annotated recordings without a match and 3 are in unannotated recordings. That higher value was not chosen, because it would be tuned to the annotated minimum instead of set below it.
+
+The first 20 usable events (V1 calibration candidates, by `usable_order`) come from 20 recordings:
+- 9 on 2018-01-22 (17:41–17:45) and 11 on 2018-01-23 (10:42–10:45).
+- 19 are annotation-matched. One (`rec2018-01-23_10h43m40.126s`, 1.83 s, confidence 0.965) is in a recording with no Inhale annotation.
+
+## Interpretation
+1. The upstream event table is reproducible from code and structurally clean. It is a sound input for modeling.
+2. Candidates shorter than 0.5 s are non-inhalation detections, not short inhalations.
+3. **Splits:** there is no evidence that the detector fragments annotated inhalations. Segmentation is still ambiguous for closely spaced candidates, all of which are in recordings without Inhale annotations, so they are excluded conservatively. Merging them through `TemporalGroupingConfig.max_gap_s` would change upstream measurements. It would be a separate upstream experiment and is not part of V1.
+4. **Unconfirmed usable events:** 32 usable events are not confirmed by an annotation (30 + 2). Some are probably unannotated inhalations and some may be detector false positives. They stay usable because the rule must be annotation-independent. The audit file allows sensitivity analyses restricted to annotation-matched events.
+
+## Decision
+1. The Stage 1 modeling dataset is `results/inhale_dataset/inhale_events_v1.csv`: all 364 upstream rows unchanged, plus context, flags, `usable`, `exclusion_reasons`, `chronological_order` and `usable_order`. "First N usable events" is defined by `usable_order`.
+2. Usability rule v1 is as above. Its parameters live in `inhale_dataset.UsabilityRule`, and the CLI labels any non-default setting `custom`.
+3. Annotation-audit columns are for evaluation and failure analysis only. They must not become anomaly features or drive calibration selection.
+4. The upstream event table is not regenerated, and close candidates are not merged.
+
+## Limitations
+- **Detector trained on this corpus:** the CNN detector is in-sample for about two-thirds of the recordings (Stage 0).
+- **Calibration sessions:** all 20 calibration candidates come from the first two recording sessions. Whether dates correspond to subjects or sessions is unknown (Entry 2), so a global V1 baseline calibrated on them may encode session-specific characteristics. Stage 2 should measure between-date differences before this is interpreted.
+- **Annotation completeness:** annotations are not exhaustive, so "no annotation" is not a negative label.
+- **Short events:** the usable set cannot contain events shorter than 0.5 s. Whether short detections are rejected or scored at inference time is a later-stage decision.
+- **Rule design timing:** apart from the 0.5 s value proposed in Entry 1, the rule was designed after inspecting this dataset. It was not pre-registered.
+
+## Next Step — Stage 2: Feature Analysis
+For the 13 features, on usable events, with all events reported for context:
+- Profile distributions, scale, skew, outliers and MAD = 0 risk.
+- Measure redundancy with rank correlations.
+- Measure stability across recording dates and between the first 20 usable events and the rest.
+- Quantify measurement issues, including RMS peaks at envelope edges for `time_to_peak_s`/`peak_rms`.
+- Decide whether the detection columns stay out of the feature set (default: yes, because they describe the CNN).
+- Choose and document the initial V1 feature subset without silently dropping any feature.

@@ -1,0 +1,87 @@
+{
+  "reference_shape": [
+    364,
+    23
+  ],
+  "candidate_shape": [
+    364,
+    23
+  ],
+  "same_columns": true,
+  "columns": {
+    "recording_id": {
+      "max_abs_diff": 0.0
+    },
+    "event_id": {
+      "max_abs_diff": 0.0
+    },
+    "recording_file": {
+      "all_equal": true
+    },
+    "label": {
+      "all_equal": true
+    },
+    "start_s": {
+      "max_abs_diff": 0.0
+    },
+    "end_s": {
+      "max_abs_diff": 0.0
+    },
+    "duration_s": {
+      "max_abs_diff": 0.0
+    },
+    "confidence": {
+      "max_abs_diff": 0.0
+    },
+    "max_confidence": {
+      "max_abs_diff": 0.0
+    },
+    "window_count": {
+      "max_abs_diff": 0.0
+    },
+    "sample_rate": {
+      "max_abs_diff": 0.0
+    },
+    "mean_rms": {
+      "max_abs_diff": 0.0
+    },
+    "peak_rms": {
+      "max_abs_diff": 0.0
+    },
+    "total_energy": {
+      "max_abs_diff": 0.0
+    },
+    "time_to_peak_s": {
+      "max_abs_diff": 0.0
+    },
+    "spectral_centroid_mean": {
+      "max_abs_diff": 0.0
+    },
+    "spectral_centroid_std": {
+      "max_abs_diff": 0.0
+    },
+    "spectral_flatness_mean": {
+      "max_abs_diff": 0.0
+    },
+    "spectral_flatness_std": {
+      "max_abs_diff": 0.0
+    },
+    "spectral_rolloff_mean": {
+      "max_abs_diff": 0.0
+    },
+    "spectral_rolloff_std": {
+      "max_abs_diff": 0.0
+    },
+    "zcr_mean": {
+      "max_abs_diff": 0.0
+    },
+    "zcr_std": {
+      "max_abs_diff": 0.0
+    }
+  },
+  "identical": true,
+  "reference": "results/post_event/inhalation_events.csv",
+  "reference_sha256": "b4f7bb3ee086c838a85f636d0c92dee98d1d9c40482af5baa3baa201b1ef4722",
+  "candidate": "C:\\Users\\SJN\\AppData\\Local\\Temp\\claude\\D--code-projects-CAPSTONE-PRISM-smart-inhaler\\2f66f905-43f1-43e4-9918-c9a7e18eb1f0\\scratchpad\\regen\\inhalation_events.csv",
+  "candidate_sha256": "b4f7bb3ee086c838a85f636d0c92dee98d1d9c40482af5baa3baa201b1ef4722"
+}

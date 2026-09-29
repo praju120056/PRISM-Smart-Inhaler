@@ -1,0 +1,243 @@
+{
+  "stage": "Stage 1 - inhale-event dataset finalization",
+  "source": {
+    "events_csv": "results/post_event/inhalation_events.csv",
+    "events_csv_sha256": "b4f7bb3ee086c838a85f636d0c92dee98d1d9c40482af5baa3baa201b1ef4722",
+    "annotation_csv": "data/annotation.csv",
+    "annotation_csv_sha256": "cdcd97c5d4ce1ee9f757e19152058edaecb61c931b17f5b05be606502dca88f1",
+    "wav_recordings": 361,
+    "sample_rates": [
+      8000
+    ],
+    "channels": [
+      1
+    ],
+    "duration_s": {
+      "min": 6.464,
+      "median": 12.0,
+      "max": 12.512
+    }
+  },
+  "provenance": {
+    "git": {
+      "head": "5be500164414139bc5df66ed2fe0fb4994e229aa",
+      "dirty": true
+    },
+    "python": "3.13.5",
+    "numpy": "2.4.6",
+    "pandas": "3.0.3"
+  },
+  "event_table": {
+    "events": 364,
+    "upstream_columns": 23,
+    "feature_columns": [
+      "duration_s",
+      "mean_rms",
+      "peak_rms",
+      "total_energy",
+      "time_to_peak_s",
+      "spectral_centroid_mean",
+      "spectral_centroid_std",
+      "spectral_flatness_mean",
+      "spectral_flatness_std",
+      "spectral_rolloff_mean",
+      "spectral_rolloff_std",
+      "zcr_mean",
+      "zcr_std"
+    ],
+    "detection_columns": [
+      "confidence",
+      "max_confidence",
+      "window_count"
+    ],
+    "missing_values": 0,
+    "nonfinite_feature_values": 0,
+    "duplicate_event_keys": 0,
+    "recordings_with_events": 322,
+    "recordings_without_events": 39,
+    "recordings_by_event_count": {
+      "1": 287,
+      "2": 31,
+      "3": 2,
+      "4": 1,
+      "5": 1
+    },
+    "chronological_order_matches_recording_id": true,
+    "events_with_bridged_non_inhale_windows": 47,
+    "inhale_window_fraction_min": 0.4117647058823529,
+    "duration_s": {
+      "count": 364.0,
+      "mean": 1.4941318681318683,
+      "std": 0.5693948110779119,
+      "min": 0.1999999999999993,
+      "25%": 1.2680000000000002,
+      "50%": 1.592,
+      "75%": 1.8160000000000003,
+      "max": 3.2880000000000007
+    }
+  },
+  "usability_rule": {
+    "version": "v1",
+    "min_duration_s": 0.5,
+    "min_neighbor_gap_s": 0.2,
+    "boundary_tolerance_s": 0.008
+  },
+  "usability": {
+    "usable": 318,
+    "excluded": 46,
+    "flag_counts": {
+      "nonfinite_feature": 0,
+      "short_duration": 32,
+      "close_neighbor": 25,
+      "recording_boundary": 1
+    },
+    "exclusion_reason_combinations": {
+      "short_duration": 20,
+      "close_neighbor": 14,
+      "short_duration;close_neighbor": 11,
+      "short_duration;recording_boundary": 1
+    },
+    "usable_recordings": 309,
+    "usable_events_per_recording": {
+      "1": 301,
+      "2": 7,
+      "3": 1
+    }
+  },
+  "annotation_audit": {
+    "raw_rows": 1162,
+    "exact_duplicate_rows": 2,
+    "non_positive_length_rows": 1,
+    "clean_rows": 1159,
+    "annotated_recordings": 301,
+    "labels_raw": {
+      "Drug": {
+        "rows": 127,
+        "recordings": 119
+      },
+      "Exhale": {
+        "rows": 404,
+        "recordings": 248
+      },
+      "Inhale": {
+        "rows": 261,
+        "recordings": 255
+      },
+      "Noise": {
+        "rows": 370,
+        "recordings": 125
+      }
+    },
+    "labels_clean": {
+      "Drug": {
+        "rows": 127,
+        "recordings": 119
+      },
+      "Exhale": {
+        "rows": 404,
+        "recordings": 248
+      },
+      "Inhale": {
+        "rows": 260,
+        "recordings": 255
+      },
+      "Noise": {
+        "rows": 368,
+        "recordings": 125
+      }
+    },
+    "duplicate_rows": [
+      {
+        "filename": "rec2018-01-23_12h57m37.371s.wav",
+        "label": "Inhale",
+        "start_sample": 22877,
+        "end_sample": 31615
+      },
+      {
+        "filename": "rec2018-02-02_00h11m42.617s.wav",
+        "label": "Noise",
+        "start_sample": 32126,
+        "end_sample": 34662
+      }
+    ],
+    "non_positive_length_rows_detail": [
+      {
+        "filename": "rec2018-02-06_10h32m03.907s.wav",
+        "label": "Noise",
+        "start_sample": 9860,
+        "end_sample": 9860
+      }
+    ],
+    "recordings_with_overlapping_inhale_annotations": [
+      "rec2018-02-05_10h56m11.262s.wav",
+      "rec2018-02-06_11h39m13.131s.wav"
+    ],
+    "match_iou": 0.5,
+    "inhale_annotations_matched": 259,
+    "inhale_annotations_total": 260,
+    "matched_iou_mean": 0.8763463322699037,
+    "matched_iou_median": 0.8866974043715848,
+    "unmatched_inhale_annotations": [
+      {
+        "recording_file": "rec2018-02-06_11h39m13.131s.wav",
+        "annotation_start_s": 7.2365,
+        "annotation_end_s": 7.598125,
+        "annotation_duration_s": 0.3616249999999992,
+        "best_event_id": 0,
+        "best_iou": 0.3398731203007514,
+        "matched": false
+      }
+    ],
+    "event_status_counts": {
+      "matched_inhale": 257,
+      "unannotated_recording": 52,
+      "no_inhale_annotation_in_recording": 46,
+      "outside_inhale_annotations": 9
+    },
+    "event_status_by_usability": {
+      "usable": {
+        "matched_inhale": 257,
+        "no_inhale_annotation_in_recording": 30,
+        "unannotated_recording": 29,
+        "outside_inhale_annotations": 2
+      },
+      "excluded": {
+        "unannotated_recording": 23,
+        "no_inhale_annotation_in_recording": 16,
+        "outside_inhale_annotations": 7
+      }
+    },
+    "short_duration_events_overlapping_inhale_annotation": 0,
+    "matched_event_duration_min_s": 0.8719999999999999,
+    "inhale_annotation_duration_s": {
+      "count": 260.0,
+      "mean": 1.5241461538461538,
+      "std": 0.38311027921118684,
+      "min": 0.3616249999999992,
+      "25%": 1.30625,
+      "50%": 1.461875,
+      "75%": 1.6871875000000003,
+      "max": 3.0223749999999994
+    }
+  },
+  "first_20_usable_events": {
+    "recordings": 20,
+    "first_recording": "rec2018-01-22_17h41m33.475s.wav",
+    "last_recording": "rec2018-01-23_10h45m44.127s.wav",
+    "annotation_status": {
+      "matched_inhale": 19,
+      "no_inhale_annotation_in_recording": 1
+    }
+  },
+  "outputs": [
+    "inhale_events_v1.csv",
+    "event_annotation_audit.csv",
+    "inhale_annotation_matches.csv",
+    "usability_sensitivity.csv",
+    "dataset_summary.json",
+    "reproducibility_check.json"
+  ],
+  "reproducibility_check": {
+    "identical": true
+  }
+}
