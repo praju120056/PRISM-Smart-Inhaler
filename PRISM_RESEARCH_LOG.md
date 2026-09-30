@@ -1401,3 +1401,177 @@ They have no event to score, so no anomaly score is manufactured. Instead they a
   1. `spectral_flatness_std`'s noise sensitivity and non-monotone response.
   2. Duration dependence of the within-event variability features for short segments.
 - **Fallback if no new data can be obtained:** an explicitly exploratory threshold-methodology analysis under the LOSO baseline, using the Stage 6 controlled perturbations as the only constructed ground truth, with per-session exceedance reported.
+
+---
+
+# Research Entry 9 — 2026-09-30: Representation Robustness and Ablation (Stage 7)
+
+**No anomaly threshold or NORMAL/ANOMALY classification was introduced in Stage 7.** Excluded status (Stage 1) is a diagnostic population only, not anomaly ground truth, and no clinical or technique-quality claim is made.
+
+## Question
+Are the current scores detecting acoustically meaningful deviations, or are they dominated by:
+- event duration
+- recording level
+- session effects
+- fragile features?
+
+## Protocol
+**Baseline:** as in Stages 5–6 (strategy C). For each of the 18 sessions, a per-feature median / 1.4826·MAD is fitted on the **usable events of all other sessions only** and frozen. It then scores every event of the held-out session. rms_z is the working score.
+- **Univariate fit:** the baseline is univariate, so one union fit per fold gives every representation's z as a column subset.
+- **Leakage checks:** 0 excluded events in any fit, and 0 held-out-session events in their own fit.
+- **Input integrity:** inputs are unchanged by hash, and Stages 1–6 code, tests and results were not modified.
+
+**Pre-specified candidates and representations** (constants in `src/representation_analysis.py`, fixed before any Stage 7 result):
+- **Energy-weighted (ew_) spectral statistics.** The extractor's per-frame centroid, flatness and rolloff, averaged with weights proportional to frame energy (librosa RMS² on the same framing), within the event only.
+  - Rationale: low-energy frames are dominated by the noise floor, which could explain the Stage 6 noise fragility and the level–brightness coupling.
+  - Check: the unweighted versions of the same frames reproduce the stored features within 6.3×10⁻⁸.
+- **relative_level_db** = 20·log10(event mean_rms / median RMS envelope of the whole recording). It cancels device gain and distance, and is computable at inference without session information.
+
+The representations tested:
+
+| Id | Definition |
+|---|---|
+| R0 | current 7 features |
+| R1 | no duration |
+| R2 | duration used only as the Stage 1 usability gate (< 0.5 s not scoreable; score = R1) |
+| R3 | no spectral_flatness_std |
+| R4 | spectral_flatness_std replaced by its ew version |
+| R5 | no mean_rms |
+| R6 | mean_rms replaced by relative_level_db |
+| R7 | all 5 spectral features replaced by ew versions |
+| R8 | relative_level_db + 5 ew spectral features (no duration) |
+
+**Controlled perturbations:**
+- The Stage 6 plan (event-level gain, white noise, RMS-preserving tilt) with the same seeds. It reproduces the Stage 6 re-measured V1 features within 5×10⁻⁶ relative, the 6-digit precision of the Stage 6 CSV.
+- Plus **whole-recording gain ×0.5 and ×2**, modelling device gain or distance.
+- Monotonicity treats changes below 10⁻⁴ z as zero. The measured float32 jitter of exactly gain-invariant features is ≤ 1×10⁻⁵ z.
+- Stage 6's gain-monotonicity fractions for the spectral features (0.61–0.95) were computed with zero tolerance. For exactly invariant features they reflected this jitter, not a response (Entry 8 is not edited).
+
+**Multivariate gate** (fixed in advance; model diagnostics, not anomaly thresholds). Robust MCD Mahalanobis distance in robust-z space, fitted per LOSO fold on usable events, compared only if every fold has:
+- ≥ 10 training events per feature
+- condition number ≤ 100
+- max |correlation − pooled correlation| ≤ 0.2
+
+**Reproducibility:** a complete second run into a separate directory reproduced all 14 CSV outputs byte for byte (seed 20261004 for bootstraps and MCD; Stage 6 noise seed 20261003).
+- **Reference environment:** the project `venv` (Python 3.13.5, numpy 2.4.6, scipy 1.17.1, scikit-learn 1.9.0, pandas 3.0.3, librosa 0.11.0). Run the analysis with `venv/Scripts/python.exe`.
+- **Cross-environment check:** a run under a different environment (Anaconda: numpy 2.1.3, scipy 1.15.3, scikit-learn 1.6.1, pandas 2.2.3) reproduced 13 of 14 CSVs byte for byte. `multivariate_diagnostics.csv` differed (see Results §4).
+
+Implementation: `src/representation_analysis.py`, command `python src/representation_analysis.py`. Tests: `tests/test_representation_analysis.py` (15 tests; full suite 141 passing). Outputs in `results/representation_analysis/`.
+
+## Results
+
+### 1. Representation comparison (`representation_comparison.csv`; usable held-out rms_z; δ = Cliff's delta vs usable, 95% session-bootstrap interval)
+
+| Rep. | d | Usable median | Gen. ratio | Session ε² | Max session-vs-rest abs δ | All excluded δ | Too-short δ | Close-only δ | Close-only strat. AUC | Δrms_z noise 30/20/10 dB | Δrms_z rec. gain ×2 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| R0 | 7 | 1.087 | 1.10 | 0.211 | 0.690 | 0.836 [0.71, 0.93] | 0.952 | 0.570 [0.30, 0.80] | 0.77 | 1.27 / 1.84 / 2.28 | 1.59 |
+| R1 | 6 | 1.019 | 1.11 | 0.283 | 0.611 | 0.416 [0.12, 0.70] | 0.470 | 0.292 [−0.04, 0.61] | 0.72 | 1.43 / 2.05 / 2.55 | 1.82 |
+| R2 | 6 | 1.019 | 1.11 | 0.283 | 0.611 | 0.292 (n = 14 scoreable) | not scoreable | 0.292 [−0.04, 0.61] | 0.72 | as R1 | 1.82 |
+| R3 | 6 | 1.073 | 1.13 | 0.199 | 0.637 | 0.849 [0.73, 0.94] | 0.961 | 0.594 [0.33, 0.83] | 0.77 | 0.35 / 0.81 / 1.82 | 1.78 |
+| R4 | 7 | 1.077 | 1.11 | 0.206 | 0.669 | 0.817 [0.68, 0.92] | 0.939 | 0.538 [0.22, 0.80] | 0.80 | 0.31 / 0.79 / 2.16 | 1.59 |
+| R5 | 6 | 1.055 | 1.09 | 0.136 | 0.625 | 0.861 [0.76, 0.94] | 0.961 | 0.633 [0.40, 0.84] | 0.80 | 1.47 / 2.05 / 2.51 | 0.00 |
+| R6 | 7 | 1.044 | 1.08 | 0.123 | 0.577 | 0.870 [0.77, 0.95] | 0.960 | 0.665 [0.39, 0.90] | 0.85 | 1.31 / 1.87 / 2.28 | 0.00 |
+| R7 | 7 | 1.029 | 1.11 | 0.325 | 0.819 | 0.737 [0.55, 0.88] | 0.890 | 0.386 [0.005, 0.75] | 0.86 | 0.02 / 0.22 / 1.46 | 1.61 |
+| R8 | 6 | 0.972 | 1.14 | 0.301 | 0.766 | 0.345 [0.005, 0.63] | 0.495 | 0.002 [−0.53, 0.55] | 0.68 | 0.02 / 0.28 / 1.66 | 0.00 |
+
+Generalization ratios (held-out median / fold in-sample median) are 1.075–1.136 in every representation.
+
+### 2. Per-feature robustness (`feature_robustness.csv`, `feature_perturbation.csv`)
+Columns: session ε² of held-out z; monotone fraction under noise; median Δz at 30 dB; max |Δz| under whole-recording gain; monotone fraction under tilt; within-session Spearman with mean_rms.
+
+| Feature | Session ε² | Noise monotone | Δz at 30 dB | Max abs Δz, rec. gain | Tilt monotone | Within-session ρ with mean_rms |
+|---|---|---|---|---|---|---|
+| duration_s | 0.454 | 1.00 | 0 | 0 | 1.00 | −0.14 |
+| mean_rms | 0.637 | 0.997 | 0.02 | 17.2 | 0.70 | 1 |
+| spectral_centroid_mean | 0.620 | 1.00 | 0.55 | 0 | 1.00 | −0.76 |
+| spectral_centroid_std | 0.053 | 0.20 | 0.41 | 0 | 0.43 | −0.08 |
+| spectral_flatness_mean | 0.393 | 1.00 | 1.88 | 0.06 | 0.01 | −0.46 |
+| spectral_flatness_std | 0.233 | 0.17 | 4.80 | 0.67 | 0.03 | −0.35 |
+| spectral_rolloff_std | 0.053 | 0.29 | −0.18 | 0 | 0.49 | −0.14 |
+| ew_spectral_flatness_std | 0.290 | 0.87 | 0.21 | 0.004 | 0.03 | −0.29 |
+| relative_level_db | 0.241 | 1.00 | 0.00 | 0 | 0.76 | +0.04 |
+| ew_spectral_centroid_mean | 0.591 | 1.00 | 0.03 | 0 | 1.00 | −0.84 |
+| ew_spectral_centroid_std | 0.104 | 0.62 | 0.00 | 0 | 0.37 | −0.11 |
+| ew_spectral_flatness_mean | 0.389 | 1.00 | 0.26 | 0.001 | 0.02 | −0.51 |
+| ew_spectral_rolloff_std | 0.461 | 0.59 | −0.05 | 0 | 0.59 | +0.27 |
+
+In this table, 0 means < 10⁻⁵ z (float32 jitter of an exactly invariant feature).
+
+Two further measurements:
+- **Level dependence of the flatness features.** Whole-recording gain changes `spectral_flatness_std` by up to 0.67 z and `spectral_flatness_mean` by up to 0.06 z. Both should be exactly gain-invariant. The likely cause is librosa's spectral-flatness power floor, active in near-silent frames (inference, not isolated experimentally).
+- **relative_level_db:** a 6 dB event-level gain moves it by only 0.49 z, so its between-event robust spread is about 12 dB. In usable events it has Spearman ρ −0.99 with the recording's background RMS and −0.08 with the event's own mean_rms. The event level varies by 2.6 dB² in dB, against 136.6 dB² for the background (computed from `candidate_features.csv`). It is effectively a background-level measure.
+
+### 3. Perturbation response of representations (`perturbation_response.csv`)
+- **Distance from the unperturbed z grows with intensity** in 97–100% of events for noise (0.969 with flatness_std in the representation, 0.997 without, 1.0 for R7/R8), 99.4–100% for gain, and 100% for tilt and whole-recording gain.
+- **Session direction:** median Δrms_z is positive in 92–100% of the 12 sessions with ≥ 5 events at every perturbation for R0.
+- **Single-feature dominance in R0:**
+  - The gain response is entirely `mean_rms` (median dominance 1.0).
+  - The 30 dB and 20 dB noise responses are dominated by `spectral_flatness_std` (median dominance 0.783 and 0.685).
+  - The tilt response is mostly `spectral_centroid_mean` (0.79 at a = 0.9).
+
+### 4. Multivariate gate (`multivariate_diagnostics.csv`)
+The gate **failed for every representation**:
+- **Conditioning was acceptable:** max condition number 13.8–98.7, and ≥ 37 training events per feature.
+- **Correlation structure was unstable:** max correlation shift vs pooled was 0.21–0.50 (median 0.07–0.12). The worst fold is always the one leaving out 2018-05-03#2 (57 events).
+
+The correlation structure itself depends on which sessions are included, so no multivariate comparison was run. `multivariate_comparison.csv` is empty by design.
+
+Two further points:
+- **R1/R2 fail by a small margin:** 0.209 against the 0.2 limit.
+- **The MCD solutions are environment-dependent.** With identical robust-z inputs (`baseline_parameters.csv` byte-identical), the Anaconda environment gave:
+  - MCD support sizes that differed by up to 18 events per fold
+  - max correlation shifts of 0.220–0.510 (R8: 0.221 vs 0.306 here)
+  - an R4 condition number of 101.2
+
+  The gate failed for every representation in both environments. Separately, perturbing the inputs by 1 ulp left all 162 fits unchanged. The MCD fit is therefore numerically deterministic, but its solution is not unique enough to be independent of the implementation, which is further evidence against multivariate scoring on these data.
+
+## Interpretation
+1. **Duration carries about half of the Stage 6 separation.** Removing it lowers the excluded-vs-usable δ from 0.836 to 0.416 (50% retained), too-short from 0.952 to 0.470, and close-neighbour-only from 0.570 to 0.292.
+   - **Within sessions** 72% of the above-chance separation remains (stratified AUC 0.946 → 0.823).
+   - **The residual is small against ordinary variation:** without duration, excluded vs usable (0.416) is smaller than the largest ordinary session-vs-rest shift in the same representation (0.611). For the only duration-eligible excluded group (close-neighbour only, R2) the interval includes 0.
+   - **Link to segment length:** Stage 6's duration-matched analysis showed the residual is shared by short usable events.
+2. **`spectral_flatness_std` is fragile in three independent ways:**
+   - noise: 4.8 z at 30 dB SNR, monotone in only 17% of events
+   - level: up to 0.67 z under a pure gain change
+   - tilt: monotone in 3% of events
+
+   It dominates the representation's noise response. Removing it cuts the 30 dB response of rms_z by 73% (1.27 → 0.35) and changes neither session dependence (0.211 → 0.199) nor the diagnostic separation (0.836 → 0.849). Its energy-weighted replacement fixes the noise and level fragility (0.21 z; 87% monotone; 0.004 z under gain), but it is still non-monotone under tilt and more session-dependent (0.290 vs 0.233).
+3. **The most session-affected features are the level features:** mean_rms (ε² 0.64), centroid mean (0.62), duration (0.45) and flatness mean (0.39). The within-event variability features are least affected (centroid std, rolloff std: 0.05).
+4. **Removing absolute level reduces combined session dependence by 36%** (0.211 → 0.136, R5) and makes the score invariant to device gain. Replacing it with recording-relative level (R6) gives 0.123. But relative level is not an event-level measure: it barely correlates with the event's own level (ρ −0.08) and almost entirely tracks each recording's background (ρ −0.99). R6's small gain over R5 therefore reflects background level, not the inhalation.
+5. **Energy weighting does not make the representation more session-robust.**
+   - It reduces noise sensitivity as intended (R7: 30 dB response 0.02).
+   - Session dependence *increases*: R7 0.325; ew rolloff std 0.46 vs 0.05; ew centroid std 0.10 vs 0.05.
+   - The level–brightness coupling *strengthens*: −0.84 vs −0.76 within sessions.
+
+   Hypothesis, not tested: the loudness–brightness coupling and the session differences are properties of the energy-bearing sound (geometry, device or subject), not of the noise floor. Part of the unweighted variability features' session stability may come from low-energy, noise-floor frames.
+6. **Controlled perturbations produce predictable, session-consistent responses** once the fragile feature is removed. Session dependence remains substantial in every representation (ε² ≥ 0.12), and multivariate modelling is not yet supported, because the correlation structure is session-dependent.
+
+## Answers to the Stage 7 Questions
+1. **How much of the Stage 6 separation is caused by duration?** About half of the pooled separation (δ 0.836 → 0.416), and about a quarter within sessions (stratified AUC above chance 0.446 → 0.323).
+2. **Does meaningful separation remain without duration?** Some remains (δ 0.42; within-session AUC 0.82), but it is smaller than ordinary session-to-session shifts. For the duration-eligible group it is not distinguishable from zero. That the remainder reflects acoustically meaningful deviation is **not established by the current data**.
+3. **Is spectral_flatness_std robust enough to retain?** No.
+4. **Which features are most affected by session / recording level?** mean_rms, spectral_centroid_mean, duration_s and spectral_flatness_mean.
+5. **Is a more session-robust representation possible without leakage?** Partially. Removing absolute level cuts session dependence by about 36% without leakage. No tested representation removes session dependence, and energy weighting makes it worse.
+6. **Do controlled perturbations produce predictable responses?** Yes for gain (mean_rms), noise (flatness mean, centroid mean) and tilt (centroid mean). spectral_flatness_std is the exception, and some variability features respond weakly or non-monotonically.
+7. **Is the current 7-feature representation scientifically defensible?** Not as-is: it mixes segmentation (duration), device-gain-dependent level (mean_rms) and a fragile feature (flatness_std) into one anomaly score.
+8. **A, B or C?** **B — modify the representation.** C (new longitudinal / ground-truth data) remains the next bottleneck.
+
+## Decision (`recommendation.json`)
+- **Remove from the anomaly score:**
+  - duration_s, which stays as a segmentation / usability attribute
+  - spectral_flatness_std
+  - mean_rms, reported separately as an uncalibrated level channel
+- **Keep:** spectral_centroid_mean and spectral_flatness_mean (both flagged as session-dependent), spectral_centroid_std and spectral_rolloff_std.
+- **Not adopted:** the energy-weighted features, relative_level_db and multivariate scoring (reasons above).
+- **V2 candidate, not evaluated:** the resulting 4-feature set is proposed as a V2 candidate. That combination was **not evaluated** in Stage 7 and must be pre-registered and evaluated in the next stage, preferably on new data. It is not adopted into the pipeline here.
+
+## Limitations
+- **No ground truth:** excluded events are not anomalies, and there is no anomaly ground truth. "Separation" is diagnostic only.
+- **Post-hoc design:** the candidate features were designed after Stage 6 and evaluated on the same 318 usable events used in Stage 2 feature selection.
+- **Synthetic perturbations** keep event boundaries fixed and do not model detector responses.
+- **Inferred sessions:** sessions are recording sittings, and whether session effects are subject, device or placement effects is unknown.
+- **Unconfirmed mechanisms:** the amin-floor explanation for flatness level-dependence, and the energy-bearing-sound explanation for session effects, are hypotheses.
+
+## Next Step
+1. Pre-register the V2 candidate (4 features, with duration and level as separate non-scored channels) and its evaluation protocol before any further analysis.
+2. Obtain longitudinal data with user/device/session identifiers and, ideally, documented deliberate acoustic variations. Without them, it is **not established by the current data** whether any representation detects meaningful inhalation-level deviations beyond session differences.

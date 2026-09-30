@@ -227,6 +227,29 @@ pooled and within sessions, with feature attribution. It also:
 Outputs go to `results/natural_population/`. Excluded events are not treated as
 anomalies, and no threshold is applied. See `PRISM_RESEARCH_LOG.md` Entry 8.
 
+### Representation Robustness and Ablation (anomaly detection, Stage 7)
+
+```bash
+python src/representation_analysis.py
+```
+
+This compares nine pre-specified feature representations under the frozen
+leave-one-session-out baseline. The comparisons are:
+
+- duration ablation
+- `spectral_flatness_std` removal or energy-weighted replacement
+- removing absolute level, or replacing it with recording-relative level
+- energy-weighted spectral statistics
+
+For each representation it reports session dependence, controlled-perturbation
+response (including whole-recording gain) and a diagnostic excluded-vs-usable
+comparison. A robust multivariate distance is compared only if a pre-specified
+stability gate passes; the gate failed for every representation.
+
+Outputs go to `results/representation_analysis/`, and the decision is in
+`recommendation.json`. No threshold is applied. See `PRISM_RESEARCH_LOG.md`
+Entry 9.
+
 ### Output
 
 ```
@@ -548,6 +571,7 @@ Raw audio does not cross any system boundary:
 | Candidate combined scores, no threshold (anomaly Stage 4) | ✅ Implemented |
 | Baseline strategy experiment across sessions (anomaly Stage 5) | ✅ Implemented |
 | Natural population separation + controlled sensitivity (anomaly Stage 6) | ✅ Implemented |
+| Representation robustness / ablation study (anomaly Stage 7) | ✅ Implemented (V2 feature set proposed, not adopted) |
 | Threshold, NORMAL / ANOMALY output | 🔲 Not started |
 | ESP32 firmware | 🔲 Not started |
 | BLE protocol implementation | 🔲 Not started |

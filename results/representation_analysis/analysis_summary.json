@@ -1,0 +1,250 @@
+{
+  "stage": "Stage 7 - representation robustness and ablation (no threshold, no labels)",
+  "v1_features": [
+    "duration_s",
+    "mean_rms",
+    "spectral_centroid_mean",
+    "spectral_centroid_std",
+    "spectral_flatness_mean",
+    "spectral_flatness_std",
+    "spectral_rolloff_std"
+  ],
+  "representations": {
+    "R0_current7": {
+      "features": [
+        "duration_s",
+        "mean_rms",
+        "spectral_centroid_mean",
+        "spectral_centroid_std",
+        "spectral_flatness_mean",
+        "spectral_flatness_std",
+        "spectral_rolloff_std"
+      ],
+      "description": "current V1 representation (7 features)"
+    },
+    "R1_no_duration": {
+      "features": [
+        "mean_rms",
+        "spectral_centroid_mean",
+        "spectral_centroid_std",
+        "spectral_flatness_mean",
+        "spectral_flatness_std",
+        "spectral_rolloff_std"
+      ],
+      "description": "duration removed"
+    },
+    "R2_duration_as_usability": {
+      "features": [
+        "mean_rms",
+        "spectral_centroid_mean",
+        "spectral_centroid_std",
+        "spectral_flatness_mean",
+        "spectral_flatness_std",
+        "spectral_rolloff_std"
+      ],
+      "description": "duration removed from the score; events < 0.5 s are not scoreable (usability gate only)"
+    },
+    "R3_no_flatness_std": {
+      "features": [
+        "duration_s",
+        "mean_rms",
+        "spectral_centroid_mean",
+        "spectral_centroid_std",
+        "spectral_flatness_mean",
+        "spectral_rolloff_std"
+      ],
+      "description": "spectral_flatness_std removed"
+    },
+    "R4_ew_flatness_std": {
+      "features": [
+        "duration_s",
+        "mean_rms",
+        "spectral_centroid_mean",
+        "spectral_centroid_std",
+        "spectral_flatness_mean",
+        "ew_spectral_flatness_std",
+        "spectral_rolloff_std"
+      ],
+      "description": "spectral_flatness_std replaced by its energy-weighted version"
+    },
+    "R5_no_mean_rms": {
+      "features": [
+        "duration_s",
+        "spectral_centroid_mean",
+        "spectral_centroid_std",
+        "spectral_flatness_mean",
+        "spectral_flatness_std",
+        "spectral_rolloff_std"
+      ],
+      "description": "absolute level (mean_rms) removed"
+    },
+    "R6_relative_level": {
+      "features": [
+        "duration_s",
+        "relative_level_db",
+        "spectral_centroid_mean",
+        "spectral_centroid_std",
+        "spectral_flatness_mean",
+        "spectral_flatness_std",
+        "spectral_rolloff_std"
+      ],
+      "description": "mean_rms replaced by relative_level_db"
+    },
+    "R7_ew_spectral": {
+      "features": [
+        "duration_s",
+        "mean_rms",
+        "ew_spectral_centroid_mean",
+        "ew_spectral_centroid_std",
+        "ew_spectral_flatness_mean",
+        "ew_spectral_flatness_std",
+        "ew_spectral_rolloff_std"
+      ],
+      "description": "all five spectral features replaced by energy-weighted versions"
+    },
+    "R8_robust_candidate": {
+      "features": [
+        "relative_level_db",
+        "ew_spectral_centroid_mean",
+        "ew_spectral_centroid_std",
+        "ew_spectral_flatness_mean",
+        "ew_spectral_flatness_std",
+        "ew_spectral_rolloff_std"
+      ],
+      "description": "no duration; relative_level_db; energy-weighted spectral features"
+    }
+  },
+  "candidate_features": [
+    "ew_spectral_centroid_mean",
+    "ew_spectral_centroid_std",
+    "ew_spectral_flatness_mean",
+    "ew_spectral_flatness_std",
+    "ew_spectral_rolloff_std",
+    "relative_level_db"
+  ],
+  "baseline": "LOSO global median / 1.4826*MAD fitted on usable events of other sessions only (Stage 5 C)",
+  "population_sizes": {
+    "usable": 318,
+    "excluded_all": 46,
+    "any_too_short": 32,
+    "any_close_neighbor": 25,
+    "any_recording_boundary": 1,
+    "only_close_neighbor": 14,
+    "only_too_short": 20,
+    "only_too_short+close_neighbor": 11,
+    "only_too_short+recording_boundary": 1
+  },
+  "leakage_and_reproducibility": {
+    "excluded_events_in_any_fit": 0,
+    "held_out_session_events_in_own_fit": 0,
+    "uw_frame_statistics_max_reproduction_error": 6.342545533222221e-08,
+    "max_relative_difference_vs_stage6_perturbed_features": 4.925619686465692e-06
+  },
+  "multivariate_gate": {
+    "rules": {
+      "min_events_per_feature": 10,
+      "max_condition_number": 100.0,
+      "max_correlation_shift_vs_pooled": 0.2
+    },
+    "results": {
+      "R0_current7": {
+        "passed": false,
+        "max_condition_number": 86.62465254761844,
+        "max_correlation_shift": 0.33082199255435735,
+        "min_n_train_per_feature": 37.285714285714285
+      },
+      "R1_no_duration": {
+        "passed": false,
+        "max_condition_number": 47.62143004400183,
+        "max_correlation_shift": 0.20895773465572887,
+        "min_n_train_per_feature": 43.5
+      },
+      "R2_duration_as_usability": {
+        "passed": false,
+        "max_condition_number": 47.62143004400183,
+        "max_correlation_shift": 0.20895773465572887,
+        "min_n_train_per_feature": 43.5
+      },
+      "R3_no_flatness_std": {
+        "passed": false,
+        "max_condition_number": 71.82864193285239,
+        "max_correlation_shift": 0.3549716019856073,
+        "min_n_train_per_feature": 43.5
+      },
+      "R4_ew_flatness_std": {
+        "passed": false,
+        "max_condition_number": 98.71149083114449,
+        "max_correlation_shift": 0.4009616791613842,
+        "min_n_train_per_feature": 37.285714285714285
+      },
+      "R5_no_mean_rms": {
+        "passed": false,
+        "max_condition_number": 13.840913787885164,
+        "max_correlation_shift": 0.3453649105542958,
+        "min_n_train_per_feature": 43.5
+      },
+      "R6_relative_level": {
+        "passed": false,
+        "max_condition_number": 14.654598092881887,
+        "max_correlation_shift": 0.338348542704372,
+        "min_n_train_per_feature": 37.285714285714285
+      },
+      "R7_ew_spectral": {
+        "passed": false,
+        "max_condition_number": 94.66988469387394,
+        "max_correlation_shift": 0.49878362691597017,
+        "min_n_train_per_feature": 37.285714285714285
+      },
+      "R8_robust_candidate": {
+        "passed": false,
+        "max_condition_number": 18.629125277213518,
+        "max_correlation_shift": 0.3057843183324793,
+        "min_n_train_per_feature": 43.5
+      }
+    }
+  },
+  "inputs_unchanged": true,
+  "input_sha256": {
+    "results/inhale_dataset/inhale_events_v1.csv": "0dbae978da146ed62aed21eccc251c621aa566e3c3bcd020ddfbf235bf367cf1",
+    "results/feature_analysis/feature_selection_v1.json": "ef2ed51d22e3f4bf9a4d7dafcee2cc2b4aee12930d904135170a0561e7bd4443",
+    "results/natural_population/controlled/perturbed_events.csv": "c9b9d502327e079a1811a97a5bc43b8a07205226af7bc2ff8567a64c271478af"
+  },
+  "parameters": {
+    "seed": 20261004,
+    "stage6_noise_seed": 20261003,
+    "bootstrap_draws": 2000,
+    "recording_gains": [
+      0.5,
+      2.0
+    ],
+    "duration_gate_s": 0.5
+  },
+  "provenance": {
+    "git": {
+      "head": "0d334b0919d3c8915e3757cb431066dab8c72868",
+      "dirty": true
+    }
+  },
+  "no_threshold_or_labels": true,
+  "outputs": [
+    "analysis_summary.json",
+    "baseline_parameters.csv",
+    "candidate_features.csv",
+    "duration_ablation.csv",
+    "duration_ablation.png",
+    "excluded_diagnostics.csv",
+    "feature_contributions.csv",
+    "feature_perturbation.csv",
+    "feature_robustness.csv",
+    "feature_robustness.png",
+    "flatness_std_ablation.csv",
+    "multivariate_comparison.csv",
+    "multivariate_diagnostics.csv",
+    "perturbation_response.csv",
+    "perturbed_features.csv",
+    "recommendation.json",
+    "representation_comparison.csv",
+    "representation_overview.png",
+    "session_robustness.csv"
+  ]
+}
