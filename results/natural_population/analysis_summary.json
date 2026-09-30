@@ -1,0 +1,216 @@
+{
+  "stage": "Stage 6 - natural population separation and controlled sensitivity (no threshold, no labels)",
+  "features": [
+    "duration_s",
+    "mean_rms",
+    "spectral_centroid_mean",
+    "spectral_centroid_std",
+    "spectral_flatness_mean",
+    "spectral_flatness_std",
+    "spectral_rolloff_std"
+  ],
+  "baseline": "leave-one-session-out global median / 1.4826*MAD fitted on USABLE events of other sessions",
+  "population_sizes": {
+    "usable": 318,
+    "excluded_all": 46,
+    "any_too_short": 32,
+    "any_close_neighbor": 25,
+    "any_recording_boundary": 1,
+    "only_close_neighbor": 14,
+    "only_too_short": 20,
+    "only_too_short+close_neighbor": 11,
+    "only_too_short+recording_boundary": 1
+  },
+  "exact_exclusion_combinations": {
+    "usable": 318,
+    "too_short": 20,
+    "close_neighbor": 14,
+    "too_short+close_neighbor": 11,
+    "too_short+recording_boundary": 1
+  },
+  "overlap": {
+    "too_short": {
+      "too_short": 32,
+      "close_neighbor": 11,
+      "recording_boundary": 1,
+      "nonfinite_feature": 0
+    },
+    "close_neighbor": {
+      "too_short": 11,
+      "close_neighbor": 25,
+      "recording_boundary": 0,
+      "nonfinite_feature": 0
+    },
+    "recording_boundary": {
+      "too_short": 1,
+      "close_neighbor": 0,
+      "recording_boundary": 1,
+      "nonfinite_feature": 0
+    },
+    "nonfinite_feature": {
+      "too_short": 0,
+      "close_neighbor": 0,
+      "recording_boundary": 0,
+      "nonfinite_feature": 0
+    }
+  },
+  "sessions": {
+    "with_events": 18,
+    "with_excluded_events": 11
+  },
+  "leakage_and_reproducibility": {
+    "usable_rows_matched_to_stage5": 318,
+    "max_abs_score_difference_vs_stage5_C": 1.5325840157842663e-05,
+    "folds": 18,
+    "excluded_events_in_any_fit": 0,
+    "held_out_session_events_in_own_fit": 0,
+    "recording_candidate_counts_match_stage1": true
+  },
+  "duration_matched_without_duration_feature": {
+    "only_close_neighbor": {
+      "n": 14,
+      "k": 5,
+      "median_duration_gap_s": 0.03200000000000114,
+      "median_paired_difference": -0.03439344908388964,
+      "frac_paired_difference_positive": 0.42857142857142855,
+      "cliffs_delta_vs_matched": 0.2321428571428572,
+      "cliffs_delta_vs_all_reference": 0.2924528301886793
+    },
+    "any_close_neighbor": {
+      "n": 25,
+      "k": 5,
+      "median_duration_gap_s": 0.06400000000000006,
+      "median_paired_difference": -0.11979664924857114,
+      "frac_paired_difference_positive": 0.32,
+      "cliffs_delta_vs_matched": 0.3257142857142856,
+      "cliffs_delta_vs_all_reference": 0.3967295597484277
+    },
+    "any_too_short": {
+      "n": 32,
+      "k": 5,
+      "median_duration_gap_s": 0.2880000000000005,
+      "median_paired_difference": -0.6671608154925985,
+      "frac_paired_difference_positive": 0.21875,
+      "cliffs_delta_vs_matched": -0.23750000000000004,
+      "cliffs_delta_vs_all_reference": 0.47012578616352196
+    },
+    "excluded_all": {
+      "n": 46,
+      "k": 5,
+      "median_duration_gap_s": 0.22399999999999975,
+      "median_paired_difference": -0.31954354598490353,
+      "frac_paired_difference_positive": 0.2826086956521739,
+      "cliffs_delta_vs_matched": 0.3416149068322982,
+      "cliffs_delta_vs_all_reference": 0.416051408258135
+    }
+  },
+  "inputs_unchanged": true,
+  "input_sha256": {
+    "results/inhale_dataset/inhale_events_v1.csv": "0dbae978da146ed62aed21eccc251c621aa566e3c3bcd020ddfbf235bf367cf1",
+    "results/inhale_dataset/event_annotation_audit.csv": "f8d019bfab782130bab451e6236f7e4b88a43960d73356dbafe4f7a82918125b",
+    "results/baseline_strategies/heldout_scores.csv": "e4608237bcff34441d041f0b3b8910a92f91c9237423fbd088f29e65358dbe54"
+  },
+  "controlled": {
+    "events": 318,
+    "identity_max_abs_feature_difference": 9.71445146547012e-17,
+    "plan": [
+      [
+        "identity",
+        0.0
+      ],
+      [
+        "gain",
+        0.5
+      ],
+      [
+        "gain",
+        0.7071067811865475
+      ],
+      [
+        "gain",
+        1.4142135623730951
+      ],
+      [
+        "gain",
+        2.0
+      ],
+      [
+        "noise",
+        30.0
+      ],
+      [
+        "noise",
+        20.0
+      ],
+      [
+        "noise",
+        10.0
+      ],
+      [
+        "tilt",
+        -0.5
+      ],
+      [
+        "tilt",
+        0.5
+      ],
+      [
+        "tilt",
+        0.9
+      ]
+    ]
+  },
+  "parameters": {
+    "bootstrap_draws": 2000,
+    "permutations": 2000,
+    "seed": 20261003,
+    "gains": [
+      0.5,
+      0.7071067811865475,
+      1.4142135623730951,
+      2.0
+    ],
+    "snr_db": [
+      30.0,
+      20.0,
+      10.0
+    ],
+    "tilts": [
+      -0.5,
+      0.5,
+      0.9
+    ]
+  },
+  "provenance": {
+    "git": {
+      "head": "c8bd3c5cb8e69f4ad510082b34e97d8517cc284a",
+      "dirty": true
+    }
+  },
+  "no_threshold_or_labels": true,
+  "outputs": [
+    "analysis_summary.json",
+    "annotation_crosscheck.csv",
+    "baseline_parameters.csv",
+    "controlled/monotonicity.csv",
+    "controlled/perturbation_response.png",
+    "controlled/perturbation_summary.csv",
+    "controlled/perturbed_events.csv",
+    "controlled/session_consistency.csv",
+    "duration_matched_comparison.csv",
+    "effect_sizes.csv",
+    "event_scores.csv",
+    "exclusion_reason_summary.csv",
+    "feature_attribution.csv",
+    "feature_attribution.png",
+    "population_summary.csv",
+    "recording_annotation_crosscheck.csv",
+    "recording_level_summary.csv",
+    "recording_window_stats.csv",
+    "score_by_exclusion_reason.png",
+    "session_controlled_comparison.csv",
+    "session_variation.csv",
+    "usable_vs_excluded_score_distribution.png",
+    "within_session_population_comparison.png"
+  ]
+}

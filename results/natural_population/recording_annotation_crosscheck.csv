@@ -1,0 +1,4 @@
+recording_group,annotated_with_inhale,annotated_without_inhale,unannotated
+no_detected_event,0,17,22
+only_excluded_events,0,3,10
+usable_event,255,26,28

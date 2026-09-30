@@ -1190,3 +1190,214 @@ rms_z session ε² and range of session medians:
    - This tells whether a threshold could separate deviations of a given size from session effects. The ground truth comes from the construction, not from clinical labels.
 3. **In parallel, request longitudinal data** with user/device/session identifiers. That is the only way to test location normalization in a deployable, personalized form (V3), with warm-up sizes set a priori.
 4. **No new features.** No new features are added at this point. `spectral_flatness_std`'s session sensitivity is recorded for the next feature review.
+
+---
+
+# Research Entry 8 — 2026-09-30: Natural Population Separation and Controlled Sensitivity (Stage 6)
+
+**No anomaly threshold or NORMAL/ANOMALY classification was introduced in Stage 6.** Excluded events are NOT treated as anomalous, and no clinical or technique-quality claim is made. This is a natural atypical / out-of-distribution population experiment.
+
+## Question
+Does the frozen leave-one-session-out (LOSO) global baseline (Stage 5, strategy C) assign systematically different scores to naturally occurring atypical events than to usable events? Specifically:
+- Is any difference robust to held-out-session evaluation and within-session comparison?
+- Which features drive it?
+- Does the full waveform → measurement → score pipeline respond predictably to controlled acoustic changes?
+
+## Populations
+All definitions are taken from the Stage 1 flags (`inhale_events_v1.csv`) and never recomputed; the code checks that the flags agree with Stage 1's `usable` and `exclusion_reasons`.
+
+**Events** (364 detected):
+
+| Group | Events |
+|---|---|
+| Usable | 318 |
+| Excluded | 46 |
+| Any too-short (< 0.5 s) | 32 |
+| Any close-neighbour (another candidate within 0.2 s) | 25 |
+| Any recording-boundary | 1 |
+| Non-finite features | 0 |
+
+Categories overlap, so counts are not additive. Exact combinations:
+
+| Combination | Events |
+|---|---|
+| too_short only | 20 |
+| close_neighbor only | 14 |
+| too_short + close_neighbor | 11 |
+| too_short + recording_boundary | 1 |
+
+**Recordings** (361):
+
+| Group | Recordings |
+|---|---|
+| With ≥ 1 usable event | 309 |
+| Detected events but none usable | 13 |
+| No detected inhalation event | 39 |
+
+**Sessions:** events occur in 18 sessions. The 46 excluded events are in 11 sessions, every one of which also has usable events.
+
+**Annotations** are used only as a descriptive cross-check. They are event-boundary labels, not labels of anomaly or technique.
+
+## Held-out Protocol and Checks
+- **Baseline:** for each of the 18 sessions, fit a per-feature median / 1.4826·MAD on the **usable events of all other sessions only**, as in Stage 5 C.
+- **Scoring:** that baseline is frozen and scores every event of the held-out session, usable and excluded alike. Scores: mean_abs_z, rms_z and max_abs_z over the 7 V1 features (Entry 6). Nothing is tuned on the excluded population, and features and score definitions are unchanged.
+- **Checks** (`analysis_summary.json`):
+  - excluded events in any fit: 0
+  - held-out-session events in their own fit: 0
+  - usable scores equal the Stage 5 C scores within 1.5×10⁻⁵, the 6-significant-digit precision of the Stage 5 CSV
+  - the existing CNN, re-run on all 361 recordings, reproduces Stage 1's event count for every recording
+  - input file hashes are unchanged
+
+Implementation: `src/natural_population_analysis.py`, command `python src/natural_population_analysis.py`. Tests: `tests/test_natural_population_analysis.py` (20 tests; full suite 126 passing). Outputs in `results/natural_population/` (and `controlled/`).
+
+## Results
+
+### 1. Usable vs excluded (held-out; `population_summary.csv`, `effect_sizes.csv`)
+Median [IQR] (p05–p95):
+
+| Score | Usable (318) | Excluded (46) |
+|---|---|---|
+| mean_abs_z | 0.88 [0.64–1.15] (0.41–1.50) | 1.59 [1.33–2.09] (0.90–2.87) |
+| rms_z | 1.09 [0.77–1.40] (0.51–1.92) | 2.12 [1.81–2.47] (1.16–3.17) |
+| max_abs_z | 1.85 [1.41–2.53] (0.88–3.71) | 4.50 [3.74–4.82] (2.20–5.88) |
+
+rms_z comparison:
+- Median ratio 1.95; Hodges–Lehmann shift 1.04; Cliff's δ 0.84, with a 95% interval of 0.69–0.93 from resampling whole sessions. AUC 0.92.
+- Overlap: 93% of excluded events lie above the usable median, 65% above the usable 95th percentile, and 35% inside the usable 5th–95th range.
+
+Cliff's δ for the other scores: mean_abs_z 0.78 [0.61, 0.91]; max_abs_z 0.85 [0.73, 0.94].
+
+### 2. Session-controlled comparison (`session_controlled_comparison.csv`)
+Across the 11 sessions with both populations:
+- **Stratified within-session AUC:** 0.95 (rms_z), 0.93 (mean_abs_z), 0.95 (max_abs_z).
+- **Significance:** permutation within sessions gives p = 0.0005, the minimum possible with 2,000 permutations.
+- **Direction:** the excluded median is higher in 10 of 11 sessions for rms_z (11 of 11 for max_abs_z), with within-session ratios of 1.31–3.88.
+- **Exception:** 2018-05-02#1, where the only 2 excluded events are close-neighbour-only (ratio 0.93).
+- **Position within own session:** the median within-session percentile of excluded events among their session's usable events is 1.0, and 78% lie above that session's 90th percentile.
+
+### 3. By exclusion reason (rms_z)
+
+| Group | n | Median | Cliff's δ [session CI] | Stratified AUC (sessions) | Share above own-session p90 |
+|---|---|---|---|---|---|
+| Any too-short | 32 | 2.21 | 0.95 [0.94, 0.98] | 0.98 (10) | 94% |
+| Too-short only | 20 | 2.22 | 0.95 [0.93, 0.98] | 0.99 (9) | 95% |
+| Too-short + close-neighbour | 11 | 2.19 | 0.95 [0.92, 0.99] | 0.97 (4) | 91% |
+| Any close-neighbour | 25 | 1.84 | 0.74 [0.46, 0.89] | 0.88 (6) | 64% |
+| Close-neighbour only | 14 | 1.63 | 0.57 [0.29, 0.82] | 0.77 (6); p = 0.0035; 5 of 6 sessions higher | 43% |
+| Recording-boundary | 1 | 2.46 | — (descriptive only) | — | — |
+
+### 4. Feature attribution (`feature_attribution.csv`, `duration_matched_comparison.csv`)
+- **All excluded events:**
+  - Duration dominates: median z −4.44, largest deviation in 85% of events, 54% of rms_z, univariate |z| AUC 0.95.
+  - rms_z recomputed **without duration** still separates, but less: AUC 0.92 → 0.71.
+  - Other features' univariate AUCs: centroid std 0.70, rolloff std 0.68, mean_rms 0.66, flatness std 0.65, flatness mean 0.55, centroid mean 0.49. All deviate downward: quieter, less bright, less within-event variability.
+- **Too-short:** duration is the largest deviation in 91% of events (59% of rms_z). Without duration the AUC is 0.74, carried mainly by lower `mean_rms` (median z −0.99, AUC 0.69) and the `*_std` features.
+- **Close-neighbour only:** these events are shorter than typical usable events (duration median z −2.56; largest deviation in 71%; 42% of rms_z). Without duration the AUC is 0.65, carried by lower centroid std (AUC 0.75), flatness std (0.68) and rolloff std (0.65).
+- **Duration-matched check.** The method was fixed before this check was run: each excluded event is paired with its k = 5 nearest-duration usable events, and both are compared on rms_z over the 6 non-duration features.
+  - **Close-neighbour only (14):** median duration gap 0.03 s; median paired difference −0.03; only 43% of events exceed their matches; Cliff's δ vs matched 0.23 (vs all usable 0.29).
+  - **Any close-neighbour (25):** gap 0.06 s; paired −0.12; 32% positive; δ 0.33.
+  - **Too-short:** matching is **not achievable**, since no usable event is shorter than 0.5 s by definition (median gap 0.29 s). Their non-duration deviation is smaller than that of the shortest usable events (δ −0.24 vs matched; 0.47 vs all usable).
+  - **Reading:** the residual, non-duration deviation of excluded events is largely shared by usable events of similar duration. It is consistent with a segment-length effect, not a distinct acoustic character.
+
+### 5. Separation vs ordinary session variation (`session_variation.csv`)
+- **Ordinary session shifts:** the 12 usable sessions with ≥ 5 events, each compared with all other usable events, give rms_z Cliff's δ between −0.69 and +0.50 (median ratios 0.63–1.38).
+- **Excluded groups against that range:**
+  - all excluded (δ 0.84) and too-short (0.95) exceed the largest session shift (|δ| 0.69)
+  - close-neighbour only (0.57) lies within the range of ordinary session shifts
+- The within-session comparisons in Result 2 remove session composition.
+
+### 6. Annotation cross-check (descriptive; `annotation_crosscheck.csv`, `population_summary.csv`)
+- **Excluded events:** none of the 46 matches an annotated inhalation. 23 are in unannotated recordings, 16 in annotated recordings without an Inhale label, and 7 outside Inhale annotations.
+- **Usable events' rms_z medians by annotation status:** 1.07 matched (257), 1.33 in recordings without an Inhale annotation (30), 1.15 in unannotated recordings (29), 1.40 outside annotations (2).
+- Annotation absence is not treated as a label.
+
+### 7. Recordings without a usable event (`recording_level_summary.csv`, `recording_window_stats.csv`)
+They have no event to score, so no anomaly score is manufactured. Instead they are described with window-level quantities of the existing CNN and the existing RMS envelope.
+
+- **No detected event (39) vs recordings with usable events (309):**
+  - mean P(Inhale) median 0.0003 vs 0.12 (δ −1.0)
+  - max P(Inhale) 0.004 vs 0.997 (δ −1.0)
+  - share of Noise windows 1.00 vs 0.62 (δ +0.96)
+  - share of Exhale windows 0 vs 0.22 (δ −0.91)
+  - recording mean RMS 0.0032 vs 0.039 (δ −0.85)
+  - 95th-percentile envelope RMS 0.0094 vs 0.23 (δ −0.91)
+  - 28 of the 39 have every window classified Noise, and 29 have recording mean RMS below 0.01. Only 6 reach the usable recordings' 5th-percentile loudness (0.023). They span 14 sessions.
+- **Detected events but none usable (13):**
+  - loudness is like usable recordings (mean RMS δ −0.06; p95 RMS δ +0.15)
+  - fewer Inhale windows (0.047 vs 0.12; δ −0.64) and almost no Exhale windows (0.004 vs 0.22; δ −0.92)
+  - more, shorter inhale candidates (median 2; δ +0.69)
+  - lower max P(Inhale) (0.86 vs 0.997)
+- **Annotation cross-check** (with Inhale annotation / annotated without Inhale / unannotated; `recording_annotation_crosscheck.csv`):
+  - no-event recordings: 0 / 17 / 22
+  - only-excluded recordings: 0 / 3 / 10
+  - usable-event recordings: 255 / 26 / 28
+
+  No recording without a detected event carries an Inhale annotation, so there is no annotated evidence of missed inhalations. The annotated no-event recordings are louder (median mean RMS 0.0091) than the unannotated ones (0.0012).
+
+### 8. Controlled waveform perturbations (secondary; `controlled/`)
+**Method:**
+- All 318 usable events. Event boundaries are fixed (duration unchanged), and each event's own frozen LOSO baseline is used.
+- The existing measurement code is re-run on the perturbed segment: `post_event.analyze_inhalation`, the unchanged 124-feature extractor.
+- Magnitudes were fixed before any Stage 6 result:
+  - gain ×0.5, ×0.71, ×1.41, ×2 (−6 / −3 / +3 / +6 dB)
+  - white Gaussian noise at 30, 20 and 10 dB SNR relative to the event's own power (per-event deterministic seed)
+  - RMS-preserving first-order tilt y[n] = x[n] − a·x[n−1] with a = −0.5, +0.5, +0.9
+- The unperturbed re-measurement reproduces stored features within 1×10⁻¹⁶. No clipping is modelled.
+
+**Results** (median Δz vs the unperturbed event; monotonicity = share of events whose z changes monotonically with intensity):
+
+| Transform | Main response | Other responses | Distance from own z monotone | Median Δrms_z | Events with higher rms_z |
+|---|---|---|---|---|---|
+| Gain | `mean_rms` only: −3.07, −1.80, +2.55, +6.15; monotone in 100% | < 0.001 | 100% | +0.55, +0.22, +0.40, +1.59 | 96%, 82%, 83%, 97% |
+| Noise (30 / 20 / 10 dB) | flatness mean +1.88, +3.31, +6.18 and centroid mean +0.55, +0.92, +1.73 (both 100% monotone); mean_rms +0.02, +0.10, +0.59 | flatness std +4.80, +5.68, +4.97 (not monotone, 17%); rolloff std −0.18, −0.32, −1.15 (29%) | 97% | +1.27, +1.84, +2.28 | 95–99% |
+| Tilt (a = −0.5 / +0.5 / +0.9) | centroid mean −1.63, +2.49, +3.90 (100% monotone); mean_rms ≈ 0 | flatness mean −1.77, +1.23, +0.17 (not monotone, 1%) | 100% | +0.38, +0.59, +0.89 | — |
+
+**Cross-session consistency** (12 sessions with ≥ 5 events; `session_consistency.csv`):
+- The direction of every main response is the same in all sessions.
+- Magnitudes scale with each session's level:
+  - `mean_rms` Δz at ×2 gain: 5.50–8.42
+  - flatness mean at 10 dB SNR: 5.46–7.09
+  - centroid mean at a = 0.9: 3.51–4.26
+
+**Notable:** `spectral_flatness_std` shifts by about 5 z already at 30 dB SNR and responds non-monotonically. It is very sensitive to low-level broadband noise, a possible reason for its session sensitivity (Entry 7; hypothesis, not tested).
+
+## Interpretation
+1. **The frozen baseline separates the naturally excluded events from usable events.** The separation holds under held-out-session evaluation and within sessions (10 of 11 sessions; stratified AUC 0.95), and it exceeds ordinary session-to-session variation.
+2. **The separation is predominantly a duration effect.** For too-short events that is the Stage 1 exclusion criterion itself. For close-neighbour events it reflects fragmented, shorter segments.
+3. **The remaining multi-feature deviation is small and duration-linked.** It is lower `mean_rms` and lower within-event spectral variability. Once close-neighbour events are duration-matched, it largely disappears (δ 0.23; 43% of paired differences positive). For too-short events it cannot be separated from segment length with these data.
+4. **Segmentation, not acoustic character.** The evidence therefore points to segmentation/recording artifacts detected through duration and segment-length-dependent measurements, not to acoustically distinct inhalations.
+5. **No-event recordings are acoustically distinct in the most basic sense:** most are near-silent and entirely Noise-classified. The event-level architecture cannot validly represent them, since there is no inhalation event to compare against the baseline.
+6. **The pipeline itself responds predictably** to controlled level, noise and spectral-shape changes, with the expected feature moving monotonically and consistently across sessions. Two features are fragile: flatness std under noise, and flatness mean under tilt, both non-monotone.
+
+## Answers to the Stage 6 Questions
+1. **Do excluded events score higher?** Yes, systematically (rms_z δ 0.84; median 2.12 vs 1.09).
+2. **Does it survive LOSO evaluation?** Yes. Every score is held-out, and no excluded or same-session event enters any fit.
+3. **Does it survive within-session comparison?** Yes: stratified AUC 0.95, higher in 10 of 11 sessions. The exception is the session whose excluded events are close-neighbour only.
+4. **Strongest reasons:** too-short (δ 0.95) and too-short + close-neighbour (0.95). Close-neighbour only is weaker (0.57) and within the range of ordinary session shifts.
+5. **One feature or many?** Predominantly one: duration (54–59% of rms_z; largest deviation in 85–91% of events). Secondary deviations in `mean_rms` and the `*_std` features are consistent with segment length and weaken strongly under duration matching.
+6. **Acoustically distinct, or artifacts?** The evidence points to segmentation/recording artifacts (short or fragmented detections), not to acoustically distinct inhalation events.
+7. **No-event recordings:** they are acoustically distinct, mostly near-silent recordings with no Inhale windows. The event-level anomaly architecture cannot validly score them. A recording-level check (e.g. "no inhalation detected") would be a separate, non-anomaly output.
+8. **Does the controlled experiment support the sensitivity story?** Yes, for level, noise and spectral tilt. Targeted features move monotonically with magnitude, the direction is consistent across sessions, and scores rise for most events at larger magnitudes. Caveats:
+   - A ±3 dB level change moves median rms_z by only 0.2–0.4, less than ordinary session variation.
+   - `spectral_flatness_std` responds non-monotonically and strongly to low-level noise.
+9. **Is there enough evidence for threshold analysis?** Not yet for a validated decision rule:
+   - the only strong natural separation is a duration/segmentation effect;
+   - session variation remains of similar size to modest acoustic changes (Entry 7);
+   - there is no independent ground truth for inhalation-level deviations.
+
+## Limitations
+- **Small groups:** too-short 32, close-neighbour only 14, boundary 1. Close-neighbour events occur in only 6 sessions.
+- **Too-short events cannot be duration-matched,** because the usability rule is itself a duration cut.
+- **Excluded events are not validated anomalies,** and annotation absence is not a label.
+- **The controlled perturbations are synthetic, event-level only,** and keep detector boundaries fixed. They do not test how perturbations would change detection itself.
+- **Sessions are inferred sittings,** not users (Entries 4–7).
+- **No held-out data:** all 318 usable events were used in Stage 2 feature selection.
+
+## Decision and Recommendation
+**Recommendation: C — obtain better longitudinal / ground-truth data first**, with two targeted representation checks (B) that don't block it.
+- **Why not A (thresholds now):** the only strong natural separation is duration/segmentation. Modest acoustic changes are comparable to ordinary session variation. Without user grouping and independent deviation labels, a threshold would mostly encode session membership and segment length.
+- **What data would resolve it:** longitudinal recordings with user/device/session identifiers, and ideally a protocol with documented, deliberate acoustic variations (e.g. instructed faster or softer inhalations, recorded as protocol conditions, not clinical labels). These would allow personal-baseline evaluation (V3) and an independent test of deviation detection.
+- **B items to address alongside:**
+  1. `spectral_flatness_std`'s noise sensitivity and non-monotone response.
+  2. Duration dependence of the within-event variability features for short segments.
+- **Fallback if no new data can be obtained:** an explicitly exploratory threshold-methodology analysis under the LOSO baseline, using the Stage 6 controlled perturbations as the only constructed ground truth, with per-session exceedance reported.

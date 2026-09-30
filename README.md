@@ -207,6 +207,26 @@ medians, fold parameters and session-scale diagnostics to
 `results/baseline_strategies/`. No threshold is applied. See
 `PRISM_RESEARCH_LOG.md` Entry 7.
 
+### Natural Population Separation (anomaly detection, Stage 6)
+
+```bash
+python src/natural_population_analysis.py
+```
+
+This scores every detected event with the frozen leave-one-session-out global
+baseline. The baseline for each session is fitted on the usable events of the
+other sessions only. The script then compares usable events with the
+Stage 1-excluded events (too short, close neighbour, recording boundary), both
+pooled and within sessions, with feature attribution. It also:
+
+- describes recordings without a detected inhalation using the existing
+  detector's window outputs
+- runs a controlled waveform-perturbation experiment (gain, noise, spectral
+  tilt)
+
+Outputs go to `results/natural_population/`. Excluded events are not treated as
+anomalies, and no threshold is applied. See `PRISM_RESEARCH_LOG.md` Entry 8.
+
 ### Output
 
 ```
@@ -527,6 +547,7 @@ Raw audio does not cross any system boundary:
 | V1 robust baseline + per-feature robust z (anomaly Stage 3) | ✅ Implemented |
 | Candidate combined scores, no threshold (anomaly Stage 4) | ✅ Implemented |
 | Baseline strategy experiment across sessions (anomaly Stage 5) | ✅ Implemented |
+| Natural population separation + controlled sensitivity (anomaly Stage 6) | ✅ Implemented |
 | Threshold, NORMAL / ANOMALY output | 🔲 Not started |
 | ESP32 firmware | 🔲 Not started |
 | BLE protocol implementation | 🔲 Not started |
