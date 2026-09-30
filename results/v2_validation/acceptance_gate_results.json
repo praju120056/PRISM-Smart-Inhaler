@@ -1,0 +1,143 @@
+{
+  "outcome": "FAIL",
+  "contract_status": "DRAFT_NOT_FROZEN",
+  "preregistration_sha256": "d467ffc0474f98c5eff8f6a5114a3d8b04ae5552b2e6146826a661c828f3b545",
+  "preregistration_commit": "55baeba",
+  "criteria": [
+    {
+      "id": "G1a",
+      "rule": "epsilon2(V2) <= epsilon2(R0_current7), computed in the same run",
+      "value": 0.1298816440583022,
+      "passed": true,
+      "detail": "epsilon2 V2 0.1299 vs R0 0.2107"
+    },
+    {
+      "id": "G1b",
+      "rule": "<= 1.15",
+      "value": 1.119585021966409,
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "id": "G2a",
+      "rule": "<= 0.5",
+      "value": 0.22059244727895896,
+      "passed": true,
+      "detail": "spectral_centroid_mean 0.221 (2018-05-03#3); spectral_flatness_mean 0.205 (2018-05-03#2); spectral_centroid_std 0.071 (2018-05-03#2); spectral_rolloff_std 0.050 (2018-05-03#2)"
+    },
+    {
+      "id": "G2b",
+      "rule": "within [2/3, 3/2] for every fold",
+      "value": [
+        0.8772204512608635,
+        1.0871350710186103
+      ],
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "id": "G2c",
+      "rule": "> 0 and finite",
+      "value": true,
+      "passed": true,
+      "detail": "min fold MAD 0.00581"
+    },
+    {
+      "id": "G3a",
+      "rule": "<= 0.2",
+      "value": 0.11307889266052706,
+      "passed": true,
+      "detail": "spectral_centroid_mean / spectral_flatness_mean, fold 2018-05-03#2"
+    },
+    {
+      "id": "G4a",
+      "rule": "<= 0.1 at every level",
+      "value": 0.0004941858786812136,
+      "passed": true,
+      "detail": "gain x0.5: 4.94e-04; gain x0.707: 2.12e-04; gain x1.41: 1.49e-04; gain x2: 2.57e-04; recording_gain x0.5: 4.94e-04; recording_gain x2: 2.57e-04"
+    },
+    {
+      "id": "G4b",
+      "rule": ">= 0.95 for each family",
+      "value": {
+        "noise": 0.9968553459119497,
+        "tilt": 1.0
+      },
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "id": "G4c",
+      "rule": ">= 0.9 in every applicable case",
+      "value": {
+        "applicable_cases": 14,
+        "failing_cases": 2
+      },
+      "passed": false,
+      "detail": "FAILING: z_spectral_flatness_mean tilt 0.9: 0.750; z_spectral_centroid_std tilt 0.9: 0.583 | all: z_spectral_centroid_mean noise 10: 1.000; z_spectral_centroid_mean tilt -0.5: 1.000; z_spectral_centroid_mean tilt 0.9: 1.000; z_spectral_flatness_mean noise 10: 1.000; z_spectral_flatness_mean tilt -0.5: 1.000; z_spectral_flatness_mean tilt 0.9: 0.750; z_spectral_centroid_std noise 10: 0.917; z_spectral_centroid_std tilt -0.5: 1.000; z_spectral_centroid_std tilt 0.9: 0.583; z_spectral_rolloff_std noise 10: 0.917; z_spectral_rolloff_std tilt 0.9: 1.000; rms_z[V2] noise 10: 1.000; rms_z[V2] tilt -0.5: 0.917; rms_z[V2] tilt 0.9: 1.000"
+    },
+    {
+      "id": "G4d",
+      "rule": "no feature has |median delta z| >= 1 together with a monotone fraction < 0.5",
+      "value": [],
+      "passed": true,
+      "detail": "spectral_centroid_mean: 0.55 z, monotone 1.00; spectral_flatness_mean: 1.88 z, monotone 1.00; spectral_centroid_std: 0.41 z, monotone 0.19; spectral_rolloff_std: -0.18 z, monotone 0.29"
+    },
+    {
+      "id": "G5a",
+      "rule": "|rho| < 0.3",
+      "value": 0.0012564573258381651,
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "id": "G5b",
+      "rule": "|rho| < 0.3",
+      "value": 0.1182911455394579,
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "id": "G6a",
+      "rule": "all CSV outputs, the frozen baseline JSON and the contract JSON are byte-identical",
+      "value": [],
+      "passed": true,
+      "detail": "34 files compared"
+    },
+    {
+      "id": "G6b",
+      "rule": "identical number of events per recording; event bounds equal to the detector's exact bounds within 1e-9 s; detector confidence within 1e-6; V2 features and mean_rms within 1e-6 relative; identical usability decisions; recordings without events reported as NO_INHALATION_DETECTED",
+      "value": {
+        "recordings": 361,
+        "events_contract": 364,
+        "recordings_with_count_mismatch": 0,
+        "max_abs_diff_bounds_s": 0.0,
+        "max_abs_diff_confidence": 1.1102230246251565e-16,
+        "usability_mismatches": 0,
+        "reason_mismatches": 0,
+        "no_inhalation_detected": 39,
+        "max_rel_diff_features": 7.91351946516286e-15
+      },
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "id": "G6c",
+      "rule": "max |difference| <= 1e-12",
+      "value": 0.0,
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "id": "G6d",
+      "rule": "0 and 0",
+      "value": {
+        "excluded_events_in_any_fit": 0,
+        "held_out_session_events_in_own_fit": 0
+      },
+      "passed": true,
+      "detail": ""
+    }
+  ],
+  "no_threshold_or_labels": true
+}

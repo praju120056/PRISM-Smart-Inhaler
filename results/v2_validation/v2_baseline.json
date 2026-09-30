@@ -1,0 +1,43 @@
+{
+  "baseline_id": "prism-v2-global-2026-09-30",
+  "contract_version": "prism-inference-v2.0",
+  "features": [
+    "spectral_centroid_mean",
+    "spectral_flatness_mean",
+    "spectral_centroid_std",
+    "spectral_rolloff_std"
+  ],
+  "parameters": {
+    "spectral_centroid_mean": {
+      "center": 0.3705300390720367,
+      "mad": 0.01879630982875824,
+      "scale": 0.027867408952116965
+    },
+    "spectral_flatness_mean": {
+      "center": 0.13224149495363235,
+      "mad": 0.02003711462020874,
+      "scale": 0.029707026135921476
+    },
+    "spectral_centroid_std": {
+      "center": 0.039400866255164105,
+      "mad": 0.006055157631635645,
+      "scale": 0.008977376704663007
+    },
+    "spectral_rolloff_std": {
+      "center": 0.08070974424481385,
+      "mad": 0.011402927339077003,
+      "scale": 0.016905980072915563
+    }
+  },
+  "mad_scale": 1.4826,
+  "n_events": 318,
+  "n_sessions": 18,
+  "source": {
+    "dataset": "results/inhale_dataset/inhale_events_v1.csv",
+    "dataset_sha256": "0dbae978da146ed62aed21eccc251c621aa566e3c3bcd020ddfbf235bf367cf1",
+    "usability_rule": "v1",
+    "fit": "median and 1.4826*MAD over all usable events",
+    "stage": "Stage 8 (PRISM_RESEARCH_LOG.md Entry 10)",
+    "gate_preregistration_commit": "55baeba"
+  }
+}

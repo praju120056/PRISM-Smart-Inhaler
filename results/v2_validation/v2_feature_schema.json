@@ -1,0 +1,63 @@
+{
+  "contract_version": "prism-inference-v2.0",
+  "anomaly_features_in_order": [
+    {
+      "index": 0,
+      "name": "spectral_centroid_mean",
+      "definition": "mean over frames of the spectral centroid of |STFT| divided by 4000 Hz",
+      "unit": "dimensionless"
+    },
+    {
+      "index": 1,
+      "name": "spectral_flatness_mean",
+      "definition": "mean over frames of spectral flatness of |STFT|^2 (geometric / arithmetic mean, power floor 1e-10)",
+      "unit": "dimensionless"
+    },
+    {
+      "index": 2,
+      "name": "spectral_centroid_std",
+      "definition": "population standard deviation (ddof 0) over frames of the normalized spectral centroid",
+      "unit": "dimensionless"
+    },
+    {
+      "index": 3,
+      "name": "spectral_rolloff_std",
+      "definition": "population standard deviation (ddof 0) over frames of the 85% spectral rolloff divided by 4000 Hz",
+      "unit": "dimensionless"
+    }
+  ],
+  "level_channel": {
+    "name": "mean_rms",
+    "unit": "RMS amplitude, full scale 1.0 (uncalibrated)",
+    "definition": "mean of an RMS envelope: 256-sample frames starting every 64 samples from the event start, partial final frames included, no padding",
+    "in_anomaly_score": false
+  },
+  "event_metadata": [
+    "event_id",
+    "start_time",
+    "end_time",
+    "duration_s",
+    "detector_confidence",
+    "detector_max_confidence",
+    "window_count"
+  ],
+  "segment": "waveform[floor(start_time * 8000) : ceil(end_time * 8000)] of the float32 input, no padding beyond the STFT's own",
+  "frames": {
+    "sample_rate_hz": 8000,
+    "n_fft": 256,
+    "hop_length": 64,
+    "window": "hann (periodic, librosa default)",
+    "center": true,
+    "pad_mode": "constant (zeros), n_fft // 2 each side",
+    "spectrum": "magnitude |STFT| (librosa.stft); flatness uses power |STFT|^2",
+    "frequencies_hz": "k * 8000 / 256 for k = 0..128",
+    "rolloff_percent": 0.85,
+    "flatness_amin": 1e-10,
+    "frame_count": "1 + floor(len(segment) / 64) (frames are aligned to the MFCC frame count)"
+  },
+  "aggregation": "mean and population std (ddof 0) over all frames, computed in float32, reported as float64",
+  "reference_implementation": [
+    "src/librosa_extractor.py::extract_features_from_audio (columns 120-122)",
+    "src/post_event.py::analyze_inhalation"
+  ]
+}

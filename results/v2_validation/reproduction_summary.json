@@ -1,0 +1,25 @@
+{
+  "recordings": 361,
+  "events_stage1": 364,
+  "events_contract": 364,
+  "recordings_with_count_mismatch": 0,
+  "no_inhalation_detected": 39,
+  "recordings_without_stage1_events": 39,
+  "no_inhalation_matches_stage1_zero_events": true,
+  "max_abs_diff_bounds_s": 0.0,
+  "max_abs_diff_duration_s": 4.440892098500626e-16,
+  "max_abs_diff_confidence": 1.1102230246251565e-16,
+  "max_rel_diff_features": {
+    "spectral_centroid_mean": 1.803484194751585e-16,
+    "spectral_flatness_mean": 5.0679687467172094e-15,
+    "spectral_centroid_std": 5.462165446835874e-15,
+    "spectral_rolloff_std": 7.91351946516286e-15,
+    "mean_rms": 2.8877053466215412e-15
+  },
+  "usability_mismatches": 0,
+  "reason_mismatches": 0,
+  "scored_events": 318,
+  "max_abs_diff_contract_score_vs_in_memory": 5.773159728050814e-15,
+  "all_outputs_validated": true,
+  "passed": true
+}

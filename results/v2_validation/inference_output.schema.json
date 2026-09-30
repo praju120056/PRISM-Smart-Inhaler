@@ -1,0 +1,436 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prism.local/schemas/prism-inference-v2.0/recording-output.json",
+  "title": "PRISM V2 recording analysis output (SCORE_ONLY; no threshold)",
+  "type": "object",
+  "properties": {
+    "contract_version": {
+      "const": "prism-inference-v2.0"
+    },
+    "baseline_id": {
+      "type": "string"
+    },
+    "detector_model_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "recording_status": {
+      "enum": [
+        "EVENTS_DETECTED",
+        "NO_INHALATION_DETECTED",
+        "INPUT_ERROR"
+      ]
+    },
+    "error": {
+      "oneOf": [
+        {
+          "enum": [
+            "unsupported_sample_rate",
+            "invalid_shape",
+            "empty_audio",
+            "nonfinite_audio",
+            "amplitude_out_of_range",
+            "shorter_than_one_detector_window",
+            "detector_feature_extraction_failed"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "input": {
+      "type": "object",
+      "properties": {
+        "sample_rate": {
+          "type": "integer"
+        },
+        "n_samples": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duration_s": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "input_domain": {
+          "enum": [
+            "reference_dataset",
+            "prism_hardware",
+            "unknown"
+          ]
+        },
+        "recording_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "recorded_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "caller-supplied ISO 8601 start time"
+        }
+      },
+      "required": [
+        "sample_rate",
+        "n_samples",
+        "duration_s",
+        "input_domain",
+        "recording_id",
+        "recorded_at"
+      ],
+      "additionalProperties": false
+    },
+    "baseline_domain_validated": {
+      "type": "boolean"
+    },
+    "feature_order": {
+      "const": [
+        "spectral_centroid_mean",
+        "spectral_flatness_mean",
+        "spectral_centroid_std",
+        "spectral_rolloff_std"
+      ]
+    },
+    "n_events": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "n_scored": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "start_time": {
+            "type": "number",
+            "minimum": 0,
+            "description": "seconds from recording start"
+          },
+          "end_time": {
+            "type": "number",
+            "description": "seconds from recording start"
+          },
+          "duration_s": {
+            "type": "number",
+            "description": "end_time - start_time"
+          },
+          "detector_confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "mean P(Inhale) over the event's Inhale windows"
+          },
+          "detector_max_confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "window_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "enum": [
+              "SCORE_ONLY",
+              "NOT_SCOREABLE"
+            ]
+          },
+          "not_scoreable_reasons": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "nonfinite_feature",
+                "short_duration",
+                "close_neighbor",
+                "recording_boundary"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "anomaly_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "feature_values": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "spectral_centroid_mean": {
+                    "type": "number"
+                  },
+                  "spectral_flatness_mean": {
+                    "type": "number"
+                  },
+                  "spectral_centroid_std": {
+                    "type": "number"
+                  },
+                  "spectral_rolloff_std": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "spectral_centroid_mean",
+                  "spectral_flatness_mean",
+                  "spectral_centroid_std",
+                  "spectral_rolloff_std"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "feature_z_scores": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "spectral_centroid_mean": {
+                    "type": "number"
+                  },
+                  "spectral_flatness_mean": {
+                    "type": "number"
+                  },
+                  "spectral_centroid_std": {
+                    "type": "number"
+                  },
+                  "spectral_rolloff_std": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "spectral_centroid_mean",
+                  "spectral_flatness_mean",
+                  "spectral_centroid_std",
+                  "spectral_rolloff_std"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mean_rms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "level channel: uncalibrated RMS (full scale 1.0); not an anomaly signal"
+          }
+        },
+        "required": [
+          "event_id",
+          "start_time",
+          "end_time",
+          "duration_s",
+          "detector_confidence",
+          "detector_max_confidence",
+          "window_count",
+          "status",
+          "not_scoreable_reasons",
+          "anomaly_score",
+          "feature_values",
+          "feature_z_scores",
+          "mean_rms"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "SCORE_ONLY"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "not_scoreable_reasons": {
+                  "maxItems": 0
+                },
+                "anomaly_score": {
+                  "type": "number"
+                },
+                "feature_values": {
+                  "type": "object",
+                  "properties": {
+                    "spectral_centroid_mean": {
+                      "type": "number"
+                    },
+                    "spectral_flatness_mean": {
+                      "type": "number"
+                    },
+                    "spectral_centroid_std": {
+                      "type": "number"
+                    },
+                    "spectral_rolloff_std": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "spectral_centroid_mean",
+                    "spectral_flatness_mean",
+                    "spectral_centroid_std",
+                    "spectral_rolloff_std"
+                  ],
+                  "additionalProperties": false
+                },
+                "feature_z_scores": {
+                  "type": "object",
+                  "properties": {
+                    "spectral_centroid_mean": {
+                      "type": "number"
+                    },
+                    "spectral_flatness_mean": {
+                      "type": "number"
+                    },
+                    "spectral_centroid_std": {
+                      "type": "number"
+                    },
+                    "spectral_rolloff_std": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "spectral_centroid_mean",
+                    "spectral_flatness_mean",
+                    "spectral_centroid_std",
+                    "spectral_rolloff_std"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "NOT_SCOREABLE"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "not_scoreable_reasons": {
+                  "minItems": 1
+                },
+                "anomaly_score": {
+                  "type": "null"
+                },
+                "feature_z_scores": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "interpretation": {
+      "const": "SCORE_ONLY: anomaly_score is the root-mean-square of robust z-scores of four spectral features relative to a frozen global baseline fitted on the reference dataset. It is a distance, not a probability, quality rating, NORMAL/ANOMALY decision or clinical assessment. No threshold is defined."
+    }
+  },
+  "required": [
+    "contract_version",
+    "baseline_id",
+    "detector_model_sha256",
+    "recording_status",
+    "error",
+    "input",
+    "baseline_domain_validated",
+    "feature_order",
+    "n_events",
+    "n_scored",
+    "events",
+    "interpretation"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "recording_status": {
+            "const": "INPUT_ERROR"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "error": {
+            "enum": [
+              "unsupported_sample_rate",
+              "invalid_shape",
+              "empty_audio",
+              "nonfinite_audio",
+              "amplitude_out_of_range",
+              "shorter_than_one_detector_window",
+              "detector_feature_extraction_failed"
+            ]
+          },
+          "events": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "recording_status": {
+            "const": "NO_INHALATION_DETECTED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "error": {
+            "type": "null"
+          },
+          "events": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "recording_status": {
+            "const": "EVENTS_DETECTED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "error": {
+            "type": "null"
+          },
+          "events": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ]
+}

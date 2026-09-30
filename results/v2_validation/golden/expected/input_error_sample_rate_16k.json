@@ -1,0 +1,26 @@
+{
+  "contract_version": "prism-inference-v2.0",
+  "baseline_id": "prism-v2-global-2026-09-30",
+  "detector_model_sha256": "2e4e72d3ca040b15718ad6b09ae4ac3069c38f5c1a389327bf6b38c4e2903725",
+  "recording_status": "INPUT_ERROR",
+  "error": "unsupported_sample_rate",
+  "input": {
+    "sample_rate": 16000,
+    "n_samples": 16000,
+    "duration_s": 1.0,
+    "input_domain": "unknown",
+    "recording_id": null,
+    "recorded_at": null
+  },
+  "baseline_domain_validated": false,
+  "feature_order": [
+    "spectral_centroid_mean",
+    "spectral_flatness_mean",
+    "spectral_centroid_std",
+    "spectral_rolloff_std"
+  ],
+  "n_events": 0,
+  "n_scored": 0,
+  "events": [],
+  "interpretation": "SCORE_ONLY: anomaly_score is the root-mean-square of robust z-scores of four spectral features relative to a frozen global baseline fitted on the reference dataset. It is a distance, not a probability, quality rating, NORMAL/ANOMALY decision or clinical assessment. No threshold is defined."
+}

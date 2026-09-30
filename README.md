@@ -250,6 +250,49 @@ Outputs go to `results/representation_analysis/`, and the decision is in
 `recommendation.json`. No threshold is applied. See `PRISM_RESEARCH_LOG.md`
 Entry 9.
 
+### V2 Validation and Inference Contract (anomaly detection, Stage 8)
+
+```bash
+# Reference run, then the recorded run (the second run checks byte-identity against the first, gate G6a)
+venv/Scripts/python.exe src/v2_validation.py --output-dir <scratch dir>
+venv/Scripts/python.exe src/v2_validation.py --reference-run <scratch dir>
+
+# Apply the inference contract to one recording (SCORE_ONLY JSON output)
+venv/Scripts/python.exe src/prism_inference.py data/<recording>.wav
+```
+
+This stage validates the 4-feature V2 representation against an acceptance
+gate that was pre-registered before any result
+(`results/v2_validation/acceptance_gate_preregistration.json`, commit
+`55baeba`). The V2 features are `spectral_centroid_mean`,
+`spectral_flatness_mean`, `spectral_centroid_std` and `spectral_rolloff_std`.
+It also writes the machine-readable inference contract for the next
+(hardware / React Native) stage:
+
+| File | Content |
+|---|---|
+| `inference_contract_v2.json` | Full contract: input, detector, grouping, scoreability, features, baseline, scoring, output, limitations, and a status set by the gate |
+| `v2_baseline.json` | Global baseline parameters (median / 1.4826·MAD of the 318 usable events); loaded, never fitted, at inference |
+| `v2_feature_schema.json` | V2 feature order and extraction parameters |
+| `inference_output.schema.json` | JSON Schema of the per-recording output |
+| `golden/` | Conformance vectors (expected outputs) for re-implementations |
+| `acceptance_gate_results.json` | Verdict for every pre-registered criterion |
+
+**Stage 8 result.** V2 failed the pre-registered gate on one criterion
+(G4c): at a strong spectral tilt, `spectral_flatness_mean` and
+`spectral_centroid_std` change direction inconsistently across sessions. All
+other criteria passed, including exact end-to-end reproduction of the Stage 1
+events and features from raw audio. The contract is therefore issued as
+`DRAFT_NOT_FROZEN`: the interface can be implemented, but the representation
+is not frozen, and freezing it anyway is the project owner's decision.
+
+The output is `SCORE_ONLY`. `anomaly_score` is a distance from the
+baseline; it has no threshold and no NORMAL/ANOMALY label. A recording
+without a detected inhalation is reported as `NO_INHALATION_DETECTED`, never
+as an anomalous event. The baseline was fitted on the reference dataset and
+has not been validated for PRISM hardware. See `PRISM_RESEARCH_LOG.md`
+Entry 10.
+
 ### Output
 
 ```
@@ -544,6 +587,7 @@ Section 10 for the complete Firestore schema and session document format.
 | Interface | Owner | Consumer | Contract |
 |---|---|---|---|
 | `inhaler_cnn.onnx` | ML | Mobile | Input (N,25,124) float32; Output (N,4) raw logits |
+| V2 inference contract | ML | Mobile | `results/v2_validation/inference_contract_v2.json` (+ output schema, baseline, golden vectors) |
 | Feature parameters | ML | Mobile | See DSP parity table in ARCHITECTURE.md §6 |
 | BLE binary packet | Hardware | Mobile | See packet struct in ARCHITECTURE.md §5 |
 | Session document | Mobile | Cloud | See JSON schema in ARCHITECTURE.md §10 |
@@ -572,6 +616,7 @@ Raw audio does not cross any system boundary:
 | Baseline strategy experiment across sessions (anomaly Stage 5) | ✅ Implemented |
 | Natural population separation + controlled sensitivity (anomaly Stage 6) | ✅ Implemented |
 | Representation robustness / ablation study (anomaly Stage 7) | ✅ Implemented (V2 feature set proposed, not adopted) |
+| V2 validation + inference contract (anomaly Stage 8) | ✅ Implemented. Pre-registered gate **failed** (G4c only), so the contract is `DRAFT_NOT_FROZEN`: interface specified and verified; V2 representation not frozen |
 | Threshold, NORMAL / ANOMALY output | 🔲 Not started |
 | ESP32 firmware | 🔲 Not started |
 | BLE protocol implementation | 🔲 Not started |

@@ -1,0 +1,206 @@
+{
+  "stage": "Stage 8 - V2 representation validation + inference contract (no threshold, no labels)",
+  "v2_features": [
+    "spectral_centroid_mean",
+    "spectral_flatness_mean",
+    "spectral_centroid_std",
+    "spectral_rolloff_std"
+  ],
+  "representations": {
+    "R0_current7": [
+      "duration_s",
+      "mean_rms",
+      "spectral_centroid_mean",
+      "spectral_centroid_std",
+      "spectral_flatness_mean",
+      "spectral_flatness_std",
+      "spectral_rolloff_std"
+    ],
+    "R1_no_duration": [
+      "mean_rms",
+      "spectral_centroid_mean",
+      "spectral_centroid_std",
+      "spectral_flatness_mean",
+      "spectral_flatness_std",
+      "spectral_rolloff_std"
+    ],
+    "R3_no_flatness_std": [
+      "duration_s",
+      "mean_rms",
+      "spectral_centroid_mean",
+      "spectral_centroid_std",
+      "spectral_flatness_mean",
+      "spectral_rolloff_std"
+    ],
+    "R5_no_mean_rms": [
+      "duration_s",
+      "spectral_centroid_mean",
+      "spectral_centroid_std",
+      "spectral_flatness_mean",
+      "spectral_flatness_std",
+      "spectral_rolloff_std"
+    ],
+    "R6_relative_level": [
+      "duration_s",
+      "relative_level_db",
+      "spectral_centroid_mean",
+      "spectral_centroid_std",
+      "spectral_flatness_mean",
+      "spectral_flatness_std",
+      "spectral_rolloff_std"
+    ],
+    "V2": [
+      "spectral_centroid_mean",
+      "spectral_flatness_mean",
+      "spectral_centroid_std",
+      "spectral_rolloff_std"
+    ],
+    "V2_minus_centroid_mean": [
+      "spectral_flatness_mean",
+      "spectral_centroid_std",
+      "spectral_rolloff_std"
+    ],
+    "V2_minus_flatness_mean": [
+      "spectral_centroid_mean",
+      "spectral_centroid_std",
+      "spectral_rolloff_std"
+    ],
+    "V2_minus_centroid_std": [
+      "spectral_centroid_mean",
+      "spectral_flatness_mean",
+      "spectral_rolloff_std"
+    ],
+    "V2_minus_rolloff_std": [
+      "spectral_centroid_mean",
+      "spectral_flatness_mean",
+      "spectral_centroid_std"
+    ],
+    "V2_plus_mean_rms": [
+      "spectral_centroid_mean",
+      "spectral_flatness_mean",
+      "spectral_centroid_std",
+      "spectral_rolloff_std",
+      "mean_rms"
+    ]
+  },
+  "baseline_id": "prism-v2-global-2026-09-30",
+  "gate_outcome": "FAIL",
+  "contract_status": "DRAFT_NOT_FROZEN",
+  "leakage": {
+    "excluded_events_in_any_fit": 0,
+    "held_out_session_events_in_own_fit": 0
+  },
+  "roundtrip_max_abs_diff": 0.0,
+  "reproduction": {
+    "recordings": 361,
+    "events_stage1": 364,
+    "events_contract": 364,
+    "recordings_with_count_mismatch": 0,
+    "no_inhalation_detected": 39,
+    "recordings_without_stage1_events": 39,
+    "no_inhalation_matches_stage1_zero_events": true,
+    "max_abs_diff_bounds_s": 0.0,
+    "max_abs_diff_duration_s": 4.440892098500626e-16,
+    "max_abs_diff_confidence": 1.1102230246251565e-16,
+    "max_rel_diff_features": {
+      "spectral_centroid_mean": 1.803484194751585e-16,
+      "spectral_flatness_mean": 5.0679687467172094e-15,
+      "spectral_centroid_std": 5.462165446835874e-15,
+      "spectral_rolloff_std": 7.91351946516286e-15,
+      "mean_rms": 2.8877053466215412e-15
+    },
+    "usability_mismatches": 0,
+    "reason_mismatches": 0,
+    "scored_events": 318,
+    "max_abs_diff_contract_score_vs_in_memory": 5.773159728050814e-15,
+    "all_outputs_validated": true,
+    "passed": true
+  },
+  "rerun": {
+    "reference_run": "C:\\Users\\SJN\\AppData\\Local\\Temp\\claude\\D--code-projects-CAPSTONE-PRISM-smart-inhaler\\2f66f905-43f1-43e4-9918-c9a7e18eb1f0\\scratchpad\\v2_refA",
+    "files_compared": 34,
+    "mismatches": [],
+    "passed": true
+  },
+  "consistency": {
+    "max_abs_diff_comparator_epsilon2_vs_stage7": 8.326672684688674e-17,
+    "max_relative_diff_perturbed_features_vs_stage7": 4.925619686465692e-06
+  },
+  "golden_cases": [
+    "single_scored_event",
+    "no_inhalation_detected",
+    "close_neighbors_not_scoreable",
+    "short_event_not_scoreable",
+    "boundary_event_not_scoreable",
+    "digital_silence_2s",
+    "white_noise_3s_minus20dBFS",
+    "input_error_sample_rate_16k",
+    "input_error_too_short"
+  ],
+  "inputs_unchanged": true,
+  "input_sha256": {
+    "results/inhale_dataset/inhale_events_v1.csv": "0dbae978da146ed62aed21eccc251c621aa566e3c3bcd020ddfbf235bf367cf1",
+    "results/feature_analysis/feature_selection_v1.json": "ef2ed51d22e3f4bf9a4d7dafcee2cc2b4aee12930d904135170a0561e7bd4443",
+    "results/representation_analysis/candidate_features.csv": "3bbb6a8c5763bbd4ab540337d1b17e4d4c8421bc55eac94d03f1fd581395c55f",
+    "results/representation_analysis/representation_comparison.csv": "68a247a499776b0e162f5ab7218392bdf3daf458a7750a63e495176b4466eb37",
+    "results/representation_analysis/perturbed_features.csv": "95fcd8733da77b1257e3a3903198f25e109c4d9cf1567db83249cf4ae66b19ce",
+    "results/v2_validation/acceptance_gate_preregistration.json": "d467ffc0474f98c5eff8f6a5114a3d8b04ae5552b2e6146826a661c828f3b545",
+    "results/inhaler_cnn.onnx": "2e4e72d3ca040b15718ad6b09ae4ac3069c38f5c1a389327bf6b38c4e2903725"
+  },
+  "parameters": {
+    "seed": 20261005,
+    "min_session_events": 5
+  },
+  "provenance": {
+    "git": {
+      "head": "55baebab2910a839f63dd07d41cae4bcc1d658c4",
+      "dirty": true
+    }
+  },
+  "no_threshold_or_labels": true,
+  "outputs": [
+    "ablation_summary.csv",
+    "acceptance_gate_preregistration.json",
+    "acceptance_gate_results.csv",
+    "acceptance_gate_results.json",
+    "analysis_summary.json",
+    "confounds.csv",
+    "correlation_folds.csv",
+    "correlation_structure.csv",
+    "excluded_diagnostics_descriptive.csv",
+    "feature_contributions.csv",
+    "feature_perturbation.csv",
+    "feature_scale_stability.csv",
+    "golden/expected/boundary_event_not_scoreable.json",
+    "golden/expected/close_neighbors_not_scoreable.json",
+    "golden/expected/digital_silence_2s.json",
+    "golden/expected/input_error_sample_rate_16k.json",
+    "golden/expected/input_error_too_short.json",
+    "golden/expected/no_inhalation_detected.json",
+    "golden/expected/short_event_not_scoreable.json",
+    "golden/expected/single_scored_event.json",
+    "golden/expected/white_noise_3s_minus20dBFS.json",
+    "golden/golden_manifest.json",
+    "golden/inputs/digital_silence_2s.wav",
+    "golden/inputs/white_noise_3s_minus20dBFS.wav",
+    "inference_contract_v2.json",
+    "inference_output.schema.json",
+    "level_channel.json",
+    "perturbation_direction.csv",
+    "perturbation_response.csv",
+    "perturbed_features.csv",
+    "representation_comparison.csv",
+    "reproduction_events.csv",
+    "reproduction_recordings.csv",
+    "reproduction_summary.json",
+    "session_robustness.csv",
+    "v2_baseline.json",
+    "v2_baseline_parameters.csv",
+    "v2_feature_schema.json",
+    "v2_feature_stability.png",
+    "v2_perturbation_response.png",
+    "v2_session_feature_medians.csv",
+    "v2_session_robustness.png",
+    "z_distributions.csv"
+  ]
+}

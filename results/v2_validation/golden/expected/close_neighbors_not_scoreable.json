@@ -1,0 +1,143 @@
+{
+  "contract_version": "prism-inference-v2.0",
+  "baseline_id": "prism-v2-global-2026-09-30",
+  "detector_model_sha256": "2e4e72d3ca040b15718ad6b09ae4ac3069c38f5c1a389327bf6b38c4e2903725",
+  "recording_status": "EVENTS_DETECTED",
+  "error": null,
+  "input": {
+    "sample_rate": 8000,
+    "n_samples": 96000,
+    "duration_s": 12.0,
+    "input_domain": "reference_dataset",
+    "recording_id": "rec2018-01-23_12h52m08.363s.wav",
+    "recorded_at": null
+  },
+  "baseline_domain_validated": true,
+  "feature_order": [
+    "spectral_centroid_mean",
+    "spectral_flatness_mean",
+    "spectral_centroid_std",
+    "spectral_rolloff_std"
+  ],
+  "n_events": 5,
+  "n_scored": 1,
+  "events": [
+    {
+      "event_id": 0,
+      "start_time": 2.432,
+      "end_time": 3.208,
+      "duration_s": 0.7760000000000002,
+      "detector_confidence": 0.8902927128707662,
+      "detector_max_confidence": 0.9959061741828918,
+      "window_count": 34,
+      "status": "SCORE_ONLY",
+      "not_scoreable_reasons": [],
+      "anomaly_score": 1.9315676356032458,
+      "feature_values": {
+        "spectral_centroid_mean": 0.33501124382019043,
+        "spectral_flatness_mean": 0.052479423582553864,
+        "spectral_centroid_std": 0.01929681934416294,
+        "spectral_rolloff_std": 0.06317845731973648
+      },
+      "feature_z_scores": {
+        "spectral_centroid_mean": -1.274563965127732,
+        "spectral_flatness_mean": -2.6849564478832466,
+        "spectral_centroid_std": -2.2394121993965976,
+        "spectral_rolloff_std": -1.0369873174737492
+      },
+      "mean_rms": 0.1692865639925003
+    },
+    {
+      "event_id": 1,
+      "start_time": 3.7600000000000002,
+      "end_time": 4.248,
+      "duration_s": 0.488,
+      "detector_confidence": 0.6223810315132141,
+      "detector_max_confidence": 0.7070614099502563,
+      "window_count": 19,
+      "status": "NOT_SCOREABLE",
+      "not_scoreable_reasons": [
+        "short_duration",
+        "close_neighbor"
+      ],
+      "anomaly_score": null,
+      "feature_values": {
+        "spectral_centroid_mean": 0.3549921214580536,
+        "spectral_flatness_mean": 0.0831386148929596,
+        "spectral_centroid_std": 0.026188651099801064,
+        "spectral_rolloff_std": 0.08421185612678528
+      },
+      "feature_z_scores": null,
+      "mean_rms": 0.15112145245075226
+    },
+    {
+      "event_id": 2,
+      "start_time": 4.32,
+      "end_time": 4.680000000000001,
+      "duration_s": 0.3600000000000003,
+      "detector_confidence": 0.6277933120727539,
+      "detector_max_confidence": 0.7131069898605347,
+      "window_count": 11,
+      "status": "NOT_SCOREABLE",
+      "not_scoreable_reasons": [
+        "short_duration",
+        "close_neighbor"
+      ],
+      "anomaly_score": null,
+      "feature_values": {
+        "spectral_centroid_mean": 0.33160144090652466,
+        "spectral_flatness_mean": 0.08162610977888107,
+        "spectral_centroid_std": 0.010238339193165302,
+        "spectral_rolloff_std": 0.041487522423267365
+      },
+      "feature_z_scores": null,
+      "mean_rms": 0.2068280577659607
+    },
+    {
+      "event_id": 3,
+      "start_time": 8.368,
+      "end_time": 8.808,
+      "duration_s": 0.4399999999999995,
+      "detector_confidence": 0.8870213329792023,
+      "detector_max_confidence": 0.9880501627922058,
+      "window_count": 16,
+      "status": "NOT_SCOREABLE",
+      "not_scoreable_reasons": [
+        "short_duration",
+        "close_neighbor"
+      ],
+      "anomaly_score": null,
+      "feature_values": {
+        "spectral_centroid_mean": 0.37483999133110046,
+        "spectral_flatness_mean": 0.05450815334916115,
+        "spectral_centroid_std": 0.050101518630981445,
+        "spectral_rolloff_std": 0.120171457529068
+      },
+      "feature_z_scores": null,
+      "mean_rms": 0.08099877089262009
+    },
+    {
+      "event_id": 4,
+      "start_time": 8.928,
+      "end_time": 10.088,
+      "duration_s": 1.1599999999999984,
+      "detector_confidence": 0.8298420642243057,
+      "detector_max_confidence": 0.9472222328186035,
+      "window_count": 61,
+      "status": "NOT_SCOREABLE",
+      "not_scoreable_reasons": [
+        "close_neighbor"
+      ],
+      "anomaly_score": null,
+      "feature_values": {
+        "spectral_centroid_mean": 0.3275027871131897,
+        "spectral_flatness_mean": 0.017114583402872086,
+        "spectral_centroid_std": 0.0188568364828825,
+        "spectral_rolloff_std": 0.02414185367524624
+      },
+      "feature_z_scores": null,
+      "mean_rms": 0.0747804120182991
+    }
+  ],
+  "interpretation": "SCORE_ONLY: anomaly_score is the root-mean-square of robust z-scores of four spectral features relative to a frozen global baseline fitted on the reference dataset. It is a distance, not a probability, quality rating, NORMAL/ANOMALY decision or clinical assessment. No threshold is defined."
+}

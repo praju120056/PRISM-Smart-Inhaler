@@ -1575,3 +1575,309 @@ Two further points:
 ## Next Step
 1. Pre-register the V2 candidate (4 features, with duration and level as separate non-scored channels) and its evaluation protocol before any further analysis.
 2. Obtain longitudinal data with user/device/session identifiers and, ideally, documented deliberate acoustic variations. Without them, it is **not established by the current data** whether any representation detects meaningful inhalation-level deviations beyond session differences.
+
+---
+
+# Research Entry 10 — 2026-09-30: V2 Representation Validation and Inference Contract (Stage 8)
+
+**No anomaly threshold or NORMAL/ANOMALY classification was introduced in Stage 8.** The inference output is `SCORE_ONLY`: a distance from a frozen baseline. Excluded (Stage 1) status is a descriptive population only, and no clinical or technique-quality claim is made.
+
+## Question
+Does the 4-feature V2 representation proposed in Stage 7 behave consistently enough across sessions and controlled acoustic perturbations to be frozen **temporarily** as the PRISM MVP inference representation, while scientific validation continues? The features are:
+- `spectral_centroid_mean`
+- `spectral_flatness_mean`
+- `spectral_centroid_std`
+- `spectral_rolloff_std`
+
+If so, what exactly is the inference contract?
+
+## Pre-registration (before any combined-V2 result)
+- **Gate committed first.** The acceptance gate was written to `results/v2_validation/acceptance_gate_preregistration.json` and committed as **`55baeba`** before any result for the combined V2 representation, its ablations or its perturbation response was computed.
+- **Decision rule:** V2 passes only if every criterion passes. On a pass the contract is issued as `FROZEN_FOR_MVP_ENGINEERING`; on a fail as `DRAFT_NOT_FROZEN`. Neither V2 nor the gate may be changed afterwards in this stage.
+- **Code check:** the rule texts in `src/v2_validation.py` (`GATE_RULES`) are tested against the committed file.
+- **Disclosure: some values were already known.** Per-feature values of the four V2 features were known from Stages 2, 5 and 7. Criteria built on them are labelled confirmatory re-checks, not independent tests:
+  - G2a–G2c: fold centre/scale stability
+  - G4a: gain invariance
+  - G4d: no fragile feature
+
+  The genuine tests are G1a/G1b (combined score), G3a (correlation stability), G4b/G4c (combined perturbation response, per-session direction), G5a/G5b (background confound) and G6 (reproducibility).
+- **Not definable from Stages 1–7, so not gated:**
+  - an absolute acceptable level of session dependence
+  - any criterion that the score detects meaningful inhalation anomalies
+  - transfer to PRISM hardware
+- **Explicitly not criteria:** excluded-vs-usable separation or AUC.
+
+| Id | Dimension | Rule | Basis |
+|---|---|---|---|
+| G1a | cross-session | session ε²(V2) ≤ ε²(R0), same run | comparative (non-inferiority, margin 0) |
+| G1b | cross-session | generalization ratio ≤ 1.15 | inherited (Stage 5) |
+| G2a | feature scale | max LOSO centre shift ≤ 0.5 pooled robust SD | anchored (Stage 2 random-20 imprecision) |
+| G2b | feature scale | fold/pooled scale within [2/3, 3/2] | anchored (Stage 2) |
+| G2c | feature scale | every MAD > 0 and finite | sanity |
+| G3a | correlation | max LOSO Spearman shift of any V2 pair ≤ 0.2 | inherited (Stage 7 MCD gate), rank-based |
+| G4a | perturbation / confound | 95th percentile of \|Δ rms_z\| ≤ 0.1 at every event and whole-recording gain level | convention |
+| G4b | perturbation | z-distance monotone in ≥ 95% of events (noise, tilt) | convention |
+| G4c | perturbation | ≥ 90% of sessions agree in sign wherever \|median Δ\| ≥ 0.1 (10 dB noise, tilt −0.5 and 0.9; per feature and for rms_z) | convention |
+| G4d | perturbation | no feature with \|median Δz\| ≥ 1 at 30 dB and noise-monotone < 0.5 | Stage 7 fragility diagnosis |
+| G5a / G5b | recording confound | \|Spearman(rms_z, recording background RMS)\| < 0.3, pooled / within session | convention (Cohen) |
+| G6a | reproducibility | byte-identical outputs across two complete runs | engineering |
+| G6b | reproducibility | the reference inference implementation reproduces the Stage 1 events, features and usability from raw audio | engineering |
+| G6c | reproducibility | exported baseline JSON reproduces in-memory z within 1e-12 | engineering |
+| G6d | leakage | 0 held-out-session events and 0 excluded events in any fold fit | protocol |
+
+## Protocol
+- **Baseline:** Strategy C (Stage 5). For each of the 18 sessions, per-feature median / 1.4826·MAD is fitted on the usable events of the other sessions only, frozen, and applied to the held-out session. rms_z = sqrt(mean z²).
+- **Session statistics:** 12 sessions with ≥ 5 usable events (318 usable events in total).
+- **Comparators:** R0_current7, R1_no_duration, R3_no_flatness_std, R5_no_mean_rms and R6_relative_level (Stage 7 definitions), recomputed in the same run. Their session ε² reproduces Stage 7 within 8.3×10⁻¹⁷.
+- **Descriptive additions** (not gated): the leave-one-feature-out ablations `V2_minus_*` and `V2_plus_mean_rms` (Part E).
+- **Perturbations:** the Stage 6/7 plan with the same seeds, via the unchanged Stage 7 `perturbation_measurements`:
+  - event gain ×0.5, ×0.707, ×1.414, ×2
+  - white noise at 30/20/10 dB SNR
+  - RMS-preserving tilt a = −0.5, 0.5, 0.9
+  - whole-recording gain ×0.5 and ×2
+
+  Each perturbed event is scored by its own frozen fold baseline.
+- **Frozen deployment baseline:** the same median/MAD fitted on **all 318 usable events of all 18 sessions**. LOSO estimates how this procedure behaves on unseen sessions.
+
+Implementation:
+- `src/v2_validation.py` (analysis, gate and contract), command `venv/Scripts/python.exe src/v2_validation.py [--reference-run <dir>]`.
+- `src/prism_inference.py` (reference implementation of the contract; `python src/prism_inference.py <wav>`).
+- Tests: `tests/test_v2_validation.py` and `tests/test_prism_inference.py` (32 tests; full suite 173 passing).
+- Outputs in `results/v2_validation/`.
+
+## Results
+
+### Part A. V2 as a combined representation (`representation_comparison.csv`, `feature_scale_stability.csv`, `z_distributions.csv`, `correlation_structure.csv`, `feature_contributions.csv`)
+All values are held-out rms_z on the 318 usable events. The excluded-vs-usable δ is descriptive only (not a criterion; excluded ≠ anomalous).
+
+| Representation | d | Median [5–95%] | Generalization ratio | Session ε² | Session medians (max/min) | Max session-vs-rest \|δ\| | Excluded δ (descriptive) |
+|---|---|---|---|---|---|---|---|
+| R0_current7 | 7 | 1.087 [0.510, 1.923] | 1.102 | 0.211 | 0.685–1.483 (2.17×) | 0.690 | 0.836 |
+| R1_no_duration | 6 | 1.019 [0.467, 1.906] | 1.106 | 0.283 | 0.590–1.395 (2.37×) | 0.611 | 0.416 |
+| R3_no_flatness_std | 6 | 1.073 [0.477, 1.955] | 1.130 | 0.199 | 0.692–1.543 (2.23×) | 0.637 | 0.849 |
+| R5_no_mean_rms | 6 | 1.055 [0.514, 1.883] | 1.089 | 0.136 | 0.721–1.582 (2.19×) | 0.625 | 0.861 |
+| R6_relative_level | 7 | 1.044 [0.545, 1.794] | 1.075 | 0.123 | 0.720–1.465 (2.03×) | 0.577 | 0.870 |
+| **V2** | 4 | 0.997 [0.423, 1.745] | 1.120 | 0.130 | 0.641–1.314 (2.05×) | 0.433 | 0.406 |
+
+**Frozen deployment baseline (`v2_baseline.json`, id `prism-v2-global-2026-09-30`).** Median / 1.4826·MAD over all 318 usable events in 18 sessions:
+
+| Feature | Centre | MAD | Scale |
+|---|---|---|---|
+| centroid_mean | 0.37053 | 0.018796 | 0.027867 |
+| flatness_mean | 0.13224 | 0.020037 | 0.029707 |
+| centroid_std | 0.039401 | 0.0060552 | 0.0089774 |
+| rolloff_std | 0.080710 | 0.011403 | 0.016906 |
+
+**LOSO fold stability.**
+- **Max centre shift (pooled robust SD):** centroid_mean 0.221 (fold 2018-05-03#3), flatness_mean 0.205 (fold 2018-05-03#2), centroid_std 0.071, rolloff_std 0.050.
+- **Fold/pooled scale ratios:** 0.877–1.087.
+- **MADs:** every MAD > 0 (minimum fold MAD 0.0058).
+
+**Held-out z (robust SD / max |z|).**
+- **Spread and extremes:** centroid_mean 1.134 / 4.60, flatness_mean 1.069 / 4.13, centroid_std 0.964 / 3.95, rolloff_std 1.013 / 3.04. All four features are near unit spread on unseen sessions.
+- **Feature contributions (rms_z share / argmax fraction):** centroid_mean 0.275 / 0.29, flatness_mean 0.231 / 0.21, centroid_std 0.260 / 0.27, rolloff_std 0.235 / 0.23. The contributions are balanced; no feature dominates.
+
+**Correlation structure (Spearman, pooled / within-session / max LOSO shift).**
+
+| Pair | Pooled | Within session | Max LOSO shift |
+|---|---|---|---|
+| centroid_mean–flatness_mean | 0.580 | 0.533 | 0.113 (fold 2018-05-03#2) |
+| centroid_std–rolloff_std | 0.355 | 0.362 | 0.086 |
+| flatness_mean–rolloff_std | −0.286 | −0.164 | 0.026 |
+
+The other three pairs have |ρ| ≤ 0.15. No pair is redundant.
+
+**Held-out session behaviour (`session_robustness.csv`, `v2_session_feature_medians.csv`, `v2_session_robustness.png`).**
+- **Largest change vs R0:** the duration-outlier session 2018-02-06#3 (session median 1.483 under R0) is at 0.756 under V2. This is the largest single change, consistent with removing duration.
+- **Remaining spread:** V2 session medians still span 2.05× (0.641–1.314). The highest is 2018-02-08#1.
+
+**Recording and segmentation confounds (`confounds.csv`; V2 rms_z, usable events; pooled / within-session Spearman).**
+
+| Quantity | Pooled ρ | Within-session ρ |
+|---|---|---|
+| recording background RMS | 0.001 | 0.118 |
+| duration | 0.056 | −0.080 |
+| detector confidence | 0.180 | −0.102 |
+| mean_rms | −0.061 | −0.100 |
+
+### Part C. Controlled perturbations (`perturbation_direction.csv`, `feature_perturbation.csv`, `perturbation_response.csv`, `v2_perturbation_response.png`)
+- **Consistency with Stage 7:** the re-measured V2 features agree with the Stage 7 perturbed table within 4.9×10⁻⁶ relative, the 6-digit precision of that table.
+
+**Per V2 feature** (median Δz at the listed levels; monotone fraction; fraction of the 12 sessions whose median Δz has the pooled sign):
+
+| Feature | Event / recording gain | Noise 30 / 20 / 10 dB | Tilt −0.5 / 0.5 / 0.9 |
+|---|---|---|---|
+| centroid_mean | invariant (max \|Δz\| < 10⁻⁵) | +0.55 / +0.92 / +1.73; monotone 1.00; sessions 1.00 | −1.63 / +2.49 / +3.90; monotone 1.00; sessions 1.00 |
+| flatness_mean | max \|Δz\| 0.058 (power floor) | +1.88 / +3.31 / +6.18; monotone 1.00; sessions 1.00 | −1.77 / +1.23 / **+0.17**; monotone 0.01; sessions 1.00 / 1.00 / **0.75** |
+| centroid_std | invariant | +0.41 / +0.61 / +0.30; monotone 0.20; sessions 0.92 | −0.51 / +0.30 / **+0.20**; monotone 0.43; sessions 1.00 / 0.92 / **0.58** |
+| rolloff_std | max \|Δz\| 0.005 | −0.18 / −0.32 / −1.15; monotone 0.29; sessions 0.58 / 0.58 / 0.92 | −0.07 / −0.83 / −1.22; monotone 0.49; sessions — / 1.00 / 1.00 |
+
+**Direction of change at the strongest tilt (a = 0.9).**
+- **flatness_mean:** only 58% of events move in the median's direction, although individual events move substantially (95th percentile |Δz| 1.61).
+- **centroid_std:** also 58% of events agree, with 95th percentile |Δz| 1.63.
+
+**Aggregate V2 rms_z.**
+- **Gain:** invariant. The 95th percentile |Δ| is ≤ 4.9×10⁻⁴ at every event and whole-recording gain level, against 0.47–2.94 for R0, where mean_rms dominates.
+- **Noise:** median Δ +0.51 / +1.12 / +2.41, dominated by flatness_mean (median single-feature dominance 0.66–0.85).
+- **Tilt:** median Δ +0.57 / +0.94 / +1.45; at a = 0.9, centroid_mean dominates (0.83).
+- **Monotonicity:** the z-space distance grows monotonically with intensity in 99.7% of events (noise) and 100% (tilt).
+- **Session consistency:** the sign of the median Δ agrees in 92–100% of sessions at every noise and tilt level.
+
+These are **predictable responses to artificial acoustic perturbations**. They are **not evidence** that the score detects meaningful inhalation anomalies, which is not established.
+
+### Part D. Leave-one-feature-out ablations (descriptive; `ablation_summary.csv`)
+
+| Representation | Session ε² | Generalization ratio | Session medians max/min | Noise 10 dB Δ | Tilt 0.9 Δ | Distance monotone (noise / tilt) |
+|---|---|---|---|---|---|---|
+| V2 | 0.130 | 1.120 | 2.05 | 2.41 | 1.45 | 0.997 / 1.000 |
+| − centroid_mean | **0.024** | 1.063 | 2.31 | 2.81 | **0.25** | 0.997 / **0.572** |
+| − flatness_mean | 0.170 | 1.089 | 3.16 | **0.60** | 1.70 | **0.796** / 1.000 |
+| − centroid_std | 0.157 | 1.092 | 1.90 | 2.97 | 1.82 | 1.000 / 1.000 |
+| − rolloff_std | 0.248 | 1.076 | 2.53 | 2.92 | 1.59 | 0.997 / 1.000 |
+
+### Part E. mean_rms as a separate level channel (`level_channel.json`)
+- **Session and gain dependence.** Held-out z(mean_rms) has session ε² 0.637. It changes by a median +6.15 z under ×2 gain and −3.07 z under ×0.5, identically for event gain and whole-recording gain.
+- **Adding it back to the score (V2_plus_mean_rms)** doubles session dependence (0.130 → 0.261). It also makes the score gain-dependent: 95th percentile |Δ| 3.61 under gain, against 0.0005 for V2.
+- **Overlap with V2.** 76% of mean_rms's rank variance is explained by the V2 features (rank R² 0.76), mainly through centroid_mean (Spearman −0.84 pooled, −0.76 within session). It correlates 0.19 with the recording background RMS.
+
+### G6. Reproducibility of the inference contract (`reproduction_summary.json`, `reproduction_events.csv`)
+The reference implementation `src/prism_inference.py` was applied to all 361 raw WAVs and compared with the Stage 1 event table:
+- **Events:** 364 = 364 events, with no count mismatch in any recording.
+- **Bounds and confidence:** event bounds are identical (maximum difference 0 s); detector confidence is within 1.1×10⁻¹⁶.
+- **Features:** V2 features and mean_rms are within 7.9×10⁻¹⁵ relative.
+- **Usability:** 0 usability or reason mismatches; 318 events scored.
+- **Scores:** contract scores equal the in-memory scores within 5.8×10⁻¹⁵.
+- **No-event recordings:** the 39 recordings without a Stage 1 event are exactly the 39 reported as `NO_INHALATION_DETECTED`.
+- **Output validation:** every output passed the contract validator.
+- **Baseline round trip:** baseline JSON reproduces the in-memory z exactly (maximum difference 0).
+- **Leakage:** 0 / 0.
+- **Byte identity:** see Deviations.
+
+## Acceptance Gate (`acceptance_gate_results.json`)
+**Outcome: FAIL. The only failing criterion is G4c.**
+
+| Id | Measured | Verdict |
+|---|---|---|
+| G1a | ε² V2 0.130 vs R0 0.211 | pass |
+| G1b | 1.120 | pass |
+| G2a | 0.221 | pass (confirmatory) |
+| G2b | 0.877–1.087 | pass (confirmatory) |
+| G2c | all MAD > 0 | pass (confirmatory) |
+| G3a | 0.113 | pass |
+| G4a | 4.9×10⁻⁴ | pass (confirmatory) |
+| G4b | noise 0.997, tilt 1.000 | pass |
+| **G4c** | **2 of 14 applicable cases below 0.9: z(flatness_mean) at tilt 0.9 = 0.75 (9/12 sessions); z(centroid_std) at tilt 0.9 = 0.58 (7/12)** | **FAIL** |
+| G4d | no fragile feature | pass (confirmatory) |
+| G5a / G5b | ρ 0.001 / 0.118 | pass |
+| G6a | 34 files identical to the reference run | pass |
+| G6b | exact reproduction (above) | pass |
+| G6c | 0 | pass |
+| G6d | 0 / 0 | pass |
+
+The contract is therefore issued as **`DRAFT_NOT_FROZEN`** (`inference_contract_v2.json`), as pre-registered. Neither V2 nor the gate was changed after the results were seen.
+
+## Deviations From the Pre-registration
+1. **G6a comparison scope.** The in-run G6a comparison excludes the contract's `status`, `status_meaning` and `acceptance_gate` fields and `acceptance_gate_results.*`, because those record the G6a verdict itself and cannot match a reference run in which G6a was not yet evaluated.
+   - **Literal wording also met:** to satisfy the pre-registered wording ("the contract JSON … byte-identical"), two further complete runs, each evaluated against the same reference run, were compared in full. All 38 non-figure outputs were byte-identical, including the complete contract and gate results.
+   - **Verdict unaffected:** no criterion's verdict depends on this.
+2. **Contract design additions.** These affect contract design only, not the gate:
+   - an input-error code `detector_feature_extraction_failed`, for the existing detector's failure path when frame features are non-finite (never observed);
+   - scoreability requires only the 5 contract features to be finite, where Stage 1 required 13. G6b verified that no reference event changes.
+
+## Interpretation
+1. **What V2 does well.**
+   - **Stability:** it is stable as a baseline (fold centres ≤ 0.22 SD, scales within 0.88–1.09×) and as a correlation structure (≤ 0.11 shift).
+   - **Invariance and confounds:** it is invariant to device gain and does not track recording background noise.
+   - **Scale:** held-out z has unit-like spread.
+   - **Session dependence:** it is lower than R0 (0.130 vs 0.211) and similar to R5/R6.
+   - **Reproducibility:** end to end from raw audio.
+2. **What fails.** Two of the four features respond to a strong spectral tilt (a = 0.9, a large high-frequency emphasis) in directions that differ between events and sessions: flatness_mean (non-monotone over tilt: −1.77, +1.23, +0.17) and centroid_std. A plausible explanation (hypothesis, not tested) is that the direction depends on each recording's original spectral balance, which differs between sessions (centroid_mean session ε² 0.62).
+   - **Practical relevance:** a change of microphone or enclosure is a spectral-shape change, so for these two features the shift caused by new hardware is expected to differ in direction between recordings and could not be removed by a single offset.
+   - **Aggregate score:** the V2 score itself responded consistently (100% of sessions at a = 0.9). The failure is at feature level, which is what G4c was pre-registered to test.
+3. **Remaining session dependence sits in spectral_centroid_mean** (post hoc, from the ablations).
+   - Removing it lowers session ε² from 0.130 to 0.024, but also removes the only fully predictable tilt response (tilt-distance monotone 0.57).
+   - centroid_mean carries most of the level information mean_rms used to carry (ρ −0.84), so removing mean_rms did not fully remove level/session information from V2.
+   - Removing rolloff_std raises session ε² to 0.248, so the within-event variability features dilute the session effect.
+   - These observations were made on the same data. They are hypotheses for a future pre-registration, not grounds to change V2 now.
+4. **mean_rms belongs outside the score.** In the score it doubles session dependence and makes the score device-gain dependent. As a separate, uncalibrated level channel it keeps loudness visible for diagnostics without contaminating the score.
+
+## Answers to the Stage 8 Questions
+1. **Does V2 pass the pre-registered gate?** No.
+2. **Which criterion fails?** Only G4c, on per-session direction consistency: z(spectral_flatness_mean) at tilt a = 0.9 (0.75 of sessions) and z(spectral_centroid_std) at tilt a = 0.9 (0.58). All other criteria pass.
+3. **Is any individual feature problematic?**
+   - **spectral_flatness_mean:** direction-inconsistent at strong tilt, non-monotone over tilt, and the most noise-sensitive V2 feature (+1.88 z at 30 dB; predictable in direction).
+   - **spectral_centroid_std:** non-monotone under noise (20%) and direction-inconsistent at strong tilt.
+   - **spectral_rolloff_std:** session-inconsistent under mild noise (0.58 at 30/20 dB; not gated, because G4c tests 10 dB).
+   - **spectral_centroid_mean:** fully predictable, but it carries most of the remaining session dependence and level coupling.
+4. **Does V2 respond predictably to controlled perturbations?** The aggregate score does: gain-invariant, monotone in ≥ 99.7% of events, direction consistent in ≥ 92% of sessions. At feature level, not fully (G4c). These are responses to artificial perturbations, not evidence of anomaly detection.
+5. **How much session dependence remains?** Held-out ε² 0.130, session medians spanning 2.05× (0.64–1.31), maximum session-vs-rest |δ| 0.43, generalization ratio 1.12. Whether this reflects subjects, devices or placements is not established by the current data.
+6. **Is mean_rms better treated as a separate level channel?** Yes. It is technically sensible to keep it outside the score: uncalibrated, not z-scored, not an anomaly signal.
+7. **Is V2 stable enough to freeze temporarily for MVP engineering?** Not under the pre-registered rule. The contract is `DRAFT_NOT_FROZEN`. Freezing V2 as an exception, or replacing it, is the project owner's decision.
+   - **What engineering can proceed with:** the interface (audio input, detector, events, scoreability, output schema, recording states, level channel) is fully specified and verified.
+   - **Why the V2 decision does not block it:** the four V2 features are event-level mean/std aggregates of the per-frame spectral values the detector pipeline already computes, so implementing them costs little either way.
+8. **Which questions remain unresolved?**
+   - whether any representation detects meaningful inhalation deviations (no ground truth)
+   - what sessions represent (subjects, devices, placements)
+   - behaviour on PRISM hardware (microphone, enclosure, 5 s buffer) and whether a hardware reference set is needed (expected)
+   - personalization (V3)
+   - whether flatness_mean / centroid_std should be replaced, and whether centroid_mean's session dependence is acceptable
+   - threshold methodology (deliberately not started)
+
+## Inference Contract (summary; full text in `inference_contract_v2.json`)
+**Input**
+- 8 kHz mono float32 in [−1, 1], from 16-bit PCM as sample/32768 (24-bit sources: int16 = s24 >> 8).
+- No resampling, normalization, filtering or trimming.
+- At least 1,536 samples (one detector window).
+- Input errors: `unsupported_sample_rate`, `invalid_shape`, `empty_audio`, `nonfinite_audio`, `amplitude_out_of_range`, `shorter_than_one_detector_window`, `detector_feature_extraction_failed`.
+
+**Detector:** `results/inhaler_cnn.onnx`.
+- Input: float32 [N, 25, 124] raw librosa features (STFT 256 / 64, Hann, centred), windows of 25 frames with stride 2.
+- Output: logits [N, 4] in class order Drug, Exhale, Inhale, Noise; softmax, then argmax.
+- Window i spans [0.016·i, min(0.016·i + 0.2, duration)].
+
+**Grouping:** default `TemporalGroupingConfig`. Inhale windows join an event while start ≤ the event's latest end. Event start = first window start; end = max window end; confidence = mean P(Inhale).
+
+**Scoreability:** Stage 1 rule v1. Events with duration < 0.5 s, a neighbour gap < 0.2 s, a start/end within 0.008 s of the recording edges, or a non-finite feature are `NOT_SCOREABLE`, with reasons.
+
+**Features:** in this exact order:
+1. spectral_centroid_mean
+2. spectral_flatness_mean
+3. spectral_centroid_std
+4. spectral_rolloff_std
+
+They are computed on waveform[floor(start·8000) : ceil(end·8000)] with the same STFT, as mean / population std over frames in float32. mean_rms (256-sample frames, hop 64) is the separate level channel.
+
+**Baseline:** `v2_baseline.json`, loaded and validated, never fitted at inference.
+
+**Score:** z_j = (x_j − centre_j) / scale_j; anomaly_score = sqrt(mean z²).
+
+**Output:** `inference_output.schema.json`.
+- **Recording status:** `EVENTS_DETECTED` / `NO_INHALATION_DETECTED` / `INPUT_ERROR`.
+- **Per event:** event_id, start_time, end_time, duration_s, detector_confidence, detector_max_confidence, window_count, status (`SCORE_ONLY` / `NOT_SCOREABLE`), not_scoreable_reasons, anomaly_score, feature_values, feature_z_scores, mean_rms.
+- **Explicitly forbidden derived outputs:** NORMAL/ANOMALY, quality percentages, Correct/Incorrect and technique error codes. The existing React Native app simulates `quality`, `Correct`/`Incorrect` and technique errors; none of these is supported by PRISM evidence.
+
+**Conformance:** 9 golden cases (`golden/golden_manifest.json`):
+- 5 dataset recordings, identified by SHA-256
+- 2 synthetic WAVs
+- 2 input errors
+
+Tolerances: z and score ±0.01, features ±10⁻⁴ relative; event structure exact.
+
+## Limitations
+- **No ground truth:** there is no anomaly or technique ground truth, so the score is a distance from a dataset baseline only.
+- **Same data:** V2 and the gate thresholds were set after Stages 2–7 on the same 318 events, and several criteria were confirmatory.
+- **Conventional thresholds:** some gate thresholds (0.1 z, 95%, 90%, |ρ| 0.3) are conventions, not derived values.
+- **Inferred sessions:** sessions are recording sittings. The baseline is global, not personal.
+- **Synthetic perturbations:** event boundaries are fixed, and first-order tilt only approximates a hardware frequency-response change.
+- **Detector in-sample:** the detector is in-sample for about two-thirds of the recordings.
+- **Hardware not validated:** PRISM hardware (INMP441, enclosure, 5 s buffer) is entirely unvalidated.
+
+## Decision and Next Step
+1. **Status:** per the pre-registered rule, V2 is **not frozen**; the contract is `DRAFT_NOT_FROZEN`, and the failing criterion is G4c. No threshold, no NORMAL/ANOMALY output.
+2. **Owner decision:**
+   - **(a)** Accept V2 as a documented exception for MVP engineering only, with anomaly_score treated as experimental and not shown to users; or
+   - **(b)** Keep the interface and replace the representation after a new pre-registered evaluation.
+
+   Any revised feature set should be tested on data not used to design it.
+3. **Engineering can start on the interface now** (hardware → audio → detector → events → scoreability → features → output schema, including `NO_INHALATION_DETECTED`), verified against the golden vectors.
+4. **Next scientific step:** reference recordings on PRISM hardware (same subjects, and ideally the dataset protocol, plus deliberate, documented variations). They are needed to quantify the domain shift the tilt results predict and to re-baseline for the device. Longitudinal user/device identifiers are still required for personalization (V3).

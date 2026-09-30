@@ -1,0 +1,300 @@
+{
+  "contract_version": "prism-inference-v2.0",
+  "status": "DRAFT_NOT_FROZEN",
+  "status_meaning": "The pre-registered acceptance gate failed (see acceptance_gate.failing_criteria). The interface (input, detector, event grouping, scoreability, output schema and recording states) is fully specified and reproduces the reference pipeline, so it can be implemented. The anomaly representation (V2 features and baseline) is NOT frozen: anomaly_score may change, must be treated as experimental and must not be shown to users as a health signal. Accepting V2 despite the failed criterion, or replacing it, is the project owner's decision.",
+  "acceptance_gate": {
+    "outcome": "FAIL",
+    "preregistration": "results/v2_validation/acceptance_gate_preregistration.json",
+    "preregistration_commit": "55baeba",
+    "results": "results/v2_validation/acceptance_gate_results.json",
+    "failing_criteria": [
+      "G4c"
+    ]
+  },
+  "pipeline": [
+    "audio input (8 kHz mono)",
+    "ONNX event detector (window classification)",
+    "Inhale event grouping",
+    "Stage 1 usability rule v1 (scoreability)",
+    "V2 feature extraction + level channel",
+    "frozen global baseline (loaded, never fitted at inference)",
+    "robust z per feature",
+    "anomaly_score = sqrt(mean z^2) (SCORE_ONLY)"
+  ],
+  "input": {
+    "sample_rate_hz": 8000,
+    "resampling": "none; any other rate is INPUT_ERROR unsupported_sample_rate",
+    "waveform": "float32 in [-1, 1]; from 16-bit little-endian PCM as sample / 32768 (see prism_inference.decode_pcm16le)",
+    "full_scale_mapping": "a 24-bit microphone sample must reach 16-bit PCM as int16 = s24 >> 8 (equivalently float = s24 / 2^23); any other digital gain changes the level channel mean_rms",
+    "channels": "mono expected; 2-D arrays are averaged over channels (existing post_event convention)",
+    "preprocessing": "none: no normalization, filtering, gain control, trimming or padding before the detector",
+    "minimum_length_samples": 1536,
+    "input_errors": [
+      "unsupported_sample_rate",
+      "invalid_shape",
+      "empty_audio",
+      "nonfinite_audio",
+      "amplitude_out_of_range",
+      "shorter_than_one_detector_window",
+      "detector_feature_extraction_failed"
+    ],
+    "input_domains": {
+      "values": [
+        "reference_dataset",
+        "prism_hardware",
+        "unknown"
+      ],
+      "meaning": "baseline_domain_validated is true only for 'reference_dataset'; PRISM hardware audio has not been validated against this baseline"
+    }
+  },
+  "event_detector": {
+    "model_file": "results/inhaler_cnn.onnx",
+    "model_sha256": "2e4e72d3ca040b15718ad6b09ae4ac3069c38f5c1a389327bf6b38c4e2903725",
+    "runtime": "ONNX Runtime, CPUExecutionProvider in the reference implementation",
+    "frame_features": {
+      "per_frame": "124 = 40 MFCC | 40 delta | 40 delta-delta | centroid/4000 | flatness | rolloff(0.85)/4000 | zero-crossing rate",
+      "stft": "n_fft 256, hop 64, hann, center=True, pad_mode constant; |STFT| for spectral features",
+      "mfcc": "librosa.feature.mfcc: 128 mel bands (Slaney), fmin 50, fmax 4000, power 2, power_to_db(ref 1, amin 1e-10, top_db 80), DCT-II ortho, no lifter",
+      "deltas": "librosa.feature.delta width 9, mode 'interp' (orders 1 and 2)",
+      "zcr": "librosa.feature.zero_crossing_rate frame 2048, hop 64, center=True",
+      "normalization": "none (raw features)",
+      "reference": "src/librosa_extractor.py::extract_features_from_audio"
+    },
+    "input_tensor": {
+      "name": "features",
+      "dtype": "float32",
+      "shape": [
+        "N",
+        25,
+        124
+      ],
+      "windows": "25 consecutive frames (0.2 s), stride 2 frames (0.016 s); recordings shorter than one window produce no windows"
+    },
+    "output_tensor": {
+      "dtype": "float32",
+      "shape": [
+        "N",
+        4
+      ],
+      "meaning": "raw logits",
+      "class_order": [
+        "Drug",
+        "Exhale",
+        "Inhale",
+        "Noise"
+      ],
+      "probabilities": "softmax over the 4 logits"
+    },
+    "window_timing": "window i: start = i * 0.016 s, end = min(start + 0.2 s, recording duration); label = argmax",
+    "validation_note": "trained on about two-thirds of the reference recordings (Entry 3); agreement with annotations is mostly in-sample"
+  },
+  "event_grouping": {
+    "config": {
+      "target_label": "Inhale",
+      "smoothing_window": 1,
+      "max_gap_s": 0.0,
+      "min_event_duration_s": 0.0,
+      "min_confidence": null
+    },
+    "rule": "Inhale-labelled windows in time order; a window joins the current event while its start <= the latest end of the event's windows (overlapping 0.2 s windows bridge up to 12 strides); otherwise a new event starts",
+    "boundaries": "start = first window start; end = max window end; duration_s = end - start",
+    "confidence": "detector_confidence = mean P(Inhale) over the event's Inhale windows; detector_max_confidence = max",
+    "event_id": "0-based chronological index within the recording",
+    "reference": "src/post_event.py::generate_window_predictions, group_inhale_events"
+  },
+  "scoreability": {
+    "rule": "Stage 1 usability rule v1; only scoreable events receive z-scores and anomaly_score",
+    "not_scoreable_reasons": {
+      "nonfinite_feature": "any V2 feature or mean_rms is non-finite, or extraction failed",
+      "short_duration": "round(duration_s, 6) < 0.5 s",
+      "close_neighbor": "another event in the same recording within a gap < 0.2 s (gap = next.start - this.end, rounded to 6 decimals)",
+      "recording_boundary": "start_time <= 0.008 s or end_time >= recording duration - 0.008 s"
+    },
+    "rationale": "the baseline was fitted only on events passing this rule; Stages 6-7 showed scores of other events are dominated by segmentation artifacts",
+    "deviation_from_stage1": "Stage 1 required all 13 descriptive features to be finite; inference computes only the 5 contract features. No reference-dataset event differs (verified by G6b)."
+  },
+  "feature_extraction": {
+    "schema_file": "results/v2_validation/v2_feature_schema.json",
+    "contract_version": "prism-inference-v2.0",
+    "anomaly_features_in_order": [
+      {
+        "index": 0,
+        "name": "spectral_centroid_mean",
+        "definition": "mean over frames of the spectral centroid of |STFT| divided by 4000 Hz",
+        "unit": "dimensionless"
+      },
+      {
+        "index": 1,
+        "name": "spectral_flatness_mean",
+        "definition": "mean over frames of spectral flatness of |STFT|^2 (geometric / arithmetic mean, power floor 1e-10)",
+        "unit": "dimensionless"
+      },
+      {
+        "index": 2,
+        "name": "spectral_centroid_std",
+        "definition": "population standard deviation (ddof 0) over frames of the normalized spectral centroid",
+        "unit": "dimensionless"
+      },
+      {
+        "index": 3,
+        "name": "spectral_rolloff_std",
+        "definition": "population standard deviation (ddof 0) over frames of the 85% spectral rolloff divided by 4000 Hz",
+        "unit": "dimensionless"
+      }
+    ],
+    "level_channel": {
+      "name": "mean_rms",
+      "unit": "RMS amplitude, full scale 1.0 (uncalibrated)",
+      "definition": "mean of an RMS envelope: 256-sample frames starting every 64 samples from the event start, partial final frames included, no padding",
+      "in_anomaly_score": false
+    },
+    "event_metadata": [
+      "event_id",
+      "start_time",
+      "end_time",
+      "duration_s",
+      "detector_confidence",
+      "detector_max_confidence",
+      "window_count"
+    ],
+    "segment": "waveform[floor(start_time * 8000) : ceil(end_time * 8000)] of the float32 input, no padding beyond the STFT's own",
+    "frames": {
+      "sample_rate_hz": 8000,
+      "n_fft": 256,
+      "hop_length": 64,
+      "window": "hann (periodic, librosa default)",
+      "center": true,
+      "pad_mode": "constant (zeros), n_fft // 2 each side",
+      "spectrum": "magnitude |STFT| (librosa.stft); flatness uses power |STFT|^2",
+      "frequencies_hz": "k * 8000 / 256 for k = 0..128",
+      "rolloff_percent": 0.85,
+      "flatness_amin": 1e-10,
+      "frame_count": "1 + floor(len(segment) / 64) (frames are aligned to the MFCC frame count)"
+    },
+    "aggregation": "mean and population std (ddof 0) over all frames, computed in float32, reported as float64",
+    "reference_implementation": [
+      "src/librosa_extractor.py::extract_features_from_audio (columns 120-122)",
+      "src/post_event.py::analyze_inhalation"
+    ]
+  },
+  "baseline": {
+    "file": "results/v2_validation/v2_baseline.json",
+    "sha256": "0eaea4b82cee0c29461a9b48153bb27776a074b4a577405c71517ec0e14332d3",
+    "baseline_id": "prism-v2-global-2026-09-30",
+    "type": "global (not personalized) robust baseline: per-feature median and 1.4826 * MAD",
+    "fitted_on": "all 318 usable events of 18 recording sessions of the reference dataset",
+    "parameters": {
+      "spectral_centroid_mean": {
+        "center": 0.3705300390720367,
+        "mad": 0.01879630982875824,
+        "scale": 0.027867408952116965
+      },
+      "spectral_flatness_mean": {
+        "center": 0.13224149495363235,
+        "mad": 0.02003711462020874,
+        "scale": 0.029707026135921476
+      },
+      "spectral_centroid_std": {
+        "center": 0.039400866255164105,
+        "mad": 0.006055157631635645,
+        "scale": 0.008977376704663007
+      },
+      "spectral_rolloff_std": {
+        "center": 0.08070974424481385,
+        "mad": 0.011402927339077003,
+        "scale": 0.016905980072915563
+      }
+    },
+    "loading": "load once and verify contract_version, baseline_id, feature order, finiteness, MAD > 0 and scale = 1.4826 * MAD (prism_inference.load_baseline); refuse to score otherwise",
+    "fitting_at_inference": "never; the baseline is not updated from new events (any update is a new baseline_id requiring its own validation)",
+    "evaluation": "leave-one-session-out (Strategy C) estimates its behaviour on unseen sessions (Entry 10)"
+  },
+  "scoring": {
+    "z": "z_j = (x_j - center_j) / scale_j in float64, j in V2 order",
+    "anomaly_score": "sqrt(mean_j z_j^2) over the 4 V2 features (rms_z)",
+    "direction": "higher = further from the baseline; 0 = at the baseline median in every feature",
+    "threshold": null,
+    "classification": null
+  },
+  "level_channel": {
+    "name": "mean_rms",
+    "in_anomaly_score": false,
+    "z_scored": false,
+    "meaning": "uncalibrated event loudness (RMS, full scale 1.0); depends on microphone sensitivity, gain, distance and enclosure; reported for diagnostics only; not an anomaly signal; no threshold"
+  },
+  "output": {
+    "schema_file": "results/v2_validation/inference_output.schema.json",
+    "recording_statuses": {
+      "EVENTS_DETECTED": "at least one Inhale event detected (each event has its own status)",
+      "NO_INHALATION_DETECTED": "the detector found no Inhale event; this is a recording-level state, never an anomalous inhalation event",
+      "INPUT_ERROR": "input violates the contract; see error"
+    },
+    "event_statuses": {
+      "SCORE_ONLY": "scored against the frozen baseline; no NORMAL/ANOMALY decision",
+      "NOT_SCOREABLE": "not scored; see not_scoreable_reasons"
+    },
+    "event_fields": [
+      "event_id",
+      "start_time",
+      "end_time",
+      "duration_s",
+      "detector_confidence",
+      "detector_max_confidence",
+      "window_count",
+      "status",
+      "not_scoreable_reasons",
+      "anomaly_score",
+      "feature_values",
+      "feature_z_scores",
+      "mean_rms"
+    ],
+    "event_timestamp": "absolute event time = input.recorded_at + start_time (recorded_at is caller-supplied)",
+    "interpretation": "SCORE_ONLY: anomaly_score is the root-mean-square of robust z-scores of four spectral features relative to a frozen global baseline fitted on the reference dataset. It is a distance, not a probability, quality rating, NORMAL/ANOMALY decision or clinical assessment. No threshold is defined.",
+    "forbidden_derived_outputs": [
+      "NORMAL / ANOMALY labels (no validated threshold exists)",
+      "quality percentages or scores rescaled to 0-100",
+      "Correct / Incorrect or good / poor technique labels",
+      "technique error codes (e.g. too_short, too_fast, incomplete_breath)",
+      "clinical or alert states derived from anomaly_score"
+    ],
+    "status_enums": {
+      "recording": [
+        "EVENTS_DETECTED",
+        "NO_INHALATION_DETECTED",
+        "INPUT_ERROR"
+      ],
+      "event": [
+        "SCORE_ONLY",
+        "NOT_SCOREABLE"
+      ],
+      "not_scoreable_reasons": [
+        "nonfinite_feature",
+        "short_duration",
+        "close_neighbor",
+        "recording_boundary"
+      ]
+    }
+  },
+  "conformance": {
+    "golden_manifest": "results/v2_validation/golden/golden_manifest.json",
+    "tolerances": {
+      "recording_status_event_count_status_reasons": "exact",
+      "event_window_indices_and_times": "exact (times are multiples of 0.016 s; compare within 1e-9 s)",
+      "detector_confidence_abs": 0.0001,
+      "feature_values_relative": 0.0001,
+      "mean_rms_relative": 0.0001,
+      "feature_z_scores_abs": 0.01,
+      "anomaly_score_abs": 0.01,
+      "rationale": "0.01 z is one tenth of the 0.1 z 'negligible change' convention of pre-registered criterion G4a."
+    },
+    "reference_implementation": "src/prism_inference.py (python src/prism_inference.py <wav>)"
+  },
+  "known_limitations": [
+    "No anomaly or technique ground truth: anomaly_score measures distance from the reference-dataset baseline only.",
+    "The baseline is global (18 recording sessions of unknown subjects/devices), not personalized; session dependence remains (held-out epsilon^2 0.130).",
+    "Not validated on PRISM hardware. A different microphone or enclosure acts like a spectral tilt: a first-order tilt a = 0.5 shifts z(spectral_centroid_mean) by a median 2.49, so hardware scores need a hardware reference study before interpretation.",
+    "PRISM hardware buffers 5 s; reference recordings are 6.5-12.5 s. Detector behaviour and boundary censoring on 5 s clips are untested (events touching the clip edges are NOT_SCOREABLE).",
+    "The detector was trained on about two-thirds of the reference recordings; event agreement is mostly in-sample.",
+    "V2 was proposed after inspecting these data (Stages 2-7) and is evaluated on the same 318 events."
+  ]
+}

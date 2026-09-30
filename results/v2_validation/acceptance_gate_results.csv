@@ -1,0 +1,17 @@
+id,rule,value,passed,detail
+G1a,"epsilon2(V2) <= epsilon2(R0_current7), computed in the same run",0.1298816440583022,True,epsilon2 V2 0.1299 vs R0 0.2107
+G1b,<= 1.15,1.119585021966409,True,
+G2a,<= 0.5,0.22059244727895896,True,spectral_centroid_mean 0.221 (2018-05-03#3); spectral_flatness_mean 0.205 (2018-05-03#2); spectral_centroid_std 0.071 (2018-05-03#2); spectral_rolloff_std 0.050 (2018-05-03#2)
+G2b,"within [2/3, 3/2] for every fold","[0.8772204512608635, 1.0871350710186103]",True,
+G2c,> 0 and finite,true,True,min fold MAD 0.00581
+G3a,<= 0.2,0.11307889266052706,True,"spectral_centroid_mean / spectral_flatness_mean, fold 2018-05-03#2"
+G4a,<= 0.1 at every level,0.0004941858786812136,True,gain x0.5: 4.94e-04; gain x0.707: 2.12e-04; gain x1.41: 1.49e-04; gain x2: 2.57e-04; recording_gain x0.5: 4.94e-04; recording_gain x2: 2.57e-04
+G4b,>= 0.95 for each family,"{""noise"": 0.9968553459119497, ""tilt"": 1.0}",True,
+G4c,>= 0.9 in every applicable case,"{""applicable_cases"": 14, ""failing_cases"": 2}",False,FAILING: z_spectral_flatness_mean tilt 0.9: 0.750; z_spectral_centroid_std tilt 0.9: 0.583 | all: z_spectral_centroid_mean noise 10: 1.000; z_spectral_centroid_mean tilt -0.5: 1.000; z_spectral_centroid_mean tilt 0.9: 1.000; z_spectral_flatness_mean noise 10: 1.000; z_spectral_flatness_mean tilt -0.5: 1.000; z_spectral_flatness_mean tilt 0.9: 0.750; z_spectral_centroid_std noise 10: 0.917; z_spectral_centroid_std tilt -0.5: 1.000; z_spectral_centroid_std tilt 0.9: 0.583; z_spectral_rolloff_std noise 10: 0.917; z_spectral_rolloff_std tilt 0.9: 1.000; rms_z[V2] noise 10: 1.000; rms_z[V2] tilt -0.5: 0.917; rms_z[V2] tilt 0.9: 1.000
+G4d,no feature has |median delta z| >= 1 together with a monotone fraction < 0.5,[],True,"spectral_centroid_mean: 0.55 z, monotone 1.00; spectral_flatness_mean: 1.88 z, monotone 1.00; spectral_centroid_std: 0.41 z, monotone 0.19; spectral_rolloff_std: -0.18 z, monotone 0.29"
+G5a,|rho| < 0.3,0.0012564573258381651,True,
+G5b,|rho| < 0.3,0.1182911455394579,True,
+G6a,"all CSV outputs, the frozen baseline JSON and the contract JSON are byte-identical",[],True,34 files compared
+G6b,identical number of events per recording; event bounds equal to the detector's exact bounds within 1e-9 s; detector confidence within 1e-6; V2 features and mean_rms within 1e-6 relative; identical usability decisions; recordings without events reported as NO_INHALATION_DETECTED,"{""recordings"": 361, ""events_contract"": 364, ""recordings_with_count_mismatch"": 0, ""max_abs_diff_bounds_s"": 0.0, ""max_abs_diff_confidence"": 1.1102230246251565e-16, ""usability_mismatches"": 0, ""reason_mismatches"": 0, ""no_inhalation_detected"": 39, ""max_rel_diff_features"": 7.91351946516286e-15}",True,
+G6c,max |difference| <= 1e-12,0.0,True,
+G6d,0 and 0,"{""excluded_events_in_any_fit"": 0, ""held_out_session_events_in_own_fit"": 0}",True,
