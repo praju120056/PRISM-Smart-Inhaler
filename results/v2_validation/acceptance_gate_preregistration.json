@@ -1,0 +1,199 @@
+{
+  "stage": "Stage 8 - V2 representation validation: pre-registered acceptance gate",
+  "written": "2026-09-30",
+  "status": "PRE-REGISTERED. Committed before any result for the combined V2 representation, its ablations or its perturbation response was computed.",
+  "purpose": "Decide whether V2 is stable and specified well enough to be frozen TEMPORARILY as the PRISM MVP inference representation while scientific validation continues. Passing the gate does NOT mean validated anomaly detection.",
+  "representation_under_test": {
+    "name": "V2",
+    "features_in_order": [
+      "spectral_centroid_mean",
+      "spectral_flatness_mean",
+      "spectral_centroid_std",
+      "spectral_rolloff_std"
+    ],
+    "score": "rms_z = sqrt(mean_j z_j^2), z_j = (x_j - median_j) / (1.4826 * MAD_j)",
+    "origin": "Proposed by Stage 7 (Entry 9, recommendation.json). Not tuned in Stage 8. Within-V2 ablations are descriptive only and cannot change V2 in this stage."
+  },
+  "evaluation_protocol": {
+    "baseline": "Strategy C (Stage 5): for each of the 18 sessions, per-feature median / 1.4826*MAD fitted on the USABLE events of the other sessions only, frozen, then applied to the held-out session.",
+    "events": "318 usable events (Stage 1 usability rule v1) in 18 sessions; session statistics use the 12 sessions with >= 5 usable events.",
+    "comparators": "R0_current7, R1_no_duration, R3_no_flatness_std, R5_no_mean_rms and R6_relative_level, as defined by Stage 7 build_representations. They are recomputed in the same run.",
+    "perturbations": "Stage 6/7 plan with the same seeds: event gain x0.5, x0.707, x1.414, x2; white noise at 30, 20 and 10 dB SNR; RMS-preserving first-order tilt a = -0.5, 0.5, 0.9; whole-recording gain x0.5 and x2. Event boundaries are fixed. Each perturbed event is scored by its own frozen LOSO fold baseline.",
+    "annotations": "Not used. Excluded (Stage 1) status is not anomaly ground truth."
+  },
+  "prior_knowledge_disclosure": [
+    "Per-feature values of the four V2 features were already known from Stages 2, 5 and 7 when this gate was written. They include:",
+    "- session epsilon^2 of held-out z: centroid_mean 0.62, flatness_mean 0.39, centroid_std 0.05, rolloff_std 0.05",
+    "- LOSO centre shifts of 0.07-0.39 pooled robust SD and scale ratios of 0.84-1.20x",
+    "- per-feature noise, tilt and gain responses",
+    "Criteria built on those values (G2a-G2c, G4a, G4d) are therefore CONFIRMATORY re-checks, not independent tests.",
+    "Values not known before Stage 8 are the genuine tests: the combined V2 score and its session dependence (G1a, G1b), fold-wise correlation stability (G3a), combined perturbation response and per-session direction consistency (G4b, G4c), background-noise confound (G5a, G5b) and end-to-end reproducibility of the inference implementation (G6b)."
+  ],
+  "criteria": [
+    {
+      "id": "G1a",
+      "dimension": "cross_session_stability",
+      "metric": "Kruskal-Wallis epsilon^2 of held-out rms_z across sessions with >= 5 usable events",
+      "rule": "epsilon2(V2) <= epsilon2(R0_current7), computed in the same run",
+      "basis": "comparative (non-inferiority against the representation V2 would replace; margin 0)",
+      "justification": "V2 is justified only if it does not increase session dependence relative to the current representation. No absolute acceptable level can be derived from Stages 1-7 (see not_definable).",
+      "known_before_stage8": "No. Component values are known, but Stage 7 showed the combined value cannot be predicted from them: removing duration raised epsilon^2 from 0.211 to 0.283."
+    },
+    {
+      "id": "G1b",
+      "dimension": "cross_session_stability",
+      "metric": "generalization ratio = median held-out rms_z / median in-sample (fold training) rms_z, usable events",
+      "rule": "<= 1.15",
+      "basis": "inherited from Stage 5",
+      "justification": "Stage 5 described ratios of 1.10-1.15 as held-out scores 'close to the fitting distribution', against 1.9-2.0 for the first-20 design.",
+      "known_before_stage8": "No"
+    },
+    {
+      "id": "G2a",
+      "dimension": "feature_scale_stability",
+      "metric": "per V2 feature, max over the 18 LOSO folds of |fold median - pooled median| / pooled scale; pooled = all 318 usable events",
+      "rule": "<= 0.5",
+      "basis": "anchored convention",
+      "justification": "Leaving out any one whole session must not move a feature's centre further than the imprecision of a random 20-event calibration set. Stage 2 measured that imprecision as a 95th-percentile median shift of 0.49-0.58 robust SD and called it 'numerically stable but imprecise'.",
+      "known_before_stage8": "Yes (Stage 5: 0.07-0.39). Confirmatory."
+    },
+    {
+      "id": "G2b",
+      "dimension": "feature_scale_stability",
+      "metric": "per V2 feature and fold, fold scale / pooled scale",
+      "rule": "within [2/3, 3/2] for every fold",
+      "basis": "anchored convention",
+      "justification": "Same anchor as G2a: Stage 2 random-20 MAD 5th-95th percentile was 0.54-1.57x the population MAD, rounded inward to [2/3, 3/2].",
+      "known_before_stage8": "Yes (Stage 5: 0.84-1.20). Confirmatory."
+    },
+    {
+      "id": "G2c",
+      "dimension": "feature_scale_stability",
+      "metric": "MAD of every V2 feature in every fold and in the pooled fit",
+      "rule": "> 0 and finite",
+      "basis": "numerical sanity",
+      "justification": "Robust z is undefined otherwise.",
+      "known_before_stage8": "Yes. Confirmatory."
+    },
+    {
+      "id": "G3a",
+      "dimension": "correlation_stability",
+      "metric": "max over the 18 LOSO folds and the 6 V2 feature pairs of |Spearman rho(fold training events) - Spearman rho(all usable events)|",
+      "rule": "<= 0.2",
+      "basis": "inherited threshold (Stage 7 pre-specified multivariate stability gate), applied with rank correlation",
+      "justification": "rms_z weighs correlated deviations jointly, so a correlation structure that depends on which sessions are included changes what the score measures. Rank correlation replaces MCD because Stage 7 showed MCD solutions are implementation-dependent, and the V2 baseline is rank/median based.",
+      "known_before_stage8": "No"
+    },
+    {
+      "id": "G4a",
+      "dimension": "controlled_perturbation / recording_level_confound",
+      "metric": "95th percentile over usable events of |delta rms_z(V2)| at each event-gain level (x0.5, x0.707, x1.414, x2) and each whole-recording gain level (x0.5, x2)",
+      "rule": "<= 0.1 at every level",
+      "basis": "convention",
+      "justification": "The score must be invariant to device gain and distance. 0.1 z is about 7% of the Stage 7 usable 5-95% score range (R0: 0.51-1.92).",
+      "known_before_stage8": "Largely. Stage 7 per-feature max |delta z| under gain was <= 0.058 (flatness_mean, power floor) and < 1e-5 for the other V2 features. Confirmatory."
+    },
+    {
+      "id": "G4b",
+      "dimension": "controlled_perturbation",
+      "metric": "fraction of usable events whose z-space distance from their unperturbed z grows monotonically with perturbation intensity (tolerance 1e-4 z), for the noise and tilt families",
+      "rule": ">= 0.95 for each family",
+      "basis": "convention",
+      "justification": "Stage 7 representations measured 0.969-1.0; a representation that responds erratically to a graded artificial change is not predictable.",
+      "known_before_stage8": "Partly (Stage 7 representations containing V2 plus other features); V2 itself not computed."
+    },
+    {
+      "id": "G4c",
+      "dimension": "controlled_perturbation",
+      "metric": "for each V2 feature, and for the V2 rms_z, at the strongest noise level (10 dB SNR) and the strongest tilts (a = -0.5 and a = 0.9): the fraction of sessions with >= 5 usable events whose median delta has the same sign as the pooled median delta; applies only where |pooled median delta| >= 0.1",
+      "rule": ">= 0.9 in every applicable case",
+      "basis": "convention",
+      "justification": "A response that reverses direction between sessions cannot be interpreted consistently. 0.9 means at least 11 of 12 sessions.",
+      "known_before_stage8": "No"
+    },
+    {
+      "id": "G4d",
+      "dimension": "controlled_perturbation",
+      "metric": "per V2 feature: |median delta z at 30 dB SNR| and noise monotone fraction",
+      "rule": "no feature has |median delta z| >= 1 together with a monotone fraction < 0.5",
+      "basis": "Stage 7 diagnosis of fragility (spectral_flatness_std: 4.80 z, 0.17 monotone)",
+      "justification": "Excludes the large-and-erratic noise response that led to removing spectral_flatness_std.",
+      "known_before_stage8": "Yes. Confirmatory."
+    },
+    {
+      "id": "G5a",
+      "dimension": "recording_level_confound",
+      "metric": "pooled Spearman rho between held-out V2 rms_z and the recording background RMS (median post_event RMS envelope of the whole recording; Stage 7 definition), usable events",
+      "rule": "|rho| < 0.3",
+      "basis": "convention (Cohen 1988 'medium' effect boundary; external)",
+      "justification": "The score should not track the recording's noise floor, which is a property of the recording environment and device, not of the inhalation.",
+      "known_before_stage8": "No"
+    },
+    {
+      "id": "G5b",
+      "dimension": "recording_level_confound",
+      "metric": "within-session Spearman rho (Stage 2 within_group_spearman) between held-out V2 rms_z and recording background RMS, usable events",
+      "rule": "|rho| < 0.3",
+      "basis": "convention (as G5a)",
+      "justification": "As G5a, with between-session offsets removed.",
+      "known_before_stage8": "No"
+    },
+    {
+      "id": "G6a",
+      "dimension": "reproducibility",
+      "metric": "two complete runs in the reference environment (project venv)",
+      "rule": "all CSV outputs, the frozen baseline JSON and the contract JSON are byte-identical",
+      "basis": "engineering requirement",
+      "justification": "A frozen representation must be exactly reproducible.",
+      "known_before_stage8": "No"
+    },
+    {
+      "id": "G6b",
+      "dimension": "reproducibility",
+      "metric": "the Stage 8 reference inference implementation applied to all 361 raw WAVs, compared with the Stage 1 event table",
+      "rule": "identical number of events per recording; event bounds equal to the detector's exact bounds within 1e-9 s; detector confidence within 1e-6; V2 features and mean_rms within 1e-6 relative; identical usability decisions; recordings without events reported as NO_INHALATION_DETECTED",
+      "basis": "engineering requirement",
+      "justification": "The inference contract must reproduce exactly the events and features the baseline was fitted on.",
+      "known_before_stage8": "No"
+    },
+    {
+      "id": "G6c",
+      "dimension": "reproducibility",
+      "metric": "scores computed from the exported frozen baseline JSON vs scores from the in-memory fit",
+      "rule": "max |difference| <= 1e-12",
+      "basis": "engineering requirement",
+      "justification": "Baseline serialization must not change scores.",
+      "known_before_stage8": "No"
+    },
+    {
+      "id": "G6d",
+      "dimension": "reproducibility / leakage",
+      "metric": "held-out-session events and excluded events in any LOSO fold fit",
+      "rule": "0 and 0",
+      "basis": "protocol requirement",
+      "justification": "A held-out session must never contribute to its own baseline.",
+      "known_before_stage8": "No"
+    }
+  ],
+  "not_definable_from_stage1_7_evidence": [
+    "An absolute acceptable level of session dependence. Sessions are recording sittings of unknown subject, device and placement, and there is no ground truth for how much between-session variation is legitimate. Absolute values are reported, not gated.",
+    "Any criterion that the score detects meaningful inhalation anomalies. There is no anomaly or technique ground truth.",
+    "Any criterion for transfer to PRISM hardware (different microphone, 5 s buffer). No hardware recordings exist."
+  ],
+  "explicitly_not_criteria": [
+    "Excluded-vs-usable separation or AUC. Excluded status is not anomaly ground truth; it is reported descriptively only.",
+    "Score magnitude, or whether V2 'looks better' than a comparator on any separation measure."
+  ],
+  "reported_not_gated": [
+    "Part A: baseline parameters, z and score distributions, session medians, contributions, held-out session behaviour.",
+    "Part D: leave-one-feature-out ablations of V2 (descriptive; no feature is removed in Stage 8).",
+    "Part E: evaluation of mean_rms as a separate level channel.",
+    "Score correlation with duration, detector confidence and mean_rms (within-session)."
+  ],
+  "decision_rule": "V2 PASSES only if every criterion G1a-G6d passes. Otherwise it FAILS, and every failing criterion is reported.",
+  "consequences": {
+    "pass": "The inference contract is issued with status FROZEN_FOR_MVP_ENGINEERING. This means a representation specified well enough for engineering integration while scientific validation continues. It does not mean a validated anomaly detector, and it introduces no threshold and no NORMAL/ANOMALY output.",
+    "fail": "The contract is issued with status DRAFT_NOT_FROZEN and lists the failing criteria. Neither V2 nor the gate is modified post hoc in Stage 8. Any exception is the project owner's decision."
+  },
+  "deviations_policy": "Any change to this gate after this commit must be recorded as a deviation in PRISM_RESEARCH_LOG.md Entry 10."
+}
