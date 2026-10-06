@@ -1,0 +1,38 @@
+representation,id,value,passed,detail
+V2,G1a,0.1298816440583022,True,epsilon2 0.1299 vs R0 0.2107
+V2,G1b,1.119585021966409,True,
+V2,G2a,0.22059244727895896,True,
+V2,G2b,"[0.8772204512608635, 1.0871350710186103]",True,
+V2,G2c,true,True,
+V2,G3a,0.11307889266052706,True,
+V2,G4a,0.0004941858786806529,True,
+V2,G4b,"{""noise"": 0.9968553459119497, ""tilt"": 1.0}",True,
+V2,G4c,"{""applicable_cases"": 14, ""failing_cases"": 2}",False,FAILING: z_spectral_flatness_mean tilt 0.9: 0.750; z_spectral_centroid_std tilt 0.9: 0.583
+V2,G4d,[],True,
+V2,G5a,0.0012564573258381651,True,
+V2,G5b,0.1182911455394579,True,
+V2_RC,G1a,0.08883172518228494,True,epsilon2 0.0888 vs R0 0.2107
+V2_RC,G1b,1.092877147925691,True,
+V2_RC,G2a,0.22059244727895896,True,
+V2_RC,G2b,"[0.8772204512608635, 1.0871350710186103]",True,
+V2_RC,G2c,true,True,
+V2_RC,G3a,0.11307889266052706,True,
+V2_RC,G4a,0.0006547888627617456,True,
+V2_RC,G4b,"{""noise"": 0.9968553459119497, ""tilt"": 1.0}",True,
+V2_RC,G4c,"{""applicable_cases"": 14, ""failing_cases"": 3}",False,FAILING: z_spectral_flatness_mean tilt 0.9: 0.750; z_spectral_centroid_std tilt 0.9: 0.583; score[V2_RC] tilt -0.5: 0.833
+V2_RC,G4d,[],True,
+V2_RC,G5a,0.03701175489157821,True,
+V2_RC,G5b,0.2045532570822044,True,
+V2_RC,RC_admissible,"{""passed"": true, ""max_condition_number"": 5.501631982969051, ""max_correlation_shift"": 0.11398636049876798, ""min_training_events_per_feature"": 65.25, ""pooled_correlation"": [[1.0, 0.5976586992749929, 0.05254590890101567, -0.08041089645779798], [0.5976586992749929, 1.0, 0.061252090652826004, -0.2982773247830919], [0.05254590890101567, 0.061252090652826004, 1.0, 0.3698323568460713], [-0.08041089645779798, -0.2982773247830919, 0.3698323568460713, 1.0]]}",True,Stage 7 multivariate gate thresholds
+V2_G4C,G1a,0.19215198595366703,True,epsilon2 0.1922 vs R0 0.2107
+V2_G4C,G1b,1.1044418877625148,True,
+V2_G4C,G2a,0.22059244727895896,True,
+V2_G4C,G2b,"[0.8772204512608635, 1.0610140011209748]",True,
+V2_G4C,G2c,true,True,
+V2_G4C,G3a,0.04402217143366858,True,
+V2_G4C,G4a,1.5915814011169215e-07,True,
+V2_G4C,G4b,"{""noise"": 0.8207547169811321, ""tilt"": 1.0}",False,
+V2_G4C,G4c,"{""applicable_cases"": 8, ""failing_cases"": 0}",True,all: z_spectral_centroid_mean noise 10: 1.000; z_spectral_centroid_mean tilt -0.5: 1.000; z_spectral_centroid_mean tilt 0.9: 1.000; z_spectral_rolloff_std noise 10: 0.917; z_spectral_rolloff_std tilt 0.9: 1.000; score[V2_G4C] noise 10: 0.917; score[V2_G4C] tilt -0.5: 0.917; score[V2_G4C] tilt 0.9: 1.000
+V2_G4C,G4d,[],True,
+V2_G4C,G5a,-0.10782471207513598,True,
+V2_G4C,G5b,0.023017763722668238,True,

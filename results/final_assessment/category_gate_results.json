@@ -1,0 +1,54 @@
+{
+  "outcome": "PASS",
+  "criteria": {
+    "K1": {
+      "rule": "outer-LOSO exceedance at alpha 0.05: 95% session-bootstrap interval contains 0.05 and point estimate <= 0.10",
+      "rate": 0.05345911949685535,
+      "ci_low": 0.007807301568441074,
+      "ci_high": 0.0897114074970884,
+      "n": 318,
+      "outside": 17,
+      "passed": true
+    },
+    "K2": {
+      "rule": "deployment reference: (c_hi - c_lo) / (2 c_alpha) <= 0.20",
+      "cut": 1.8297261539489305,
+      "band": [
+        1.6200762237720456,
+        1.9724145879667279
+      ],
+      "relative_half_width": 0.09628172047337866,
+      "passed": true
+    },
+    "K3": {
+      "rule": "OUTSIDE fraction non-decreasing over noise 30->20->10 dB and tilt 0.5->0.9; |gain - identity| <= 0.02",
+      "identity": 0.05345911949685535,
+      "noise_30_20_10": [
+        0.2861635220125786,
+        0.660377358490566,
+        0.9937106918238994
+      ],
+      "tilt_0.5_0.9": [
+        0.46540880503144655,
+        0.8081761006289309
+      ],
+      "tilt_-0.5": 0.24842767295597484,
+      "gain_minus_identity": {
+        "gain x0.5": 0.0,
+        "gain x0.707": 0.0,
+        "gain x1.41": 0.0,
+        "gain x2": 0.0,
+        "recording_gain x0.5": 0.0,
+        "recording_gain x2": 0.0
+      },
+      "passed": true
+    },
+    "K4": {
+      "rule": "a complete second run produces byte-identical CSV/JSON outputs",
+      "files_compared": 9,
+      "mismatches": [],
+      "passed": true
+    }
+  },
+  "preregistration_sha256": "5b5cdf6ee4498ddb69b21be6b54546d1bd1fc0ec3ddde72ad519dc90c61801e6"
+}

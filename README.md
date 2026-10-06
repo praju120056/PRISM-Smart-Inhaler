@@ -26,7 +26,11 @@ inference. The detector classifies overlapping 200 ms audio windows, one every
 
 Current state (details in `ARCHITECTURE.md` §1 and §9):
 - **Implemented:** inhalation events (times, durations) and whether each one is measurable ("scoreable").
-- **Experimental:** a distance of each inhalation from a global reference baseline (`anomaly_score`). It has no threshold and no NORMAL/ANOMALY label.
+- **Implemented; calibration checked held-out by recording session on the same PRISM corpus:** a final reference-range assessment of each scoreable inhalation (Stage 9).
+  - **What it gives:** the event's acoustic deviation from a global reference, and its empirical reference-tail probability among the reference deviations.
+  - **The statement:** `WITHIN_REFERENCE_RANGE` or `OUTSIDE_REFERENCE_RANGE` (deviation above the one-sided 95% upper reference limit), with a `STABLE` / `BORDERLINE` label.
+  - **What it is not:** external validation, or a normal/abnormal, anomaly, technique or clinical classification.
+- **Experimental:** the underlying V2 representation (`DRAFT_NOT_FROZEN`).
 - **Planned:** a personal baseline. It needs longitudinal user/device data.
 - **Not validated:** Drug/Exhale event analytics, such as actuation or coordination timing.
 - **Not supported:** technique-quality or clinical labels. The dataset has acoustic event annotations only.
@@ -116,7 +120,7 @@ This writes `results/post_event/inhalation_events.csv`, a run manifest, and
 histograms plus duration-versus-RMS/energy scatter plots. To persist each
 original-waveform event segment as a WAV file too, add `--export-segments`.
 
-### Finalize the Inhale-Event Dataset (anomaly detection, Stage 1)
+### Finalize the Inhale-Event Dataset (Stage 1)
 
 ```bash
 python src/inhale_dataset.py
@@ -134,7 +138,7 @@ writes the following to `results/inhale_dataset/`:
 "Usable" means eligible for baseline modeling. It is not a technique-quality
 label. See `PRISM_RESEARCH_LOG.md` Entry 3 for the rule and its evidence.
 
-### Feature Analysis and V1 Feature Selection (anomaly detection, Stage 2)
+### Feature Analysis and V1 Feature Selection (Stage 2)
 
 ```bash
 python src/feature_analysis.py
@@ -153,7 +157,7 @@ edge check. It writes the following to `results/feature_analysis/`:
 
 See `PRISM_RESEARCH_LOG.md` Entry 4.
 
-### V1 Robust Baseline (anomaly detection, Stage 3)
+### V1 Robust Baseline (Stage 3)
 
 ```bash
 python src/baseline_v1.py
@@ -171,7 +175,7 @@ The features come from `feature_selection_v1.json`. It writes the following to
 No anomaly score, threshold or NORMAL/ANOMALY label is produced yet. See
 `PRISM_RESEARCH_LOG.md` Entry 5.
 
-### V1 Candidate Combined Scores (anomaly detection, Stage 4)
+### V1 Candidate Combined Scores (Stage 4)
 
 ```bash
 python src/scoring_v1.py
@@ -188,7 +192,7 @@ the 20 calibration events leave-one-out. It writes the following to
 No threshold is applied and no event is labelled NORMAL or ANOMALY. See
 `PRISM_RESEARCH_LOG.md` Entry 6.
 
-### Baseline Strategy Experiment (anomaly detection, Stage 5)
+### Baseline Strategy Experiment (Stage 5)
 
 ```bash
 python src/baseline_strategies.py
@@ -208,7 +212,7 @@ medians, fold parameters and session-scale diagnostics to
 `results/baseline_strategies/`. No threshold is applied. See
 `PRISM_RESEARCH_LOG.md` Entry 7.
 
-### Natural Population Separation (anomaly detection, Stage 6)
+### Natural Population Separation (Stage 6)
 
 ```bash
 python src/natural_population_analysis.py
@@ -228,7 +232,7 @@ pooled and within sessions, with feature attribution. It also:
 Outputs go to `results/natural_population/`. Excluded events are not treated as
 anomalies, and no threshold is applied. See `PRISM_RESEARCH_LOG.md` Entry 8.
 
-### Representation Robustness and Ablation (anomaly detection, Stage 7)
+### Representation Robustness and Ablation (Stage 7)
 
 ```bash
 python src/representation_analysis.py
@@ -251,7 +255,7 @@ Outputs go to `results/representation_analysis/`, and the decision is in
 `recommendation.json`. No threshold is applied. See `PRISM_RESEARCH_LOG.md`
 Entry 9.
 
-### V2 Validation and Inference Contract (anomaly detection, Stage 8)
+### V2 Validation and Inference Contract (Stage 8)
 
 ```bash
 # Reference run, then the recorded run (the second run checks byte-identity against the first, gate G6a)
@@ -296,6 +300,70 @@ without a detected inhalation is reported as `NO_INHALATION_DETECTED`, never
 as an anomalous event. The baseline was fitted on the reference dataset and
 has not been validated for PRISM hardware. See `PRISM_RESEARCH_LOG.md`
 Entry 10.
+
+### Final Event-Level Assessment (Stage 9) — the canonical pipeline
+
+```bash
+# Assess one recording: raw 8 kHz WAV -> events -> V2 deviation -> reference-calibrated assessment (JSON)
+venv/Scripts/python.exe src/prism_assessment.py data/<recording>.wav --input-domain reference_dataset
+
+# Reproduce Stage 9: reference run, then the recorded run (byte-identity check K4)
+venv/Scripts/python.exe src/assessment_validation.py --output-dir <empty scratch dir>
+venv/Scripts/python.exe src/assessment_validation.py --reference-run <scratch dir>
+```
+
+Both output directories must be empty before the run, apart from
+`stage9_preregistration.json` in `results/final_assessment/`.
+- **Why:** the K4 check compares every CSV/JSON present in the output directory (Entries 13–14).
+- **What happens otherwise:** the script refuses to run with a `StageError` naming the leftover files. Remove the earlier outputs, or choose another `--output-dir`.
+
+Stage 9 adds the final stage of the pipeline on top of the unchanged V2
+inference contract. It does not change the detector, events, scoreability,
+features or baseline.
+
+**What each event gets.**
+- **Empirical reference-tail probability:** p = (1 + #{i : cᵢ ≥ a}) / (n + 1).
+  - a is the event's V2 aggregate acoustic deviation;
+  - cᵢ are the n = 318 reference deviations, each reference inhalation scored by a baseline fitted without its own recording session.
+
+  It is an empirical upper-tail probability with the +1 correction. It is not a hypothesis-test p-value, and no finite-sample guarantee is claimed.
+- **Reference-range assessment:**
+  - `WITHIN_REFERENCE_RANGE` if p > 0.05;
+  - `OUTSIDE_REFERENCE_RANGE` if p ≤ 0.05, equivalently a > c\*. The one-sided 95% upper reference limit c\* = 1.830 is the 304th smallest of the 318 reference deviations; the effective level is 15/319 ≈ 0.047;
+  - `NOT_ASSESSED` if the event is not scoreable, with its reasons.
+- **Stability label:**
+  - `STABLE`: the category is unchanged when the 18 reference sessions are resampled (2,000 draws, 5th–95th percentile band of the cut) and under every allowed ±1 detector-window boundary shift (16 ms);
+  - `BORDERLINE`: it changes under at least one of them.
+
+  It is not a probability that the category is correct.
+
+**Pre-registered gate.** The gate (`results/final_assessment/stage9_preregistration.json`) passed. It was evaluated held-out by recording session on the same PRISM corpus, which is an internal consistency/calibration check, not external validation. The contract status is `CATEGORICAL_ASSESSMENT_ADOPTED`.
+- **K1, held-out exceedance:** 5.35% [0.78%, 8.97%].
+- **K2, cut stability:** relative half-width 0.096.
+- **K3, controlled perturbations:** monotone under noise and spectral tilt, unchanged under gain.
+- **K4, reproducibility:** byte-identical reruns.
+
+**Robustness checks.**
+- **Alternatives:** none qualified, so V2 is retained. A correlation-aware distance and a G4c-repair subset were both compared.
+- **End-to-end:** all 361 recordings processed with 0 failures, and the output agrees exactly with the table-based evaluation.
+
+**Limits.**
+- **Session concentration:** calibration holds marginally, not per session. 14 of the 17 held-out OUTSIDE events come from two recording sessions, and 15 of 17 come from 2018-05-03 when whole days are held out. 8 of the 17 are `BORDERLINE`.
+- **Same corpus only:** every earlier design decision used the same 318 events. There is no external dataset, and the assessment is not validated for new users, devices, microphones or PRISM hardware.
+- **Global reference:** the reference is not personal (the data contain no user or device identifiers).
+- **Acoustic reference only:** OUTSIDE describes acoustic deviation relative to the PRISM reference corpus. It is not a normal/abnormal, anomaly, technique-quality or clinical classification.
+
+See `PRISM_RESEARCH_LOG.md` Entries 12–13.
+
+| File (`results/final_assessment/`) | Content |
+|---|---|
+| `assessment_contract_v1.json` | Canonical pipeline contract `prism-assessment-v1.0` |
+| `assessment_reference_v1.json` | Frozen reference: V2 baseline, 318 calibration scores, cut 1.830, band [1.620, 1.972] |
+| `assessment_output.schema.json` | JSON Schema of the per-recording output |
+| `golden/` | Conformance vectors for re-implementations |
+| `heldout_assessment.csv`, `calibration_by_session.csv` | Leave-one-session-out evaluation |
+| `e2e_loso_*.csv`, `e2e_deployment_*.csv` | End-to-end runs of the canonical pipeline over all recordings |
+| `representation_gate.csv`, `category_gate_results.json` | Representation comparison and category gate |
 
 ### Output
 
@@ -368,7 +436,7 @@ PRISM smart inhaler/
     ├── visualize.py        # Confusion matrix and feature importance plots
     ├── run_pipeline.py     # Detector training entry point
     ├── post_event.py       # ONNX wrapper, Inhale event grouping and measurement
-    ├── inhale_dataset.py … v2_validation.py  # Anomaly research Stages 1-8
+    ├── inhale_dataset.py … v2_validation.py  # Research Stages 1-8 (baseline, deviation, V2)
     └── prism_inference.py  # Inference contract V2 reference implementation
 ```
 
@@ -619,6 +687,7 @@ Section 10 for the complete Firestore schema and session document format.
 |---|---|---|---|
 | `inhaler_cnn.onnx` | ML | Mobile | Input (N,25,124) float32; Output (N,4) raw logits |
 | V2 inference contract | ML | Mobile | `results/v2_validation/inference_contract_v2.json` (+ output schema, baseline, golden vectors) |
+| Assessment contract (final pipeline output) | ML | Mobile | `results/final_assessment/assessment_contract_v1.json` (+ reference, output schema, golden vectors) |
 | Feature parameters | ML | Mobile | See DSP parity table in ARCHITECTURE.md §6 |
 | BLE binary packet | Hardware | Mobile | See packet struct in ARCHITECTURE.md §5 |
 | Session document | Mobile | Cloud | See JSON schema in ARCHITECTURE.md §10 |
@@ -640,15 +709,16 @@ Raw audio does not cross any system boundary:
 | ML research pipeline (RF, SVM, XGBoost, CNN) | ✅ Complete |
 | ONNX export (inhaler_cnn.onnx, opset 17) | ✅ Complete |
 | Cross-validation results (89.0% mean accuracy) | ✅ Complete |
-| Inhale-event dataset + usability rule (anomaly Stage 1) | ✅ Implemented |
-| Feature analysis + V1 feature selection (anomaly Stage 2) | ✅ Implemented |
-| V1 robust baseline + per-feature robust z (anomaly Stage 3) | ✅ Implemented |
-| Candidate combined scores, no threshold (anomaly Stage 4) | ✅ Implemented |
-| Baseline strategy experiment across sessions (anomaly Stage 5) | ✅ Implemented |
-| Natural population separation + controlled sensitivity (anomaly Stage 6) | ✅ Implemented |
-| Representation robustness / ablation study (anomaly Stage 7) | ✅ Implemented (V2 feature set proposed, not adopted) |
-| V2 validation + inference contract (anomaly Stage 8) | ✅ Implemented. Pre-registered gate **failed** (G4c only), so the contract is `DRAFT_NOT_FROZEN`: interface specified and verified; V2 representation not frozen |
-| Threshold, NORMAL / ANOMALY output | 🔲 Not started |
+| Inhale-event dataset + usability rule (Stage 1) | ✅ Implemented |
+| Feature analysis + V1 feature selection (Stage 2) | ✅ Implemented |
+| V1 robust baseline + per-feature robust z (Stage 3) | ✅ Implemented |
+| Candidate combined scores, no threshold (Stage 4) | ✅ Implemented |
+| Baseline strategy experiment across sessions (Stage 5) | ✅ Implemented |
+| Natural population separation + controlled sensitivity (Stage 6) | ✅ Implemented |
+| Representation robustness / ablation study (Stage 7) | ✅ Implemented (V2 feature set proposed, not adopted) |
+| V2 validation + inference contract (Stage 8) | ✅ Implemented. Pre-registered gate **failed** (G4c only), so the contract is `DRAFT_NOT_FROZEN`: interface specified and verified; V2 representation not frozen |
+| Final event-level reference-range assessment (Stage 9) | ✅ Implemented. Empirical reference-tail probability and `WITHIN` / `OUTSIDE_REFERENCE_RANGE` against the one-sided 95% upper reference limit, with a `STABLE` / `BORDERLINE` label. The pre-registered gate passed (`CATEGORICAL_ASSESSMENT_ADOPTED`), held-out by recording session on the same PRISM corpus (not external validation); calibration holds marginally across sessions, not per session |
+| NORMAL / ANOMALY or technique-quality output | ⛔ Not supported (no ground truth); `OUTSIDE_REFERENCE_RANGE` is not an anomaly label |
 | ESP32 firmware | 🔲 Not started |
 | BLE protocol implementation | 🔲 Not started |
 | React Native mobile app | 🔲 Not started |

@@ -1,0 +1,101 @@
+{
+  "contract_version": "prism-assessment-v1.0",
+  "reference_id": "prism-assessment-ref-2026-10-06",
+  "purpose": "Conformance vectors for re-implementations of the assessment layer (engineering, not validation).",
+  "inputs": "Same inputs as results/v2_validation/golden (dataset WAVs by file name and SHA-256).",
+  "tolerances": {
+    "inference_fields": "as results/v2_validation/golden/golden_manifest.json",
+    "reference_tail_probability": "exact (it is a count ratio) when aggregate_deviation is within 0.01 of the expected value and not within 0.01 of a calibration score",
+    "assessment_and_reliability": "exact"
+  },
+  "cases": [
+    {
+      "case": "single_scored_event",
+      "input": {
+        "type": "dataset_wav",
+        "file": "rec2018-01-22_17h41m33.475s.wav",
+        "sha256": "5ff05d4cd35f731aaf231c3fdc4b0ea2e29fb82199e60512798f9d185d20f86d"
+      },
+      "input_domain": "reference_dataset",
+      "expected": "expected/single_scored_event.json"
+    },
+    {
+      "case": "no_inhalation_detected",
+      "input": {
+        "type": "dataset_wav",
+        "file": "rec2018-01-23_11h00m33.928s.wav",
+        "sha256": "9d99aa359f02666344eef83f4d0b118cf90830f381619d6d0da37a3974391181"
+      },
+      "input_domain": "reference_dataset",
+      "expected": "expected/no_inhalation_detected.json"
+    },
+    {
+      "case": "close_neighbors_not_scoreable",
+      "input": {
+        "type": "dataset_wav",
+        "file": "rec2018-01-23_12h52m08.363s.wav",
+        "sha256": "e2008bcc158e7d2c40b2d774aaa38fc890876e2ef677662a733186e6275094c8"
+      },
+      "input_domain": "reference_dataset",
+      "expected": "expected/close_neighbors_not_scoreable.json"
+    },
+    {
+      "case": "short_event_not_scoreable",
+      "input": {
+        "type": "dataset_wav",
+        "file": "rec2018-01-23_10h45m44.127s.wav",
+        "sha256": "5be0121004a9041a01f26b43f2b72209d044db2c171f441c7979518f55cefd03"
+      },
+      "input_domain": "reference_dataset",
+      "expected": "expected/short_event_not_scoreable.json"
+    },
+    {
+      "case": "boundary_event_not_scoreable",
+      "input": {
+        "type": "dataset_wav",
+        "file": "rec2018-01-23_10h52m57.816s.wav",
+        "sha256": "0ea52d6a3d779faaa45b4673df09b7dcf73f047f184be4d225fa77bb5004f574"
+      },
+      "input_domain": "reference_dataset",
+      "expected": "expected/boundary_event_not_scoreable.json"
+    },
+    {
+      "case": "digital_silence_2s",
+      "input": {
+        "type": "synthetic_wav",
+        "path": "inputs/digital_silence_2s.wav",
+        "sha256": "78f82cd49af869013e8ec414a15d71f5f4f2ec8d006b6a0c50527c91eaa7a85f"
+      },
+      "input_domain": "unknown",
+      "expected": "expected/digital_silence_2s.json"
+    },
+    {
+      "case": "white_noise_3s_minus20dBFS",
+      "input": {
+        "type": "synthetic_wav",
+        "path": "inputs/white_noise_3s_minus20dBFS.wav",
+        "sha256": "fef079d2fc66a4f4939e5098076ab6d6851be7ec921fac7fc85abf3e62a9d94a"
+      },
+      "input_domain": "unknown",
+      "expected": "expected/white_noise_3s_minus20dBFS.json"
+    },
+    {
+      "case": "input_error_sample_rate_16k",
+      "input": {
+        "type": "inline",
+        "description": "16000 zero samples at 16000 Hz"
+      },
+      "input_domain": "unknown",
+      "expected": "expected/input_error_sample_rate_16k.json"
+    },
+    {
+      "case": "input_error_too_short",
+      "input": {
+        "type": "inline",
+        "description": "1535 zero samples at 8000 Hz"
+      },
+      "input_domain": "unknown",
+      "expected": "expected/input_error_too_short.json"
+    }
+  ]
+}

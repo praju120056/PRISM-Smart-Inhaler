@@ -1,0 +1,52 @@
+{
+  "contract_version": "prism-assessment-v1.0",
+  "inference_contract_version": "prism-inference-v2.0",
+  "reference_id": "prism-assessment-ref-2026-10-06",
+  "baseline_id": "prism-assessment-ref-2026-10-06/baseline",
+  "detector_model_sha256": "2e4e72d3ca040b15718ad6b09ae4ac3069c38f5c1a389327bf6b38c4e2903725",
+  "recording_status": "INPUT_ERROR",
+  "error": "unsupported_sample_rate",
+  "input": {
+    "sample_rate": 16000,
+    "n_samples": 16000,
+    "duration_s": 1.0,
+    "input_domain": "unknown",
+    "recording_id": null,
+    "recorded_at": null
+  },
+  "baseline_domain_validated": false,
+  "feature_order": [
+    "spectral_centroid_mean",
+    "spectral_flatness_mean",
+    "spectral_centroid_std",
+    "spectral_rolloff_std"
+  ],
+  "reference": {
+    "alpha": 0.05,
+    "categorical": true,
+    "cut": 1.8297261539489305,
+    "band": [
+      1.6200762237720456,
+      1.9724145879667279
+    ],
+    "n_reference_events": 318,
+    "n_reference_sessions": 18,
+    "feature_center": {
+      "spectral_centroid_mean": 0.3705300390720367,
+      "spectral_flatness_mean": 0.13224149495363235,
+      "spectral_centroid_std": 0.039400866255164105,
+      "spectral_rolloff_std": 0.08070974424481385
+    },
+    "feature_scale": {
+      "spectral_centroid_mean": 0.027867408952116965,
+      "spectral_flatness_mean": 0.029707026135921476,
+      "spectral_centroid_std": 0.008977376704663007,
+      "spectral_rolloff_std": 0.016905980072915563
+    }
+  },
+  "n_events": 0,
+  "n_scoreable": 0,
+  "n_outside_reference_range": 0,
+  "events": [],
+  "interpretation": "aggregate_deviation a is the root-mean-square of robust z-scores of four spectral features relative to a global reference baseline. reference_tail_probability is the empirical reference-tail probability p = (1 + #{i : c_i >= a}) / (n + 1), where c_1..c_n are the reference deviations (n = n_reference_events; each reference inhalation scored by a baseline fitted without its own recording session): an empirical upper-tail probability of the reference deviation distribution with the +1 correction, not a hypothesis-test p-value. OUTSIDE_REFERENCE_RANGE means p <= 0.05, equivalently a above the one-sided 95% upper reference limit (reference.cut); WITHIN_REFERENCE_RANGE means p > 0.05. STABLE means the category is unchanged under resampling of the reference sessions and +/-1 detector-window boundary shifts; BORDERLINE means it changes under at least one of them. These statements describe acoustic deviation relative to the PRISM reference corpus only; they are not normal/abnormal, anomaly, technique-quality or clinical classifications."
+}

@@ -5,10 +5,12 @@
 > mobile developers, ML researchers, and cloud/backend engineers working on the
 > end-to-end PRISM smart inhaler platform.
 >
-> **Last updated:** 2026-10-06
-> **Status:** event detector implemented; post-event and anomaly research
-> stages 1–8 implemented; inference contract V2 issued as `DRAFT_NOT_FROZEN`;
-> hardware, mobile app, cloud and dashboard not started.
+> **Last updated:** 2026-10-07
+> **Status:** event detector implemented; post-event and baseline/assessment research
+> stages 1–9 implemented; inference contract V2 issued as `DRAFT_NOT_FROZEN`;
+> final event-level reference-range assessment (`prism-assessment-v1.0`,
+> Stage 9) implemented, with calibration checked held-out by recording session
+> on the same PRISM corpus; hardware, mobile app, cloud and dashboard not started.
 
 ### Status vocabulary
 
@@ -28,11 +30,21 @@ These states are used throughout this document (AGENTS.md §18).
 | Topic | Authoritative source |
 |---|---|
 | Inference (detector → events → scoreability → features → score → output) | `results/v2_validation/inference_contract_v2.json`, `src/prism_inference.py` |
+| Final event-level assessment (the canonical pipeline output) | `results/final_assessment/assessment_contract_v1.json`, `src/prism_assessment.py` |
 | Per-frame DSP | `src/librosa_extractor.py::extract_features_from_audio` |
-| Research history, evidence and decisions | `PRISM_RESEARCH_LOG.md` (Entries 1–10) |
+| Research history, evidence and decisions | `PRISM_RESEARCH_LOG.md` (Entries 1–12) |
 | Running the repository | `README.md` |
 
 If this document disagrees with the contract or the code, the contract and the code are correct, and this document must be fixed.
+
+### Revision 2026-10-07
+- **Stage 9 final event-level assessment added** (§8.6, §9.7, §13, §15, §17; Entries 12–13).
+  - **What the pipeline now ends with:** a reference-range assessment per scoreable event: `WITHIN_REFERENCE_RANGE` / `OUTSIDE_REFERENCE_RANGE` against the one-sided 95% upper reference limit, with an empirical reference-tail probability and a `STABLE` / `BORDERLINE` label.
+  - **What stays unchanged:** the inference contract V2.
+- **Terminology corrected after the Stage 9 audit (Entry 13).**
+  - The probability is an empirical reference-tail probability, not a conformal or hypothesis-test p-value.
+  - The threshold is a one-sided 95% upper reference limit.
+  - Validation is held-out by recording session on the same PRISM corpus, not external validation.
 
 ### Revision 2026-10-06 (summary of corrections)
 - **DSP (§6, §7, §8.6).**
@@ -45,7 +57,7 @@ If this document disagrees with the contract or the code, the contract and the c
 - **Inference flow (§8.6).** The frame-majority-vote reconstruction, session analytics and composite quality labels were replaced by the V2 inference contract, which is the implemented and verified flow.
 - **Withdrawn design (§9, §10, §11).** The personalized baseline engine design was withdrawn (Mahalanobis on MFCCs, EMA, 1.5/3.0 deviation bands, GOOD/POOR composite labels). So were the quality fields of the session document and the quality/anomaly dashboard views. None has an evidential basis, and the contract forbids these outputs (Research Entries 2, 3 and 10).
 - **New content.**
-  - the anomaly research stages and their status (§9, §17);
+  - the research stages and their status (§9, §17);
   - integration constraints for hardware and mobile (§4, §5, §6);
   - the contract output schema (§13);
   - conformance artefacts (§15).
@@ -101,7 +113,8 @@ It has no validated clinical inhalation-technique labels (Research Entry 2), so:
 |---|---|---|
 | Where is there an inhalation in the recording? | CNN windows → Inhale event grouping | IMPLEMENTED. Events agree with the annotations (259 of 260 annotated inhalations matched at IoU ≥ 0.5, mean IoU 0.876), but this is mostly in-sample for the detector (Entry 3) |
 | Is the event measurable? | Usability rule v1, which decides scoreability | IMPLEMENTED (Entry 3); reproduced by the contract (Entry 10, G6b) |
-| How far is the inhalation's spectrum from the reference baseline? | V2 features → frozen global baseline → `anomaly_score` | EXPERIMENTAL. `SCORE_ONLY`, no threshold; contract `DRAFT_NOT_FROZEN` (Entry 10) |
+| How far is the inhalation's spectrum from the reference baseline? | V2 features → frozen global baseline → aggregate deviation (`anomaly_score`) | IMPLEMENTED; the V2 representation is `DRAFT_NOT_FROZEN` (Entry 10) |
+| Is the inhalation's acoustic deviation within the empirical reference distribution of the PRISM reference corpus? | Empirical reference-tail probability → `WITHIN` / `OUTSIDE_REFERENCE_RANGE` against the one-sided 95% upper reference limit + `STABLE` / `BORDERLINE` | IMPLEMENTED; calibration checked held-out by recording session on the same PRISM corpus (Entries 12–13). Held-out exceedance 5.35%; marginal, not per-session; not external validation; not validated for new users, devices or PRISM hardware |
 | Is the inhalation consistent with *this user's* baseline? | Personalized baseline (V3) | PLANNED. Needs longitudinal user/device identifiers |
 | Was the inhaler actuated? Was there an exhale first? How were actuation and inhalation coordinated? | The detector emits Drug and Exhale windows | NOT VALIDATED. No event grouping, timing analysis or evaluation exists for Drug/Exhale, and the contract outputs none |
 | Is technique clinically correct, or within a clinical range? | — | NOT SUPPORTED. There are no technique-quality labels |
@@ -137,11 +150,13 @@ analytics are transmitted to the cloud, and no cloud ML inference is required.
 |---|---|---|
 | 1 | **Event detector:** a global CNN (ONNX) that classifies 200 ms windows as Drug / Exhale / Inhale / Noise | IMPLEMENTED; window-level cross-validation (§8.8) |
 | 2 | **Post-event layer:** Inhale events, scoreability, event features | IMPLEMENTED (Entries 1, 3, 10) |
-| 3 | **Global baseline and anomaly score:** frozen V2 baseline; `anomaly_score` as a distance | EXPERIMENTAL (Entry 10) |
+| 3 | **Global baseline and deviation:** frozen V2 baseline; aggregate deviation (`anomaly_score`) | IMPLEMENTED; V2 representation `DRAFT_NOT_FROZEN` (Entry 10) |
+| 3b | **Reference-range assessment:** empirical reference-tail probability, `WITHIN` / `OUTSIDE_REFERENCE_RANGE`, `STABLE` / `BORDERLINE` | IMPLEMENTED; checked held-out by recording session on the same PRISM corpus (Entries 12–13) |
 | 4 | **Personalized baseline:** per-user statistics and adaptation (V3/V4) | PLANNED |
-| 5 | **Threshold:** NORMAL / ANOMALY | Not started; no validated threshold methodology |
+| 5 | **NORMAL / ANOMALY or technique labels** | NOT SUPPORTED: no ground truth. `OUTSIDE_REFERENCE_RANGE` is a reference-distribution statement, not an anomaly label |
 
-The layers do not combine into a "quality assessment". No quality score exists.
+The layers do not combine into a "quality assessment". No quality score exists, and the final assessment
+is not one.
 
 ---
 
@@ -191,8 +206,10 @@ The layers do not combine into a "quality assessment". No quality score exists.
 |   Inhale window grouping -> events                                |
 |   Scoreability (usability rule v1)                                |
 |   V2 features on each event segment + mean_rms level channel      |
-|   Frozen global baseline -> z -> anomaly_score (SCORE_ONLY)       |
-|   -> contract output JSON (§13)                                   |
+|   Frozen global baseline -> z -> aggregate deviation              |
+| Final assessment (prism-assessment-v1.0, §9.7):                   |
+|   reference tail probability -> WITHIN / OUTSIDE_REFERENCE_RANGE  |
+|   + reliability -> canonical output JSON (§13)                    |
 |         |                                                         |
 | Feedback UI (display rules §9.4) + Local SQLite Storage           |
 +---------|---------------------------------------------------------+
@@ -842,7 +859,21 @@ Recording received (int16 PCM, 8 kHz, mono) + caller metadata (recorded_at, inpu
   recording_status: EVENTS_DETECTED | NO_INHALATION_DETECTED | INPUT_ERROR
   per event: times, confidence, status SCORE_ONLY | NOT_SCOREABLE, reasons,
              anomaly_score, feature_values, feature_z_scores, mean_rms
+     |
+     v [9] Final assessment (prism-assessment-v1.0; src/prism_assessment.py; §9.7)
+  p = (1 + #{c in C : c >= anomaly_score}) / (|C| + 1)
+      C = 318 leave-one-session-out reference scores (assessment_reference_v1.json)
+  assessment = OUTSIDE_REFERENCE_RANGE if anomaly_score > cut (1.830, i.e. p <= 0.05)
+               WITHIN_REFERENCE_RANGE otherwise; NOT_ASSESSED if not scoreable
+  reliability = STABLE if the event and its 8 one-stride boundary variants all lie on
+                one side of the band [1.620, 1.972], else BORDERLINE
+     |
+     v [10] Canonical output JSON (assessment_output.schema.json; §13)
 ```
+
+**Canonical entry point.** `python src/prism_assessment.py <wav>` runs steps [1]–[10].
+Steps [1]–[8] are the unchanged inference contract V2. Its output is the
+pipeline's final, machine-readable result.
 
 **Worked example.** `results/recording_runs/rec2018-01-22_17h41m49.809s/` shows the result for one reference recording:
 - one event at 0.688–2.232 s, `SCORE_ONLY`;
@@ -907,9 +938,11 @@ regenerated before any feature-importance claim is made.
 
 ## 9. Baseline and Anomaly Scoring
 
-PRISM evaluates an inhalation against a baseline (AGENTS.md §1, §10). A global
-V2 baseline exists and is EXPERIMENTAL. The baseline is not yet personal: the
-dataset has no user identifiers (Entry 2). Threshold selection has not started.
+PRISM evaluates an inhalation against a baseline (AGENTS.md §1, §10).
+- **The baseline:** a global V2 baseline. The representation is `DRAFT_NOT_FROZEN`.
+- **The final assessment:** a reference-range assessment for each scoreable event (Stage 9, §9.7). Its calibration was checked held-out by recording session on the same PRISM corpus; this is not external validation.
+- **Not personal:** the dataset has no user or device identifiers (Entries 2, 12).
+- **No labels:** NORMAL/ANOMALY and technique labels are not supported.
 
 ### 9.1 Research Stages and Status
 
@@ -923,7 +956,8 @@ dataset has no user identifiers (Entry 2). Threshold selection has not started.
 | 6 | Natural population separation and controlled perturbations. Excluded events score higher, mainly because of duration and segmentation | IMPLEMENTED | Entry 8 |
 | 7 | Representation ablation. Duration, `mean_rms` and `spectral_flatness_std` removed from the score; 4-feature V2 proposed | IMPLEMENTED | Entry 9 |
 | 8 | V2 validation against a pre-registered gate; inference contract | IMPLEMENTED. Gate **failed** on G4c only, so `DRAFT_NOT_FROZEN` | Entry 10 |
-| — | Threshold methodology, NORMAL / ANOMALY | Not started | — |
+| 9 | Final event-level reference-range assessment: empirical reference-tail probability against leave-one-session-out reference deviations; `WITHIN` / `OUTSIDE_REFERENCE_RANGE` against the one-sided 95% upper reference limit; `STABLE` / `BORDERLINE`; representation alternatives compared | IMPLEMENTED; pre-registered gate **passed** held-out by recording session on the same PRISM corpus, so `CATEGORICAL_ASSESSMENT_ADOPTED`; V2 retained | Entries 12–13, `results/final_assessment/` |
+| — | NORMAL / ANOMALY, technique-quality labels | NOT SUPPORTED (no ground truth) | Entries 2, 12 |
 | — | V3 personalized baseline; V4 adaptive personalization | PLANNED | Entries 3, 7, 8 |
 
 ### 9.2 Current Baseline (V2, global, frozen)
@@ -944,7 +978,7 @@ dataset has no user identifiers (Entry 2). Threshold selection has not started.
 means further from the baseline median. It is a distance, not a probability.
 
 **What is known (Entry 10; held-out by session, 318 usable events):**
-- **Score distribution on unseen sessions:** 5th percentile / median / 95th percentile = 0.42 / 1.00 / 1.75.
+- **Score distribution on held-out sessions (same corpus):** 5th percentile / median / 95th percentile = 0.42 / 1.00 / 1.75.
 - **Session dependence remains:** ε² 0.130, and session medians span 0.64–1.31 (2.05×).
 - **Gain:** invariant (95th percentile |Δ| ≤ 4.9×10⁻⁴).
 - **Noise and tilt:** the score rises monotonically with added noise and spectral tilt (≥ 99.7% of events). These are responses to artificial perturbations, not evidence of detecting meaningful inhalation deviations.
@@ -974,6 +1008,7 @@ The contract lists these as `forbidden_derived_outputs`.
 | `status` and `not_scoreable_reasons` (e.g. "inhalation detected, too short to analyse") | Yes; describe them as measurement conditions, not technique errors |
 | `NO_INHALATION_DETECTED` | Yes, as "no inhalation detected". Never as an anomalous inhalation |
 | `anomaly_score`, `feature_z_scores` | No. They are internal and experimental while the contract is `DRAFT_NOT_FROZEN`, and they must not be presented as a health signal |
+| `assessment`, `reference_tail_probability`, `assessment_reliability` (Stage 9) | Not as a health or technique signal. Their calibration was checked only held-out by recording session on the same PRISM reference corpus. On PRISM hardware (`baseline_domain_validated = false`) they need a hardware reference before any user-facing use. If shown at all, phrase them as "acoustically within / outside the range of the reference recordings" |
 | `mean_rms` | No; it is uncalibrated loudness, for diagnostics only |
 | `detector_confidence` | Diagnostics only |
 
@@ -1011,6 +1046,58 @@ Before personalization can be built, the following are needed (Entries 7, 8, 10)
 Stage 5 evidence relevant to the design:
 - Deployable session-location normalization with 5 warm-up events did not improve on the global baseline.
 - 10 warm-up events did improve it, but that result is sensitivity analysis only.
+
+**Metadata audit (Entry 12).** The WAVs carry no metadata chunks, filenames are
+timestamps only, and annotations have 4 columns. No user, device, placement or
+protocol identifier exists. The metadata required for personalization is listed
+in Entry 12.
+
+### 9.7 Final Event-Level Assessment (Stage 9, `prism-assessment-v1.0`)
+
+**Status:** IMPLEMENTED. The pre-registered gate passed, so the contract is
+`CATEGORICAL_ASSESSMENT_ADOPTED` (Entries 12–13). The gate was evaluated held-out
+by recording session on the same PRISM corpus: an internal consistency/calibration
+check, not external validation.
+
+**Method.**
+- **Reference:** `results/final_assessment/assessment_reference_v1.json`, `reference_id` `prism-assessment-ref-2026-10-06`.
+  - its baseline is identical to `v2_baseline.json`;
+  - the reference deviations c₁ … c₃₁₈ are the leave-one-session-out scores of the 318 usable events, i.e. reference events measured exactly as a new session's events are.
+- **Empirical reference-tail probability:** p = (1 + #{i : cᵢ ≥ a}) / (n + 1), n = 318, where a is the event's aggregate deviation.
+  - It is an empirical upper-tail probability with the +1 correction, not a hypothesis-test or conformal p-value.
+  - No finite-sample guarantee is claimed.
+- **One-sided 95% upper reference limit:** c\* = 1.830, the 304th smallest reference deviation.
+  - `OUTSIDE_REFERENCE_RANGE` iff a > c\*, equivalently p ≤ 0.05.
+  - The effective attainable level is 15/319 ≈ 0.047.
+  - α = 0.05 is a convention.
+- **Stability band:** [1.620, 1.972], the 5th–95th percentile of the cut under session-bootstrap resampling of the 18 reference sessions (2,000 draws, seed 20261006). It is stored in the reference, so assessment involves no randomness.
+- **Stability label:**
+  - `STABLE` iff the category is unchanged under that resampling and under every allowed ±1 detector-window boundary shift (16 ms), i.e. the event score and all variant scores lie on one side of the band;
+  - `BORDERLINE` otherwise.
+
+  It is not a probability that the category is correct.
+
+**Evidence (held-out by recording session on the same PRISM corpus; nothing fitted on the held-out session):**
+
+| Check | Result |
+|---|---|
+| Held-out exceedance at α 0.05 | 5.35% [0.78%, 8.97%] (17/318); 1.26% at α 0.01, 11.3% at α 0.10 |
+| Per session | 0–13.5%; 14 of 17 OUTSIDE events in 2018-05-03#2/#3; heterogeneity p 0.058. Marginal, not per-session, calibration |
+| Whole-day holdout (sensitivity) | 17/318 = 5.35% [0%, 10.6%]; 15 of 17 OUTSIDE events on 2018-05-03 |
+| Cut stability | band half-width 9.6%; session removal 0.94–1.08×; event removal ≤ 3.8% |
+| Controlled perturbations (OUTSIDE share) | noise 30/20/10 dB: 29% / 66% / 99%; tilt 0.5/0.9: 47% / 81%; gain: unchanged |
+| Reliability | 288 STABLE / 30 BORDERLINE; 8 of 17 OUTSIDE events are BORDERLINE |
+| End-to-end, 361 recordings | 0 failures; 364 events, 318 assessed, 46 NOT_ASSESSED; exact agreement with the evaluation; reruns byte-identical |
+| Alternatives | correlation-aware distance (fails G4c) and G4c-repair subset (fails G4b): V2 retained |
+
+**Meaning.** `OUTSIDE_REFERENCE_RANGE` says the event's acoustic deviation lies
+above the one-sided 95% upper reference limit of the empirical reference
+distribution built from the PRISM reference corpus. `WITHIN_REFERENCE_RANGE` says
+it does not.
+- **Geometry:** in the four-dimensional feature space, the WITHIN region is a sphere (in robust-z units) around the baseline centre. The decision itself is the one-sided upper limit on the scalar deviation.
+- **Not a classification:** it is not a normal/abnormal, anomaly, technique-quality or clinical classification.
+- **It can reflect the recording context:** because calibration is marginal, OUTSIDE statements concentrate in recording contexts unlike the reference. Whether that is subject, device or placement is unknown.
+- **Same corpus only:** all earlier design decisions used the same 318 events. There is no external dataset, and the assessment is not validated for new users, devices, microphones or PRISM hardware (Entry 13).
 
 ---
 
@@ -1128,6 +1215,7 @@ PRISM smart inhaler/
 |   |-- natural_population/  <- Stage 6
 |   |-- representation_analysis/  <- Stage 7
 |   |-- v2_validation/       <- Stage 8: contract, baseline, schemas, golden vectors, gate
+|   |-- final_assessment/    <- Stage 9: assessment contract, reference, schema, golden vectors, LOSO evaluation
 |   |-- recording_runs/      <- Per-recording stage checkpoints for app parity
 |   +-- phone_test/          <- Ad-hoc phone recording test (outside the contract domain)
 |
@@ -1153,7 +1241,9 @@ PRISM smart inhaler/
 |   |-- natural_population_analysis.py <- Stage 6
 |   |-- representation_analysis.py    <- Stage 7
 |   |-- v2_validation.py              <- Stage 8 (gate, contract artefacts)
-|   +-- prism_inference.py            <- Inference contract V2 reference implementation
+|   |-- prism_inference.py            <- Inference contract V2 reference implementation
+|   |-- prism_assessment.py           <- Final assessment layer; canonical CLI (WAV -> final output)
+|   +-- assessment_validation.py      <- Stage 9 (calibration, gate, end-to-end runs, contract)
 |
 +-- tests/                   <- unittest suites (python -m unittest discover tests)
 ```
@@ -1250,6 +1340,35 @@ validator is `prism_inference.validate_output`. Key order is part of the contrac
 | `feature_z_scores` | object \| null | z per V2 feature; null if not scoreable |
 | `mean_rms` | float ≥ 0 \| null | level channel (uncalibrated), not in the score |
 
+### Assessment Output (`prism-assessment-v1.0`; the canonical pipeline output)
+
+The full JSON Schema is `results/final_assessment/assessment_output.schema.json`, and
+the executable validator is `prism_assessment.validate_assessment_output`. Key order is
+part of the contract.
+
+**Recording level:**
+- **Contract identity:** `contract_version`, `inference_contract_version`, `reference_id`, `baseline_id`, `detector_model_sha256`.
+- **Recording state:** `recording_status`, `error`, `input`, `baseline_domain_validated`, `feature_order`.
+- **`reference`:** `alpha`, `categorical`, `cut`, `band`, `n_reference_events`, `n_reference_sessions`, `feature_center`, `feature_scale`.
+- **Counts:** `n_events`, `n_scoreable`, `n_outside_reference_range`.
+- **`interpretation`:** a fixed string.
+
+| Event field | Meaning |
+|---|---|
+| `event_id`, `start_time`, `end_time`, `duration_s` | as in the inference contract |
+| `start_sample`, `end_sample` | exact integer slice measured: `floor(start_time·8000)`, `ceil(end_time·8000)` |
+| `detector_confidence`, `detector_max_confidence`, `window_count` | detector evidence |
+| `scoreability`, `not_scoreable_reasons` | `SCOREABLE` \| `NOT_SCOREABLE` (usability rule v1) |
+| `feature_values`, `mean_rms` | V2 measurements; level channel (not in the score) |
+| `feature_deviations` | robust z per V2 feature (null if not scoreable) |
+| `aggregate_deviation` | sqrt(mean z²) (= inference `anomaly_score`) |
+| `reference_tail_probability` | empirical reference-tail probability (1 + #{i : cᵢ ≥ a}) / (n + 1) (null if not scoreable) |
+| `assessment` | `WITHIN_REFERENCE_RANGE` \| `OUTSIDE_REFERENCE_RANGE` \| `CONTINUOUS_ONLY` (if the reference is not categorical) \| `NOT_ASSESSED` |
+| `assessment_reliability` | `STABLE` \| `BORDERLINE` \| null |
+| `segmentation_variants`, `segmentation_deviation_range` | number of one-stride boundary variants; min/max deviation over the event and its variants |
+| `dominant_feature`, `dominant_share` | feature with the largest z² and its share (descriptive) |
+| `reason` | human-readable summary of the assessment or of the not-scoreable reasons |
+
 ### Other Interfaces
 
 | File | Content |
@@ -1291,7 +1410,7 @@ validator is `prism_inference.validate_output`. Key order is part of the contrac
 | `train_cnn.py` | `run_cnn_cv(X, y, groups, le, ...)`: GroupKFold CNN; reshapes `(N,3100)` to `(N,25,124)`; AMP + early stopping; exports the best fold to ONNX |
 | `run_pipeline.py` | Steps 0-9. CLI: `--fast`, `--xgb-only`, `--no-svm`, `--cnn` |
 
-### Post-event and anomaly research
+### Post-event and baseline/assessment research
 
 | Module | Content | Log |
 |---|---|---|
@@ -1306,6 +1425,8 @@ validator is `prism_inference.validate_output`. Key order is part of the contrac
 | `representation_analysis.py` | Representation ablations R0–R8; `recommendation.json` | Entry 9 |
 | `v2_validation.py` | Pre-registered gate, frozen V2 baseline, contract artefacts, golden vectors | Entry 10 |
 | `prism_inference.py` | Inference contract V2: `analyze_recording`, `load_baseline`, `validate_output`, `output_json_schema`; CLI `python src/prism_inference.py <wav>` | Entry 10 |
+| `prism_assessment.py` | Final assessment: `AssessmentReference`, `fit_reference`, `assess_recording`, `validate_assessment_output`, `output_json_schema`; canonical CLI `python src/prism_assessment.py <wav>` | Entry 12 |
+| `assessment_validation.py` | Stage 9: pre-registered representation comparison, LOSO calibration, K1–K4 gate, stability, perturbation, end-to-end runs, contract and golden vectors | Entry 12 |
 
 ---
 
@@ -1321,6 +1442,9 @@ validator is `prism_inference.validate_output`. Key order is part of the contrac
 | Output schema | `results/v2_validation/inference_output.schema.json` | JSON Schema draft 2020-12 |
 | Golden vectors | `results/v2_validation/golden/` | 9 cases: 5 dataset WAVs identified by SHA-256, 2 synthetic WAVs, 2 input errors |
 | Stage checkpoints | `results/recording_runs/<recording>/` | Frame features, window logits, contract output for one recording |
+| Assessment contract | `results/final_assessment/assessment_contract_v1.json` | `prism-assessment-v1.0`, `CATEGORICAL_ASSESSMENT_ADOPTED` (Stage 9 gate passed) |
+| Assessment reference | `results/final_assessment/assessment_reference_v1.json` | `prism-assessment-ref-2026-10-06`, SHA-256 `32ada36c…cca8`; 318 calibration scores; cut 1.830; band [1.620, 1.972] |
+| Assessment golden vectors | `results/final_assessment/golden/` | the same 9 inputs as the V2 golden vectors, with the final output |
 | `cv_results.csv` | `results/cv_results.csv` | Per-fold per-class metrics |
 | XGBoost summary | `results/xg/summary_report.txt` | 5-fold; 0.8902 mean acc |
 
@@ -1367,7 +1491,9 @@ Phase 1 - ML Research
   [ ] Owner decision: accept V2 as an MVP exception, or replace it
   [ ] PRISM-hardware reference recordings (domain shift, re-baselining)
   [ ] Longitudinal data with user/device identifiers
-  [ ] Threshold methodology (pre-registered), NORMAL / ANOMALY
+  [x] Stage 9 final event-level reference-range assessment (empirical reference-tail probability,
+      one-sided 95% upper reference limit; Entries 12-13)
+  [ ] Re-reference for PRISM hardware (new reference_id; needs hardware recordings)
   [ ] Personalized baseline V3 (§9.6)
 
 Phase 2 - Mobile Application
@@ -1416,7 +1542,8 @@ Phase 5 - Personalized Baseline (after Phase 1 data items)
 | Baseline strategy, population, representation studies (Stages 5–7) | IMPLEMENTED | Entries 7–9 |
 | V2 global baseline + anomaly_score | EXPERIMENTAL | Gate failed (G4c); `DRAFT_NOT_FROZEN` |
 | Inference contract V2 reference implementation | IMPLEMENTED | Exact reproduction of the Stage 1 events (G6b); 9 golden vectors |
-| Threshold, NORMAL / ANOMALY | Not started | — |
+| Final event-level reference-range assessment (`prism-assessment-v1.0`) | IMPLEMENTED; calibration checked held-out by recording session on the same PRISM corpus | Stage 9 gate passed; marginal (not per-session) calibration; not external validation; 0 failures over 361 recordings |
+| NORMAL / ANOMALY, technique-quality labels | NOT SUPPORTED | No ground truth; `OUTSIDE_REFERENCE_RANGE` is not an anomaly label |
 | Personalized baseline (V3/V4) | PLANNED | Needs longitudinal user/device data |
 | Drug/Exhale event analytics (coordination, actuation) | NOT VALIDATED | Detector windows only; no event grouping or evaluation |
 | Technique-quality / clinical labels | NOT SUPPORTED | No ground truth (Entry 2) |

@@ -1,0 +1,426 @@
+{
+  "stage": "Stage 9 - final event-level assessment (reference calibration; no clinical labels)",
+  "preregistration_sha256": "5b5cdf6ee4498ddb69b21be6b54546d1bd1fc0ec3ddde72ad519dc90c61801e6",
+  "representation_decision": {
+    "selected": "V2",
+    "qualifying_alternatives": [],
+    "rule": "an alternative replaces V2 only if it passes every Stage 8 criterion including G4c and K1 while V2 does not; otherwise V2 is retained",
+    "summary": {
+      "V2": {
+        "features": [
+          "spectral_centroid_mean",
+          "spectral_flatness_mean",
+          "spectral_centroid_std",
+          "spectral_rolloff_std"
+        ],
+        "kind": "rms",
+        "failing_criteria": [
+          "G4c"
+        ],
+        "passes_all_gate_criteria": false,
+        "k1": {
+          "rate": 0.05345911949685535,
+          "ci_low": 0.007807301568441074,
+          "ci_high": 0.0897114074970884,
+          "n": 318,
+          "outside": 17,
+          "passed": true
+        },
+        "session_epsilon_squared": 0.1298816440583022
+      },
+      "V2_RC": {
+        "features": [
+          "spectral_centroid_mean",
+          "spectral_flatness_mean",
+          "spectral_centroid_std",
+          "spectral_rolloff_std"
+        ],
+        "kind": "rc",
+        "failing_criteria": [
+          "G4c"
+        ],
+        "passes_all_gate_criteria": false,
+        "k1": {
+          "rate": 0.050314465408805034,
+          "ci_low": 0.017985611510791366,
+          "ci_high": 0.08135823299332769,
+          "n": 318,
+          "outside": 16,
+          "passed": true
+        },
+        "session_epsilon_squared": 0.08883172518228494
+      },
+      "V2_G4C": {
+        "features": [
+          "spectral_centroid_mean",
+          "spectral_rolloff_std"
+        ],
+        "kind": "rms",
+        "failing_criteria": [
+          "G4b"
+        ],
+        "passes_all_gate_criteria": false,
+        "k1": {
+          "rate": 0.050314465408805034,
+          "ci_low": 0.009455439839822551,
+          "ci_high": 0.08419489455024765,
+          "n": 318,
+          "outside": 16,
+          "passed": true
+        },
+        "session_epsilon_squared": 0.19215198595366703
+      }
+    }
+  },
+  "gate_outcome": "PASS",
+  "contract_status": "CATEGORICAL_ASSESSMENT_ADOPTED",
+  "gate": {
+    "K1": {
+      "rule": "outer-LOSO exceedance at alpha 0.05: 95% session-bootstrap interval contains 0.05 and point estimate <= 0.10",
+      "rate": 0.05345911949685535,
+      "ci_low": 0.007807301568441074,
+      "ci_high": 0.0897114074970884,
+      "n": 318,
+      "outside": 17,
+      "passed": true
+    },
+    "K2": {
+      "rule": "deployment reference: (c_hi - c_lo) / (2 c_alpha) <= 0.20",
+      "cut": 1.8297261539489305,
+      "band": [
+        1.6200762237720456,
+        1.9724145879667279
+      ],
+      "relative_half_width": 0.09628172047337866,
+      "passed": true
+    },
+    "K3": {
+      "rule": "OUTSIDE fraction non-decreasing over noise 30->20->10 dB and tilt 0.5->0.9; |gain - identity| <= 0.02",
+      "identity": 0.05345911949685535,
+      "noise_30_20_10": [
+        0.2861635220125786,
+        0.660377358490566,
+        0.9937106918238994
+      ],
+      "tilt_0.5_0.9": [
+        0.46540880503144655,
+        0.8081761006289309
+      ],
+      "tilt_-0.5": 0.24842767295597484,
+      "gain_minus_identity": {
+        "gain x0.5": 0.0,
+        "gain x0.707": 0.0,
+        "gain x1.41": 0.0,
+        "gain x2": 0.0,
+        "recording_gain x0.5": 0.0,
+        "recording_gain x2": 0.0
+      },
+      "passed": true
+    },
+    "K4": {
+      "rule": "a complete second run produces byte-identical CSV/JSON outputs",
+      "files_compared": 9,
+      "mismatches": [],
+      "passed": true
+    }
+  },
+  "calibration": {
+    "k1": {
+      "rate": 0.05345911949685535,
+      "ci_low": 0.007807301568441074,
+      "ci_high": 0.0897114074970884,
+      "n": 318,
+      "outside": 17,
+      "passed": true
+    },
+    "overdispersion": {
+      "sessions_tested": 12,
+      "pooled_rate": 0.05647840531561462,
+      "chi_square": 19.829346883531052,
+      "df": 11,
+      "parametric_bootstrap_p": 0.05847076461769116
+    },
+    "by_alpha": [
+      {
+        "alpha": 0.01,
+        "rate": 0.012578616352201259,
+        "ci_low": 0.0,
+        "ci_high": 0.022013734739178684
+      },
+      {
+        "alpha": 0.05,
+        "rate": 0.05345911949685535,
+        "ci_low": 0.007807301568441074,
+        "ci_high": 0.0897114074970884
+      },
+      {
+        "alpha": 0.1,
+        "rate": 0.11320754716981132,
+        "ci_low": 0.037900322466649,
+        "ci_high": 0.17940292483000592
+      }
+    ],
+    "pit_ks_statistic": 0.020060321245703866,
+    "pit_ks_p_descriptive": 0.9992981208953567,
+    "held_out_p_percentiles": {
+      "p05": 0.04961832061068702,
+      "p25": 0.25607960741548524,
+      "p50": 0.5088865285891309,
+      "p75": 0.7623081558146954,
+      "p95": 0.9529488654188015
+    }
+  },
+  "stability": {
+    "session_removal": {
+      "min_cut": 1.727208714005142,
+      "max_cut": 1.9682870668105894,
+      "max_relative_deviation": 0.07572767791650992
+    },
+    "event_removal": {
+      "max_relative_change": 0.03839587200960949,
+      "events_changing_cut": 273,
+      "reference_events_within_max_change_of_cut": 5
+    }
+  },
+  "reliability_loso": {
+    "overall": {
+      "STABLE": 288,
+      "BORDERLINE": 30
+    },
+    "by_assessment": {
+      "OUTSIDE_REFERENCE_RANGE": {
+        "STABLE": 9,
+        "BORDERLINE": 8
+      },
+      "WITHIN_REFERENCE_RANGE": {
+        "STABLE": 279,
+        "BORDERLINE": 22
+      }
+    },
+    "median_segmentation_range": 0.0752647810757312,
+    "p95_segmentation_range": 0.3459140779144183
+  },
+  "reported": {
+    "dominant_feature_outside": {
+      "spectral_centroid_mean": 7,
+      "spectral_centroid_std": 6,
+      "spectral_rolloff_std": 3,
+      "spectral_flatness_mean": 1
+    },
+    "median_dominant_share_outside": 0.593183127010655,
+    "dominant_feature_all_usable": {
+      "spectral_centroid_mean": 93,
+      "spectral_centroid_std": 85,
+      "spectral_rolloff_std": 74,
+      "spectral_flatness_mean": 66
+    },
+    "median_dominant_share_all_usable": 0.5784471585580077,
+    "natural_extremes": {
+      "usable": {
+        "n": 318,
+        "outside_rate": 0.05345911949685535,
+        "median_score": 0.9973248595448148
+      },
+      "excluded_all": {
+        "n": 46,
+        "outside_rate": 0.2391304347826087,
+        "median_score": 1.2960692599945247,
+        "cliffs_delta_score_vs_usable": 0.4063439978124146
+      },
+      "by_exclusion_group": {
+        "close_neighbor": {
+          "n": 14,
+          "outside_rate": 0.14285714285714285,
+          "median_score": 1.24894210202855
+        },
+        "too_short": {
+          "n": 20,
+          "outside_rate": 0.2,
+          "median_score": 1.2711808424274516
+        },
+        "too_short+close_neighbor": {
+          "n": 11,
+          "outside_rate": 0.36363636363636365,
+          "median_score": 1.37367730765721
+        },
+        "too_short+recording_boundary": {
+          "n": 1,
+          "outside_rate": 1.0,
+          "median_score": 2.3920813058814137
+        }
+      },
+      "note": "diagnostic only: excluded events are NOT_ASSESSED in production and are not anomalies"
+    },
+    "identity_flags_match_heldout": true,
+    "stored_perturbed_z_max_abs_diff": 1.1324274851176597e-14
+  },
+  "lofo": [
+    {
+      "representation": "V2_minus_centroid_mean",
+      "outside_rate": 0.05345911949685535,
+      "agreement_with_V2": 0.9622641509433962,
+      "cohens_kappa": 0.6271252687121358,
+      "v2_outside_also_outside": 0.6470588235294118
+    },
+    {
+      "representation": "V2_minus_flatness_mean",
+      "outside_rate": 0.050314465408805034,
+      "agreement_with_V2": 0.9842767295597484,
+      "cohens_kappa": 0.8402010050251256,
+      "v2_outside_also_outside": 0.8235294117647058
+    },
+    {
+      "representation": "V2_minus_centroid_std",
+      "outside_rate": 0.05345911949685535,
+      "agreement_with_V2": 0.9559748427672956,
+      "cohens_kappa": 0.5649794801641584,
+      "v2_outside_also_outside": 0.5882352941176471
+    },
+    {
+      "representation": "V2_minus_rolloff_std",
+      "outside_rate": 0.04716981132075472,
+      "agreement_with_V2": 0.9748427672955975,
+      "cohens_kappa": 0.7368094351334575,
+      "v2_outside_also_outside": 0.7058823529411765
+    }
+  ],
+  "e2e_loso": {
+    "recordings": 361,
+    "failed_recordings": 0,
+    "failures": [],
+    "recording_status": {
+      "EVENTS_DETECTED": 322,
+      "NO_INHALATION_DETECTED": 39
+    },
+    "events": 364,
+    "scoreable": 318,
+    "not_scoreable": 46,
+    "not_scoreable_reason_combinations": {
+      "short_duration": 20,
+      "close_neighbor": 14,
+      "short_duration;close_neighbor": 11,
+      "short_duration;recording_boundary": 1
+    },
+    "assessment": {
+      "WITHIN_REFERENCE_RANGE": 301,
+      "NOT_ASSESSED": 46,
+      "OUTSIDE_REFERENCE_RANGE": 17
+    },
+    "reliability_of_assessed": {
+      "STABLE": 288,
+      "BORDERLINE": 30
+    },
+    "non_finite_numeric_values": 0,
+    "aggregate_deviation_percentiles": {
+      "p05": 0.4226016619777339,
+      "p25": 0.7078423980378176,
+      "p50": 0.9973248595448159,
+      "p75": 1.2904993351748844,
+      "p95": 1.7451352621132354
+    },
+    "tail_probability_percentiles": {
+      "p05": 0.04961832061068702,
+      "p25": 0.25607960741548524,
+      "p50": 0.5088865285891309,
+      "p75": 0.7623081558146954,
+      "p95": 0.9529488654188015
+    },
+    "segmentation_variants": {
+      "8": 318
+    }
+  },
+  "e2e_deployment": {
+    "recordings": 361,
+    "failed_recordings": 0,
+    "failures": [],
+    "recording_status": {
+      "EVENTS_DETECTED": 322,
+      "NO_INHALATION_DETECTED": 39
+    },
+    "events": 364,
+    "scoreable": 318,
+    "not_scoreable": 46,
+    "not_scoreable_reason_combinations": {
+      "short_duration": 20,
+      "close_neighbor": 14,
+      "short_duration;close_neighbor": 11,
+      "short_duration;recording_boundary": 1
+    },
+    "assessment": {
+      "WITHIN_REFERENCE_RANGE": 307,
+      "NOT_ASSESSED": 46,
+      "OUTSIDE_REFERENCE_RANGE": 11
+    },
+    "reliability_of_assessed": {
+      "STABLE": 295,
+      "BORDERLINE": 23
+    },
+    "non_finite_numeric_values": 0,
+    "aggregate_deviation_percentiles": {
+      "p05": 0.4094570499112921,
+      "p25": 0.655862014535248,
+      "p50": 0.8977690140446594,
+      "p75": 1.1927364888801497,
+      "p95": 1.675079358900917
+    },
+    "tail_probability_percentiles": {
+      "p05": 0.06896551724137931,
+      "p25": 0.3236677115987461,
+      "p50": 0.554858934169279,
+      "p75": 0.7836990595611285,
+      "p95": 0.9655172413793104
+    },
+    "segmentation_variants": {
+      "8": 318
+    }
+  },
+  "e2e_consistency": {
+    "events_e2e": 364,
+    "events_stage1": 364,
+    "recordings_with_event_count_mismatch": 0,
+    "scoreability_vs_stage1_usable_mismatches": 0,
+    "max_abs_score_diff": 5.329070518200751e-15,
+    "p_mismatches": 0,
+    "category_mismatches": 0
+  },
+  "deployment_reference": {
+    "cut": 1.8297261539489305,
+    "band": [
+      1.6200762237720456,
+      1.9724145879667279
+    ],
+    "n_events": 318,
+    "n_sessions": 18,
+    "categorical": true
+  },
+  "golden_cases": [
+    "single_scored_event",
+    "no_inhalation_detected",
+    "close_neighbors_not_scoreable",
+    "short_event_not_scoreable",
+    "boundary_event_not_scoreable",
+    "digital_silence_2s",
+    "white_noise_3s_minus20dBFS",
+    "input_error_sample_rate_16k",
+    "input_error_too_short"
+  ],
+  "inputs_unchanged": true,
+  "input_sha256": {
+    "results/inhale_dataset/inhale_events_v1.csv": "0dbae978da146ed62aed21eccc251c621aa566e3c3bcd020ddfbf235bf367cf1",
+    "results/feature_analysis/feature_selection_v1.json": "ef2ed51d22e3f4bf9a4d7dafcee2cc2b4aee12930d904135170a0561e7bd4443",
+    "results/v2_validation/perturbed_features.csv": "b3f430de7d8ccfe7ada62603f3d209a73802a334e8b6cc0182fed743cd379728",
+    "results/representation_analysis/candidate_features.csv": "3bbb6a8c5763bbd4ab540337d1b17e4d4c8421bc55eac94d03f1fd581395c55f",
+    "results/final_assessment/stage9_preregistration.json": "5b5cdf6ee4498ddb69b21be6b54546d1bd1fc0ec3ddde72ad519dc90c61801e6",
+    "results/inhaler_cnn.onnx": "2e4e72d3ca040b15718ad6b09ae4ac3069c38f5c1a389327bf6b38c4e2903725"
+  },
+  "runtime_seconds": {
+    "loso_e2e_total": 193.57456149999052,
+    "deployment_e2e_total": 191.22839019999083
+  },
+  "provenance": {
+    "git": {
+      "head": "35713e837c0dbfa6b0e316fa016e8db9d09c769d",
+      "dirty": true
+    }
+  }
+}

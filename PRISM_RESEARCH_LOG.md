@@ -1952,3 +1952,450 @@ Unchanged from Entry 10:
 - longitudinal user/device data.
 
 Additional engineering item: regenerate the XGBoost importance artefacts, or remove them from documentation, before citing them.
+
+---
+
+# Research Entry 12 — 2026-10-07: Final Event-Level Assessment — Reference Calibration of the V2 Deviation (Stage 9)
+
+**No clinical, technique-quality or NORMAL/ANOMALY label is introduced.** The new categorical output says only where an inhalation's acoustic spectral profile lies relative to the reference distribution.
+
+## Question
+Given the pipeline as it stands and no clinical ground truth, what should the final event-level output be, and what is needed to make it reliable enough to end the pipeline?
+
+## Phase 1: Audit of the pipeline as implemented
+| Stage | Implementation | Input → output | Tests | Validation (log) | Status before Stage 9 |
+|---|---|---|---|---|---|
+| Input check | `prism_inference.check_input` | float32 8 kHz mono → waveform or `INPUT_ERROR` | `test_prism_inference` | contract, G6b (Entry 10) | implemented |
+| Frame features | `librosa_extractor.extract_features_from_audio` | waveform → float32[1 + n//64, 124] | `test_post_event` (indirect) | DSP described in ARCHITECTURE §6 (Entry 11) | implemented |
+| Windows + detector | `post_event.generate_window_predictions`, `inhaler_cnn.onnx` | frames → per-window softmax over Drug/Exhale/Inhale/Noise (0.2 s windows, 0.016 s stride) | `test_post_event` | window CV 0.89 accuracy; deployed fold in-sample for about 2/3 of the recordings (Entries 1, 3) | validated at window level |
+| Inhale grouping | `post_event.group_inhale_events` | windows → events (start, end, confidence) | `test_post_event` | 259/260 annotated inhalations matched, IoU 0.876 (Entry 3; mostly in-sample) | validated against annotations |
+| Scoreability | `prism_inference.not_scoreable_reasons` (usability rule v1) | events → `SCORE_ONLY` / `NOT_SCOREABLE` + reasons | `test_inhale_dataset`, `test_prism_inference` | Entries 3, 8 | implemented |
+| Event features | `prism_inference.event_measurements` → `post_event.analyze_inhalation` | waveform slice → 4 V2 features + `mean_rms` | `test_prism_inference` | reproduces Stage 1 within 7.9×10⁻¹⁵ (Entry 10, G6b) | implemented |
+| Baseline + deviation | `FrozenBaseline` (median / 1.4826·MAD, 318 events, 18 sessions), `anomaly_score` = rms z | features → z, aggregate deviation | `test_prism_inference`, `test_v2_validation` | Stages 5–8; gate failed only on G4c | `DRAFT_NOT_FROZEN` |
+| **Final assessment** | **none** | — | — | — | **missing: the pipeline ended at an uncalibrated distance** |
+
+There are no broken links inside the Python pipeline: `prism_inference.analyze_recording` runs WAV → `SCORE_ONLY` end to end and reproduces every Stage 1 event (Entry 10). Three gaps remained:
+1. **The final output had no statistical meaning.** `anomaly_score` is a distance with no reference scale, and a fixed cut such as "z > 2" would be arbitrary.
+2. **Segment bounds depend on floating-point rounding.** Integer sample bounds are taken from float times (`ceil(end·8000)`), so a re-implementation can differ by one sample. The app audit found this in 129 of 364 events. The canonical output now reports the exact integer sample slice.
+3. **Deployment scores on reference recordings are in-sample.** Every reference event helped fit the baseline, so its deployment score is optimistic (6–11%, Entry 6).
+
+## Phase 2: Why there was no defensible final assessment
+- **No ground truth:** there are no technique or deviation labels, so a threshold cannot be tuned to detection performance (Entries 2, 8).
+- **Session dependence:** held-out ε² is 0.130 (Entry 10). Any fixed cut on the raw distance flags sessions at different rates.
+- **The distance is uncalibrated:** its held-out distribution (median 1.00, p95 1.75) has no reference scale attached, and in-sample scores are optimistic (Entry 6).
+- **Natural extremes are segmentation artefacts,** not inhalation deviations (Entries 8–9), so they cannot validate a cut.
+- **G4c:** per-feature direction under strong tilt is inconsistent across sessions. This is a hardware-transfer risk, not a reference-domain defect.
+- **Alternatives:** the Stage 7 multivariate gate blocked covariance-aware distances for 6–7 features. No alternative to V2 had been compared since.
+
+**What the data do support:** a calibration of the distance against reference events measured exactly as a new session's events are, i.e. leave-one-session-out (LOSO) reference scores. This turns the distance into a conformal p-value, whose meaning is testable without labels. Under exchangeability, P(p ≤ α) ≤ α for reference-like events.
+
+## Pre-registration
+- **File:** `results/final_assessment/stage9_preregistration.json`, written before any Stage 9 result: SHA-256 `5b5cdf6e…01e6`, 2026-10-06T18:24:44Z.
+- **Hash check:** `src/assessment_validation.py` refuses to run if the file changes, and a test checks the rule constants against it.
+- **Disclosure:** it was not committed separately before the analysis (no commit was authorized at that point). The recorded hash and timestamp are the evidence of order.
+- **Known before writing it:** the Entry 10 numbers listed in the file.
+
+## Method
+**Score (unchanged):** a = sqrt(mean z²) over the 4 V2 features.
+
+**Calibration:**
+- **C:** the LOSO scores of the reference's usable events.
+- **Tail probability:** p(a) = (1 + #{c ∈ C : c ≥ a}) / (|C| + 1).
+- **Cut:** c_α = the (n − m)-th smallest c, with m = ⌊α(n + 1) − 1⌋ computed exactly. Then p ≤ α iff a > c_α.
+
+**Categories (α = 0.05, the central-95% reference-interval convention):**
+- `WITHIN_REFERENCE_RANGE` if p > 0.05;
+- `OUTSIDE_REFERENCE_RANGE` if p ≤ 0.05;
+- `NOT_ASSESSED` for non-scoreable events, with reasons.
+
+**Reliability:**
+- **Band:** [c_lo, c_hi] = 5th–95th percentiles of c_α under a session bootstrap (resample whole sessions; 2,000 draws, seed 20261006).
+- **Segmentation variants:** the event bounds moved by one detector stride at the start and/or end (8 variants, reference float formula).
+- **Label:** `STABLE` if the event and every variant lie on one side of the band, otherwise `BORDERLINE`.
+
+**Evaluation (leakage-free):** for each of the 18 sessions with usable events, the reference was refitted on the other sessions (baseline plus nested LOSO calibration, cut and band), frozen, and applied to that session. Reference events from sessions without usable events are scored by the deployment reference, which never saw them.
+
+**Category gate (pre-registered):**
+- **K1:** held-out exceedance at α 0.05 — the 95% session-bootstrap interval contains 0.05 and the point estimate is ≤ 0.10.
+- **K2:** (c_hi − c_lo) / (2 c_α) ≤ 0.20.
+- **K3:** the OUTSIDE fraction is non-decreasing over noise 30 → 20 → 10 dB and tilt 0.5 → 0.9, and the gain effect is ≤ 0.02.
+- **K4:** byte-identical rerun.
+
+**Representations (pre-registered):**
+- **V2** (incumbent).
+- **V2_RC:** sqrt(z′R⁻¹z/4), with R the per-fold robust correlation (2 sin(πρ/6) from Spearman ρ). Admissible only under the Stage 7 multivariate gate thresholds.
+- **V2_G4C:** centroid_mean + rolloff_std, which drops the two G4c-failing features.
+- **Rule:** an alternative replaces V2 only if it passes every Stage 8 criterion including G4c, and K1, while V2 does not.
+
+**Implementation:**
+- `src/prism_assessment.py`: the production assessment layer and the canonical CLI `python src/prism_assessment.py <wav>`.
+- `src/assessment_validation.py`: this stage; command `venv/Scripts/python.exe src/assessment_validation.py [--reference-run <dir>]`.
+- **Tests:** `tests/test_prism_assessment.py`, `tests/test_assessment_validation.py` (31 tests; full suite 204 passing).
+- **Outputs:** `results/final_assessment/`.
+
+## Results
+
+### A. Representation comparison (`representation_gate.csv`; Stage 8 criteria recomputed)
+| Representation | Session ε² | Gen. ratio | Failing criteria | K1 held-out exceedance [95% session CI] |
+|---|---|---|---|---|
+| **V2** | 0.130 | 1.120 | **G4c** (flatness_mean 0.75, centroid_std 0.58 of sessions at tilt 0.9) | 5.35% [0.78, 8.97] |
+| V2_RC | 0.089 | 1.093 | **G4c** (same two features, and the aggregate at tilt −0.5: 0.833) | 5.03% [1.80, 8.14] |
+| V2_G4C | 0.192 | 1.104 | **G4b** (noise distance monotone in only 82% of events) | 5.03% [0.95, 8.42] |
+
+- **V2_RC was admissible:** max condition number 5.5, max correlation shift 0.114, ≥ 65 training events per feature. It lowers session dependence (0.130 → 0.089) but makes the aggregate's tilt response less consistent across sessions.
+- **V2_G4C passes G4c** but loses noise monotonicity and is more session-dependent.
+- **No alternative qualifies, so V2 is retained** by the pre-registered rule.
+- **V2 reproduction:** its recomputed criteria reproduce Stage 8.
+
+### B. Calibration on unseen sessions (`heldout_assessment.csv`, `calibration_by_session.csv`)
+- **K1:** 17 of 318 held-out usable events are OUTSIDE: **5.35% [0.78%, 8.97%]**.
+- **Other α levels:** α 0.01 gives 1.26% [0.00, 2.20]; α 0.10 gives 11.32% [3.79, 17.94].
+- **Distribution of held-out p:** KS distance from uniform 0.020; p05/median/p95 = 0.050 / 0.509 / 0.953.
+- **Session concentration:** 14 of the 17 OUTSIDE events come from 2018-05-03#2 (7/57) and 2018-05-03#3 (7/52). Of the rest, 2 are in 2018-01-23#3 (2/29) and 1 in 2018-02-06#3 (1/13); all other sessions have 0. Heterogeneity across the 12 sessions with ≥ 5 events: χ² 19.8, df 11, parametric-bootstrap p 0.058.
+- **Interpretation:** calibration holds **marginally** over sessions, not per session.
+- **OUTSIDE events are well-formed inhalations, not segmentation artefacts:**
+  - median duration 1.66 s against 1.62 s for WITHIN events;
+  - detector confidence 0.98 against 0.95;
+  - 13 of 17 are annotation-matched;
+  - Spearman of score with duration 0.06, with confidence 0.18.
+
+### C. Reference stability
+- **K2:** the deployment cut is 1.830 with band [1.620, 1.972], a relative half-width of 0.096.
+- **Session removal:** the 18 fold cuts range 1.727–1.968 (0.944–1.076× the deployment cut).
+- **Event removal:** a leave-one-event-out refit changes the cut by at most 3.8%. 5 reference events lie within that distance of the cut.
+
+### D. Controlled perturbations (`perturbation_assessment.csv`; K3)
+OUTSIDE fraction among the 318 held-out events:
+
+| Condition | OUTSIDE fraction |
+|---|---|
+| Identity | 5.35% |
+| Noise 30 / 20 / 10 dB SNR | 28.6% / 66.0% / 99.4% |
+| Tilt +0.5 / +0.9 | 46.5% / 80.8% |
+| Tilt −0.5 | 24.8% |
+| Event gain ×0.5–×2 and whole-recording gain ×0.5 / ×2 | unchanged (Δ = 0 at every level) |
+
+- **Predictable response:** the assessment responds monotonically to known spectral changes and is invariant to device gain.
+- **Not a detection result:** these are controlled acoustic perturbations, not technique errors. They show what magnitude of spectral change the assessment resolves beyond reference variability.
+
+### E. Reproducibility (K4)
+- **K4:** run 2 against run 1 gave 9 evaluation files byte-identical.
+- **Full directory:** runs 2 and 3 produced byte-identical files across all 28 outputs (golden vectors, contract, reference, end-to-end tables, figures). `analysis_summary.json` is identical except for runtime and git provenance.
+- **Inputs:** unchanged by hash.
+
+### F. Reliability (held-out end-to-end run)
+- **Overall:** 288 STABLE, 30 BORDERLINE (9.4%).
+- **OUTSIDE events:** 9 STABLE and 8 BORDERLINE.
+- **WITHIN events:** 279 STABLE and 22 BORDERLINE.
+- **Segmentation sensitivity:** a one-stride boundary change moves the score by a median range of 0.075 (p95 0.35).
+- **Interpretation:** about half of the OUTSIDE statements are borderline, which is why reliability is part of the output.
+
+### G. Dominance and leave-one-feature-out agreement
+- **Largest deviation in OUTSIDE events:** centroid_mean 7, centroid_std 6, rolloff_std 3, flatness_mean 1. The median dominant share is 0.59, against 0.58 for all events.
+- **Leave-one-feature-out agreement:** every feature contributes. Agreement is 0.956–0.984, with Cohen's κ 0.56 (− centroid_std), 0.63 (− centroid_mean), 0.74 (− rolloff_std) and 0.84 (− flatness_mean).
+
+### H. Natural extreme events (diagnostic; these are `NOT_ASSESSED` in production)
+- **Excluded events forced through the held-out assessment:** 24% OUTSIDE (11/46), against 5.3% of usable events (score δ 0.41).
+- **By exclusion group:** close-neighbour only 14%, too-short 20%, too-short + close-neighbour 36%, too-short + boundary 1/1.
+- **Consistent with Entries 8–9:** segmentation artefacts carry atypical spectra, and the scoreability rule removes them before assessment.
+
+### I. End-to-end runs of the canonical pipeline (`e2e_*`)
+**LOSO references (held-out):**
+- **Recordings:** 361 processed, **0 failures**; 322 `EVENTS_DETECTED`, 39 `NO_INHALATION_DETECTED`, 0 `INPUT_ERROR`.
+- **Events:** 364; 318 scoreable; 46 not scoreable (short 20, close neighbour 14, short + close 11, short + boundary 1).
+- **Assessments:** 301 WITHIN, 17 OUTSIDE, 46 NOT_ASSESSED. 0 non-finite values. Every scoreable event had all 8 segmentation variants.
+- **Agreement with the table-based evaluation:** 0 event-count mismatches, 0 scoreability mismatches, scores within 5.3×10⁻¹⁵, 0 p mismatches, 0 category mismatches.
+- **Runtime:** mean 0.26 s per 12 s recording (max 1.2 s) on the development PC, including the 8 variants.
+
+**Deployment reference (in-sample for these reference recordings):** 307 WITHIN, 11 OUTSIDE, 46 NOT_ASSESSED; 295 STABLE, 23 BORDERLINE. The deployment baseline is identical to `v2_baseline.json`, and the calibration distribution equals the Stage 8 held-out V2 distribution (p05/median/p95 0.4226 / 0.9973 / 1.7451).
+
+## Category gate (`category_gate_results.json`)
+| Id | Measured | Verdict |
+|---|---|---|
+| K1 | 5.35% [0.78%, 8.97%] | pass |
+| K2 | 0.096 | pass |
+| K3 | noise 0.286 → 0.660 → 0.994; tilt 0.465 → 0.808; gain Δ 0 | pass |
+| K4 | 9/9 files identical (and 28/28 in the full comparison) | pass |
+
+**Outcome: PASS. The contract is issued as `CATEGORICAL_ASSESSMENT_ADOPTED`** (`assessment_contract_v1.json`, `prism-assessment-v1.0`).
+
+## Personalization
+- **Metadata audit:** the 361 WAVs carry only `fmt`/`data` chunks (no LIST/INFO metadata). Filenames are timestamps only, and `annotation.csv` has 4 columns. No user, device, placement or protocol identifier exists, and sessions are inferred sittings.
+- **Nothing personal was implemented.** The reference is global and is labelled so.
+- **Within-session reference:** Stage 5 already tested it. A deployable 5-event warm-up did not improve on the global baseline; 10 events did (sensitivity only).
+- **Session dependence of the final assessment:** per-session OUTSIDE rates range 0–13.5%.
+- **Metadata required for future personalization:**
+  - per recording: a pseudonymous user id; device id (hardware serial, microphone/firmware revision, gain configuration); inhaler/canister type; recording session id and timestamp; placement/environment notes;
+  - for deliberate protocol variations: the condition label as a protocol condition, not a clinical label;
+  - for evaluation: a reference recording set on PRISM hardware.
+- **Data needed to evaluate a personal reference:** at least 10 events per user per context (Stage 5 sensitivity) and several sessions per user, evaluated with held-out-session splits within a user.
+
+## Final pipeline contract (`results/final_assessment/assessment_contract_v1.json`, schema `assessment_output.schema.json`)
+- **Input:** 8 kHz mono audio, as in `prism-inference-v2.0`, unchanged.
+- **Per recording:**
+  - inference fields: status, error, input, domain flag;
+  - reference statistics: α, categorical flag, cut, band, n events/sessions, feature centres and scales.
+- **Per event:**
+  - **segmentation:** bounds (times plus the exact integer sample slice), duration;
+  - **detector:** confidence, max confidence, window count;
+  - **scoreability:** status and reasons;
+  - **measurements and deviations:** feature values, `mean_rms`, per-feature z, aggregate deviation;
+  - **assessment:** reference tail probability, assessment, reliability;
+  - **diagnostics:** segmentation variant count and deviation range, dominant feature and share, reason.
+- **Conformance:** golden vectors in `results/final_assessment/golden/`.
+- **Reference implementation:** `src/prism_assessment.py`.
+
+## Claim matrix
+| # | Claim | Status | Evidence | Limitation |
+|---|---|---|---|---|
+| 1 | CNN event detection | Validated at window level | 3-fold CV accuracy 0.89, Inhale F1 0.89 (Entry 1) | deployed fold in-sample for about 2/3 of the recordings |
+| 2 | Inhalation event formation | Validated against annotations | 259/260 annotated inhalations matched, IoU 0.876 (Entry 3) | mostly in-sample; annotations are acoustic, not technique |
+| 3 | Event characterization | Implemented, reproducible | V2 features reproduce Stage 1 within 7.9×10⁻¹⁵ from raw audio (Entry 10); 0 non-finite values in 364 events | float-derived segment bounds (one-sample sensitivity) |
+| 4 | Robust reference construction | Validated across sessions | fold centres ≤ 0.22 SD, scales 0.88–1.09× (Entry 10); cut stable 0.94–1.08× under session removal and ≤ 3.8% under event removal | 18 inferred sittings, unknown subjects/devices |
+| 5 | Acoustic deviation scoring | Implemented; behaves predictably | gain-invariant; monotone under noise/tilt; generalization ratio 1.12 | V2 `DRAFT_NOT_FROZEN` (G4c); session ε² 0.130 |
+| 6 | Final event-level assessment | **Implemented and validated on the reference domain** | held-out end-to-end run over all 361 recordings, 0 failures; exact agreement with the evaluation | reference domain only; 9.4% of assessments BORDERLINE (8/17 of OUTSIDE) |
+| 7 | Statistical / reference-consistency assessment (p, WITHIN / OUTSIDE at α 0.05) | **Supported marginally** | K1–K4 pass; exceedance 5.35% [0.78, 8.97]; 1.26% at α 0.01, 11.3% at α 0.10 | not per session (0–13.5%; 14/17 in two sessions); same-data evaluation |
+| 8 | Personalization | Not supported by the data | no identifiers exist (metadata audit) | needs longitudinal user/device data |
+| 9 | Normal / anomalous classification | Not supported | no anomaly ground truth | OUTSIDE means atypical for the reference, not anomalous |
+| 10 | Technique-quality classification | Not supported | no technique labels (Entry 2) | — |
+| 11 | Clinical interpretation | Not supported | — | no clinical data; PRISM hardware not validated |
+
+## Interpretation
+1. **The strongest defensible final assessment** is a reference-calibrated statement: the event's V2 acoustic profile is within, or outside, the region that contains 95% of reference inhalations from unseen sessions. It comes with its p-value and a reliability label.
+   - **Its false-flag rate is controlled marginally:** 5.35% on held-out sessions.
+   - **It is stable,** gain-invariant, monotone in controlled spectral changes, and reproducible.
+2. **Its main weakness is session concentration.** Most held-out OUTSIDE statements fall in two sittings whose spectra differ from the rest of the reference. Within the reference domain this is correct behaviour, because those inhalations *are* atypical for the reference. But it means an OUTSIDE statement often reflects the recording context (subject, device or placement — unknown) as much as the individual inhalation.
+3. **Why categories are worth emitting:** the continuous p and deviation are always reported. The categories add a fixed, documented interpretation, not new information.
+
+## Limitations
+- **No independent data:** the same 318 events were used in Stages 2–8. Results are calibration and behaviour checks, not detection performance.
+- **Session-level exchangeability is assumed** for marginal validity. Per-session validity does not hold (heterogeneity p 0.058).
+- **Arbitrary conventions:** α = 0.05 and the K2 limit of 0.20 are conventions, not derived values.
+- **Pre-registration order:** the pre-registration was hash-recorded, not committed, before the analysis.
+- **Hardware:** PRISM hardware audio is unvalidated (`baseline_domain_validated = false`). G4c predicts direction-inconsistent feature shifts under a hardware frequency-response change.
+- **Detector:** in-sample for about two-thirds of the recordings.
+
+## Decision and Next Step
+1. **Adopted:** the final event-level output is `prism-assessment-v1.0`: inference contract V2 plus reference tail probability plus WITHIN / OUTSIDE at α 0.05 plus reliability. NOT_ASSESSED events carry reasons.
+2. **Retained:** V2 remains the representation (no alternative qualified). Its `DRAFT_NOT_FROZEN` status, and the owner's decision on it (Entry 10), are unchanged.
+3. **Next scientific steps (unchanged):**
+   - PRISM-hardware reference recordings, which need a new reference and a new `reference_id`;
+   - longitudinal user/device data for personalization;
+   - ideally, documented deliberate acoustic variations as an independent test of the OUTSIDE statement.
+
+---
+
+# Research Entry 13 — 2026-10-07: Stage 9 Audit — Terminology Correction, Leakage Audit and Final Claim (no new experiment)
+
+**No computation changed.**
+- **Unchanged:** scoring, thresholds, the feature set, baseline construction, the assessment rules and every number in the Stage 9 outputs.
+- **Corrected:** terminology in code strings, outputs and documentation.
+- **Entry 12 is not edited.** Where its wording is corrected, it is quoted here.
+- **The pre-registration is unchanged:** `results/final_assessment/stage9_preregistration.json`, SHA-256 `5b5cdf6e…01e6`. Its historical wording is quoted below.
+
+## Corrections to Entry 12 (quoted; Entry 12 itself is unchanged)
+- **The tail probability was mislabelled.** Entry 12 and the pre-registration describe p as a "conformal p-value", and Entry 12 adds: "Under exchangeability, P(p ≤ α) ≤ α for reference-like events". That does not describe this implementation:
+  - **Scores are not exchangeable.** Each reference deviation cᵢ is computed with a different baseline (fitted without event i's own session), while a new event is scored with the baseline fitted on all reference sessions. The guarantee requires one fixed scoring rule and exchangeable scores.
+  - **Events are clustered by recording session.**
+  - **So there is no finite-sample guarantee.** Calibration is only checked empirically (Entry 12 §B).
+- **The reference-range wording was imprecise.** Entry 12's "central-95% reference-interval convention" and the output text "central 95% reference region" describe a two-sided interval. The decision is a one-sided upper limit on a non-negative scalar deviation: the **one-sided 95% upper reference limit**.
+- **The validation claim was too broad.** Entry 12 calls the assessment "validated on the reference domain". The correct scope is **held-out by recording session on the same PRISM corpus**: an internal consistency/calibration check, not external validation, and not generalization to new subjects or devices.
+- **K4 deviated from the pre-registered scope.**
+  - **The in-run check was narrower.** It compared the 9 evaluation CSVs produced before the gate decision, against the pre-registered "byte-identical CSV/JSON outputs". The reference, contract, golden vectors and deployment run are written after the gate decision and depend on it.
+  - **Literal identity was established separately,** by comparing two further complete runs file by file (Entry 12 §E; repeated below).
+- **The gate's severity was overstated.** K1 compares held-out leave-one-session-out deviations with reference deviations of the same kind from the same corpus, so near-nominal exceedance is largely expected by construction. K3 was largely implied by the Stage 8 results (gain invariance, monotone noise and tilt response). K1–K4 are therefore consistency checks, not severe tests.
+
+## A. Empirical reference-tail probability (exact definition)
+p = (1 + #{i : cᵢ ≥ a}) / (n + 1), with n = 318.
+- **a:** the event's V2 aggregate acoustic deviation, sqrt(¼ Σⱼ zⱼ²), with zⱼ = (xⱼ − medianⱼ) / (1.4826·MADⱼ) under the frozen reference baseline. The deployment baseline is fitted on all 318 reference events; in evaluation, on the reference events of the other sessions.
+- **cᵢ:** the reference deviations. Each of the 318 usable reference events is scored by a baseline fitted without its own recording session.
+
+**What it is:** an empirical upper-tail probability of the reference deviation distribution, with the +1 correction.
+**What it is not:** a conventional hypothesis-test p-value, an exact conformal p-value, or an exact conformal prediction. No finite-sample guarantee such as P(p ≤ α) ≤ α is claimed.
+**Smallest attainable value:** 1/319.
+
+## B. Reference threshold
+- **c\*** = the 304th smallest reference deviation = **1.8297** (m = ⌊0.05 · 319 − 1⌋ = 14 reference deviations lie above it; 304/318 = 95.6% lie at or below it).
+- **Decision:** `OUTSIDE_REFERENCE_RANGE` iff **a > c\***, equivalently **p ≤ 0.05**. `WITHIN_REFERENCE_RANGE` otherwise.
+- **Effective attainable level:** **15/319 ≈ 0.047**, the largest attainable p at or below 0.05.
+- **Geometry:** in the four-dimensional feature space, the WITHIN region is a sphere (robust-z units) around the baseline centre. The decision itself is the one-sided upper limit on the scalar deviation.
+- **Category meaning:** the event's acoustic deviation is within, or outside, the empirical reference distribution established from the PRISM reference corpus.
+
+## C. Leakage audit
+**Session and event level: no leakage found.** It was checked by rebuilding all 18 held-out-session references with the production code (`prism_assessment.fit_reference`):
+- **Own session excluded:** no held-out session appears in its own reference's calibration.
+- **Sizes consistent:** baseline and calibration sizes equal the number of usable events outside the held-out session, in all 18 folds.
+- **Mutation test:** multiplying the held-out session's V2 features by 1.5 (plus 0.01), and forcing all its events usable, left its reference bit-identical in all 18 folds. The held-out event and its session do not contribute.
+- **Frozen before scoring:** each reference (frozen dataclasses) is fully built before any held-out event is scored.
+- **No fitting during assessment:** `assess_recording` only applies the stored baseline, calibration scores, cut and band.
+
+**Pipeline level: the same 318 events were reused across earlier design decisions.**
+
+| Decision | Made on this corpus |
+|---|---|
+| Event detector | trained on about two-thirds of these recordings (fold membership not saved) |
+| Usability rule, session gap | designed from these events and timestamps (Entries 1, 3, 4) |
+| Feature selection | all 318 events (Entry 4) |
+| Baseline strategy | chosen from leave-one-session-out results on these events (Entry 7) |
+| V2 design | after the Stage 6 results on these events (Entry 9) |
+| Stage 8 gate thresholds | partly set knowing per-feature values (Entry 10) |
+| Stage 9 conventions | α 0.05 is a convention; the K2/K3 thresholds and the band and boundary-shift design were set knowing the Stage 8 distribution |
+| Stage 9 alternatives | compared on the same events; V2 retained |
+
+**Consequence:** the held-out calibration check is an internal same-corpus consistency/calibration assessment, not independent external validation.
+
+## D. Same-day sensitivity (leave-one-date-out)
+- **Result:** holding out whole recording days (10 dates; baseline and nested calibration refitted without the held-out day) gives **17/318 = 5.35%**, with a 95% date-bootstrap interval of about **[0%, 10.6%]**.
+- **Concentration:** **15 of the 17** OUTSIDE events occur on **2018-05-03**. The other two are 1 on 2018-01-23 and 1 on 2018-02-06.
+- **Interpretation:** this reinforces the possibility of session- or day-level acoustic context effects (subject, device, placement — unknown).
+
+## E. STABLE / BORDERLINE (exact definition)
+- **Reference-session resampling:**
+  - draws: **2,000** bootstrap resamples of the 18 reference sessions (whole sessions, with replacement), **seed 20261006** (numpy `default_rng`);
+  - per draw: the cut is recomputed from the resampled reference deviations with that draw's n;
+  - **band:** the **5th–95th percentile** of the resampled cuts, [1.620, 1.972]; relative half-width **9.6%** (6.3–13.0% across the 18 held-out-session references);
+  - **storage:** the band is stored in the reference file, so assessment involves no randomness. Refitting reproduced the stored band bit for bit (numpy 2.4.6). numpy does not guarantee its generator stream across versions, so a refit under another version could differ.
+- **Boundary perturbation:** the first and/or last detector window moves by **±1 detector step = 16 ms = 128 samples**.
+  - **Variants:** 8 combinations, each re-measured with the unchanged V2 code and scored with the same frozen baseline.
+  - **Validity:** a variant is used when it stays inside the recording and spans at least one window. **All 318 events had all 8 variants.**
+- **STABLE:** the category is unchanged across the reference-session resampling and the boundary-shift perturbations. Formally, the event's deviation and all its variant deviations lie on one side of the band: all > band high, or all ≤ band low.
+- **BORDERLINE:** the category changes under at least one of them.
+- **What STABLE is not:** a probability that the category is correct.
+- **Counts:**
+  - **OUTSIDE:** **8 of 17 are BORDERLINE**. In 5 the score lies inside the band; in 3 a boundary variant crosses the band edge. 6 of the 8 are in 2018-05-03#2.
+  - **WITHIN:** 22 of 301 are BORDERLINE (14 + 8).
+
+## F. Final results (held-out by recording session on the same PRISM corpus)
+| Level | OUTSIDE | Rate [95% session-bootstrap interval] |
+|---|---|---|
+| 1% | 4/318 | 1.26% [0.00, 2.20] |
+| 5% | 17/318 | 5.35% [0.78, 8.97] |
+| 10% | 36/318 | 11.3% [3.79, 17.9] |
+
+- **At 5%:** **14 of 17** OUTSIDE events are from two recording sessions (2018-05-03#2: 7/57; 2018-05-03#3: 7/52).
+- **Under whole-day holdout:** **15 of 17** occur on 2018-05-03.
+- **Calibration is marginal,** not per session (per-session rates 0–13.5%; heterogeneity p 0.058).
+
+## G. Final scientific limitation and statement
+- **V2 is not frozen.** It remains **DRAFT_NOT_FROZEN** because the pre-registered **G4c** criterion failed (Entry 10).
+- **Same corpus:** **all design choices were made on this same corpus**, and **no external dataset** was used.
+- **No identifiers:** **no user or device identifiers** are available; sessions are inferred recording sittings.
+- **No technique labels:** **no clinical technique-quality labels** exist.
+- **Not validated for new users, devices, microphones or PRISM hardware.**
+- **Not a classifier:** it is not a normal/abnormal, anomaly, technique-quality or clinical classifier.
+
+**Final statement.**
+
+> On the PRISM reference corpus (318 scoreable inhalation events from 361 recordings in 18 inferred recording sessions), the pipeline reports for each scoreable event:
+> - its V2 aggregate acoustic deviation;
+> - its empirical reference-tail probability, p = (1 + #{i : cᵢ ≥ a}) / 319 over the 318 leave-one-session-out reference deviations;
+> - a reference-range assessment against the one-sided 95% upper reference limit (c\* = 1.8297; effective level 15/319).
+>
+> Held out by recording session on the same corpus, 17 of 318 events (5.35%; 95% session-bootstrap interval 0.8–9.0%) were OUTSIDE_REFERENCE_RANGE. The rates were 1.26% and 11.3% at the 1% and 10% levels.
+>
+> This calibration is marginal, not per session. 14 of the 17 come from two sessions recorded on 2018-05-03, and 15 of 17 fall on that day under whole-day holdout, so an OUTSIDE assessment often reflects session- or day-level acoustic differences of unknown origin. 8 of the 17 are BORDERLINE.
+>
+> The V2 representation is DRAFT_NOT_FROZEN (G4c), and every design choice used this corpus. There is no external dataset, no user or device identifiers, and no clinical labels.
+>
+> The assessment describes acoustic deviation relative to this reference corpus only. It is not a normal/abnormal, anomaly, technique-quality or clinical classification, and it is not validated for new users, devices, microphones or PRISM hardware.
+
+## H. Changes made (terminology and documentation only)
+- **`src/prism_assessment.py`:**
+  - module docstring, the α comment and the fixed `INTERPRETATION` string (the output's `interpretation` and its schema constant);
+  - the `tail_probability` and `reliability` docstrings;
+  - the per-event `reason` text, which now says "deviation at or above/below the one-sided 95% upper reference limit (empirical reference-tail probability …)" and takes the percentage from the reference's α;
+  - `conformal_cut` renamed to `reference_cut`, with the same code.
+- **`src/assessment_validation.py`:**
+  - the module docstring and the call sites of `reference_cut`;
+  - contract text: status meaning, representation status, pipeline description, tail-probability and cut definitions (which now state c\*, its rank and the effective level 15/319), category and STABLE/BORDERLINE meanings, and a new `category_gate.scope` field;
+  - the known limitations (same-corpus reuse; not validated for new users, devices, microphones or PRISM hardware).
+- **`tests/test_prism_assessment.py`:** follows the rename; the test logic is unchanged.
+- **`README.md`, `ARCHITECTURE.md`:**
+  - the corrected terminology;
+  - validation claims qualified as "held-out by recording session on the same PRISM corpus";
+  - the "(anomaly detection, Stage N)" labels of Stages 1–8 neutralised to "(Stage N)";
+  - a reproduction note on clean output directories.
+- **Not changed:** scoring, thresholds, the feature set, baseline construction, the assessment rules, the pre-registration, and Entry 12.
+
+## I. Regeneration and verification
+- **Runs:** run A (scratch, reference run), run B (`results/final_assessment`, K4 against A), run C (scratch, K4 against A).
+- **Gate:** both B and C **PASS** (K1–K4; K4 9/9 files identical).
+- **B vs C:** **28 of 28 output files are byte-identical,** including the reference, contract, schema, golden vectors, end-to-end tables and figures. `analysis_summary.json` is identical except for runtime and git provenance.
+- **No number changed** between the pre-correction outputs and the regenerated ones, compared value by value with exact float parsing.
+  - **The only numeric differences** are wall-clock timings.
+  - **Byte-identical files:** `assessment_reference_v1.json` (SHA-256 `32ada36c…cca8`), `category_gate_results.json` and every evaluation CSV and figure.
+  - **Text-only differences:** the `interpretation` constant, the per-event `reason` text, and the contract's text fields.
+- **Recomputation from the saved end-to-end output:**
+  - p recomputed independently: 0 mismatches;
+  - p ≤ 0.05 against score > c\*: 0 mismatches;
+  - category against p: 0 mismatches.
+
+  With pandas' default CSV float parser, 100 p values differ by at most 1.1×10⁻¹⁶ (one unit in the last place, a parser artefact; 0 count mismatches). Exact parsing gives 0 differences.
+- **Reference refit:** refitting the deployment reference reproduces the stored band, cut and calibration bit for bit.
+- **Tests:** `venv/Scripts/python.exe -m unittest discover tests` gives 204 tests, all passing.
+
+**Issue found during regeneration: K4 depends on stale files.**
+- **What happened:** the first run B was executed into the already-populated `results/final_assessment`. The in-run K4 comparison lists every CSV/JSON present in the output directory, so it compared 22 files, including 13 left from the previous version. Their wording differed, so K4 reported FAIL and the run wrote a non-categorical reference.
+- **Recovery:** the directory was emptied (except the pre-registration) and run B repeated, which gave the PASS reported above. The stale-file run's outputs were discarded.
+- **What the original Stage 9 run did:** it wrote into a fresh directory, so its 9-file K4 was correct.
+- **Status:** the code is unchanged in this entry (terminology-only scope). The README now requires empty output directories.
+- **Recommended code fix:** compare only the files written by the current run, or refuse a non-empty output directory.
+
+---
+
+# Research Entry 14 — 2026-10-07: Stage 9 Reproducibility Fix — K4 Output-Directory Guard (no methodological change)
+
+**This changes infrastructure only.** The following are unchanged:
+- scoring, baseline, V2 features and thresholds;
+- assessment categories and STABLE/BORDERLINE logic;
+- reference construction;
+- the pre-registration (SHA-256 `5b5cdf6e…01e6`);
+- every numerical result.
+
+## Problem (Entry 13 §I)
+- **What K4 does:** the in-run K4 check (`compare_runs`) compares every CSV/JSON present in the output directory with the reference run.
+- **The flaw:** a run into a populated directory therefore included files left by an earlier run. They could make K4 fail spuriously, which made the run write a non-categorical reference. In principle, a stale file that happened to match could also make the comparison cover files the current run did not produce.
+
+## Fix
+- **Guard:** `assessment_validation.require_clean_output_dir(output)` is called at the start of `run_analysis`, before anything is read, computed or written.
+  - **Rule:** it raises `StageError` unless the output directory is empty, with `stage9_preregistration.json` the only file allowed.
+  - **Error message:** it names the leftover entries in sorted order and says to remove them or choose another `--output-dir`.
+- **Why this design:** refusing was chosen over "compare only the files produced by this run", because it is simpler and cannot silently miss or include a stale file.
+- **Documentation:** the CLI help and the README reproduction note were updated.
+
+## Tests
+Five new tests in `tests/test_assessment_validation.py`:
+
+| Test | What it checks |
+|---|---|
+| `test_stale_file_would_contaminate_k4` | documents the failure mode (a stale file enters K4) and that the guard refuses that directory |
+| `test_empty_or_preregistration_only_directory_is_accepted` | an empty directory, and one holding only the pre-registration, are accepted |
+| `test_any_leftover_file_or_folder_is_refused` | a leftover CSV, folder, text file or hidden file is refused |
+| `test_error_is_deterministic_and_names_the_leftovers` | the message is identical across calls and lists `a.json, b.csv, golden/` in sorted order |
+| `test_run_analysis_refuses_before_writing_anything` | the guard is wired into `run_analysis`, and the directory is unchanged afterwards |
+
+**Mutation check:** with the guard removed in memory, the wiring scenario fails with `FileNotFoundError` instead of `StageError`, so the test depends on the guard.
+**Full suite:** 209 tests (204 + 5), all passing.
+
+## Demonstration
+Running Stage 9 into the populated `results/final_assessment` now stops immediately:
+- **Error raised:** "output directory … is not empty: analysis_summary.json, … (21 entries) …".
+- **Directory afterwards:** byte-identical; nothing was written.
+
+## Regeneration from clean directories and verification
+- **Procedure:** `results/final_assessment` was emptied (except the pre-registration). Then three runs:
+  - run A into an empty scratch directory (reference run; gate INCOMPLETE by design);
+  - run B into `results/final_assessment`, with K4 against A;
+  - run C into an empty scratch directory, with K4 against A.
+- **Gate:** runs B and C **PASS** (K1–K4); K4 found 9/9 files identical.
+- **B vs C:** **all 28 output files are byte-identical.** `analysis_summary.json` differs only in `runtime_seconds`.
+- **Unchanged from the pre-fix outputs:** all 28 output files are byte-identical to the Entry 13 outputs, apart from the wall-clock fields in `e2e_timing.csv` and `analysis_summary.json`. **0 numerical changes, 0 text changes.**
+- **Recomputation from the saved end-to-end output (exact float parsing):**
+  - 0 p mismatches;
+  - 0 mismatches between p ≤ 0.05 and score > c\*;
+  - 0 category mismatches;
+  - still 17 OUTSIDE, 8 of them BORDERLINE.
+- **Reference:** the stored band [1.620, 1.972], cut 1.8297 and calibration reproduce bit for bit. The reference SHA-256 is unchanged (`32ada36c…cca8`).
+
+## Status
+The output-directory contamination issue is resolved: a Stage 9 run can only write into a directory that contains nothing but the pre-registration, so K4 compares exactly the files produced by the current run.

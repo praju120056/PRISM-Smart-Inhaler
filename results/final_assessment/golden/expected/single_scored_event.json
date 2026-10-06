@@ -1,0 +1,91 @@
+{
+  "contract_version": "prism-assessment-v1.0",
+  "inference_contract_version": "prism-inference-v2.0",
+  "reference_id": "prism-assessment-ref-2026-10-06",
+  "baseline_id": "prism-assessment-ref-2026-10-06/baseline",
+  "detector_model_sha256": "2e4e72d3ca040b15718ad6b09ae4ac3069c38f5c1a389327bf6b38c4e2903725",
+  "recording_status": "EVENTS_DETECTED",
+  "error": null,
+  "input": {
+    "sample_rate": 8000,
+    "n_samples": 96000,
+    "duration_s": 12.0,
+    "input_domain": "reference_dataset",
+    "recording_id": "rec2018-01-22_17h41m33.475s.wav",
+    "recorded_at": null
+  },
+  "baseline_domain_validated": true,
+  "feature_order": [
+    "spectral_centroid_mean",
+    "spectral_flatness_mean",
+    "spectral_centroid_std",
+    "spectral_rolloff_std"
+  ],
+  "reference": {
+    "alpha": 0.05,
+    "categorical": true,
+    "cut": 1.8297261539489305,
+    "band": [
+      1.6200762237720456,
+      1.9724145879667279
+    ],
+    "n_reference_events": 318,
+    "n_reference_sessions": 18,
+    "feature_center": {
+      "spectral_centroid_mean": 0.3705300390720367,
+      "spectral_flatness_mean": 0.13224149495363235,
+      "spectral_centroid_std": 0.039400866255164105,
+      "spectral_rolloff_std": 0.08070974424481385
+    },
+    "feature_scale": {
+      "spectral_centroid_mean": 0.027867408952116965,
+      "spectral_flatness_mean": 0.029707026135921476,
+      "spectral_centroid_std": 0.008977376704663007,
+      "spectral_rolloff_std": 0.016905980072915563
+    }
+  },
+  "n_events": 1,
+  "n_scoreable": 1,
+  "n_outside_reference_range": 0,
+  "events": [
+    {
+      "event_id": 0,
+      "start_time": 2.496,
+      "end_time": 4.04,
+      "duration_s": 1.544,
+      "start_sample": 19968,
+      "end_sample": 32320,
+      "detector_confidence": 0.8478618302766014,
+      "detector_max_confidence": 0.9846252202987671,
+      "window_count": 85,
+      "scoreability": "SCOREABLE",
+      "not_scoreable_reasons": [],
+      "feature_values": {
+        "spectral_centroid_mean": 0.37882059812545776,
+        "spectral_flatness_mean": 0.19025211036205292,
+        "spectral_centroid_std": 0.03874003514647484,
+        "spectral_rolloff_std": 0.07275300472974777
+      },
+      "mean_rms": 0.1772032380104065,
+      "feature_deviations": {
+        "spectral_centroid_mean": 0.2975001754797616,
+        "spectral_flatness_mean": 1.952757409745388,
+        "spectral_centroid_std": -0.07361071395678642,
+        "spectral_rolloff_std": -0.47064645059018323
+      },
+      "aggregate_deviation": 1.015959457162092,
+      "reference_tail_probability": 0.4827586206896552,
+      "assessment": "WITHIN_REFERENCE_RANGE",
+      "assessment_reliability": "STABLE",
+      "segmentation_variants": 8,
+      "segmentation_deviation_range": [
+        0.9865158531104743,
+        1.0969547237402872
+      ],
+      "dominant_feature": "spectral_flatness_mean",
+      "dominant_share": 0.9235998267661636,
+      "reason": "deviation at or below the one-sided 95% upper reference limit (empirical reference-tail probability 0.483; largest deviation: spectral_flatness_mean)"
+    }
+  ],
+  "interpretation": "aggregate_deviation a is the root-mean-square of robust z-scores of four spectral features relative to a global reference baseline. reference_tail_probability is the empirical reference-tail probability p = (1 + #{i : c_i >= a}) / (n + 1), where c_1..c_n are the reference deviations (n = n_reference_events; each reference inhalation scored by a baseline fitted without its own recording session): an empirical upper-tail probability of the reference deviation distribution with the +1 correction, not a hypothesis-test p-value. OUTSIDE_REFERENCE_RANGE means p <= 0.05, equivalently a above the one-sided 95% upper reference limit (reference.cut); WITHIN_REFERENCE_RANGE means p > 0.05. STABLE means the category is unchanged under resampling of the reference sessions and +/-1 detector-window boundary shifts; BORDERLINE means it changes under at least one of them. These statements describe acoustic deviation relative to the PRISM reference corpus only; they are not normal/abnormal, anomaly, technique-quality or clinical classifications."
+}

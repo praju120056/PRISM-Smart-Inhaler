@@ -1,0 +1,214 @@
+{
+  "contract_version": "prism-assessment-v1.0",
+  "status": "CATEGORICAL_ASSESSMENT_ADOPTED",
+  "status_meaning": "The pre-registered Stage 9 gate (K1-K4), evaluated held-out by recording session on the same PRISM corpus, passed: events receive WITHIN_REFERENCE_RANGE / OUTSIDE_REFERENCE_RANGE against the one-sided 95% upper reference limit, with a STABLE / BORDERLINE label.",
+  "representation_status": "V2 representation retained; inherits DRAFT_NOT_FROZEN from Stage 8 (G4c: per-feature direction under strong spectral tilt). The assessment's calibration was checked held-out by recording session on the same PRISM corpus only; it is not externally validated and not validated for new users, devices, microphones or PRISM hardware.",
+  "representation_comparison": {
+    "selected": "V2",
+    "qualifying_alternatives": [],
+    "rule": "an alternative replaces V2 only if it passes every Stage 8 criterion including G4c and K1 while V2 does not; otherwise V2 is retained",
+    "summary": {
+      "V2": {
+        "features": [
+          "spectral_centroid_mean",
+          "spectral_flatness_mean",
+          "spectral_centroid_std",
+          "spectral_rolloff_std"
+        ],
+        "kind": "rms",
+        "failing_criteria": [
+          "G4c"
+        ],
+        "passes_all_gate_criteria": false,
+        "k1": {
+          "rate": 0.05345911949685535,
+          "ci_low": 0.007807301568441074,
+          "ci_high": 0.0897114074970884,
+          "n": 318,
+          "outside": 17,
+          "passed": true
+        },
+        "session_epsilon_squared": 0.1298816440583022
+      },
+      "V2_RC": {
+        "features": [
+          "spectral_centroid_mean",
+          "spectral_flatness_mean",
+          "spectral_centroid_std",
+          "spectral_rolloff_std"
+        ],
+        "kind": "rc",
+        "failing_criteria": [
+          "G4c"
+        ],
+        "passes_all_gate_criteria": false,
+        "k1": {
+          "rate": 0.050314465408805034,
+          "ci_low": 0.017985611510791366,
+          "ci_high": 0.08135823299332769,
+          "n": 318,
+          "outside": 16,
+          "passed": true
+        },
+        "session_epsilon_squared": 0.08883172518228494
+      },
+      "V2_G4C": {
+        "features": [
+          "spectral_centroid_mean",
+          "spectral_rolloff_std"
+        ],
+        "kind": "rms",
+        "failing_criteria": [
+          "G4b"
+        ],
+        "passes_all_gate_criteria": false,
+        "k1": {
+          "rate": 0.050314465408805034,
+          "ci_low": 0.009455439839822551,
+          "ci_high": 0.08419489455024765,
+          "n": 318,
+          "outside": 16,
+          "passed": true
+        },
+        "session_epsilon_squared": 0.19215198595366703
+      }
+    }
+  },
+  "pipeline": [
+    "8 kHz mono audio",
+    "inference contract prism-inference-v2.0 (detector, Inhale events, scoreability, V2 features, robust z, aggregate deviation)",
+    "empirical reference-tail probability (+1-corrected empirical upper-tail probability; not a hypothesis-test p-value)",
+    "reference-range assessment against the one-sided 95% upper reference limit (if adopted)",
+    "stability (reference-session resampling band, +/-1 detector-window boundary shifts)"
+  ],
+  "inference_contract": "results/v2_validation/inference_contract_v2.json (unchanged)",
+  "reference": {
+    "file": "results/final_assessment/assessment_reference_v1.json",
+    "sha256": "32ada36c21fc66c331618a9182d79f1d81d7b18a65a4dc73022a044a11cdcca8",
+    "reference_id": "prism-assessment-ref-2026-10-06",
+    "n_events": 318,
+    "n_sessions": 18,
+    "alpha": "1/20",
+    "cut": 1.8297261539489305,
+    "band": [
+      1.6200762237720456,
+      1.9724145879667279
+    ],
+    "band_percentiles": [
+      5.0,
+      95.0
+    ],
+    "bootstrap_draws": 2000,
+    "seed": 20261006,
+    "fitting_at_inference": "never; any update is a new reference_id requiring its own validation"
+  },
+  "assessment": {
+    "aggregate_deviation": "sqrt(mean_j z_j^2) over the 4 V2 features (the inference contract's anomaly_score)",
+    "reference_tail_probability": "empirical reference-tail probability p = (1 + #{i : c_i >= a}) / (n + 1); a = the event's aggregate deviation; c_i = leave-one-session-out deviations of the reference's usable events (n = n_events). An empirical upper-tail probability with the +1 correction: not a hypothesis-test p-value, and no finite-sample guarantee is claimed",
+    "cut": "one-sided 95% upper reference limit c* = the (n - m)-th smallest c_i, m = floor(alpha (n + 1) - 1): c* = 1.8297261539489305 (rank 304 of 318); p <= alpha iff a > c*; effective attainable level (m + 1) / (n + 1) = 15/319",
+    "categories": {
+      "WITHIN_REFERENCE_RANGE": "p > 0.05: deviation at or below the one-sided 95% upper reference limit",
+      "OUTSIDE_REFERENCE_RANGE": "p <= 0.05: deviation above the one-sided 95% upper reference limit",
+      "meaning": "acoustic deviation within or outside the empirical reference distribution of the PRISM reference corpus; not a normal/abnormal, anomaly, technique-quality or clinical classification",
+      "CONTINUOUS_ONLY": "used when the categorical statement is not adopted",
+      "NOT_ASSESSED": "event not scoreable (usability rule v1); reasons are given"
+    },
+    "reliability": {
+      "STABLE": "the category is unchanged under resampling of the reference sessions and under every allowed +/-1 detector-window boundary shift (the event deviation and every segmentation variant lie on one side of the band); not a probability that the category is correct",
+      "BORDERLINE": "the category changes under at least one of those perturbations",
+      "band": "5th-95th percentile of the session-bootstrap cut",
+      "segmentation_variants": "event bounds moved by one detector stride (0.016 s) at start and/or end; reference float formula"
+    },
+    "meaning": "aggregate_deviation a is the root-mean-square of robust z-scores of four spectral features relative to a global reference baseline. reference_tail_probability is the empirical reference-tail probability p = (1 + #{i : c_i >= a}) / (n + 1), where c_1..c_n are the reference deviations (n = n_reference_events; each reference inhalation scored by a baseline fitted without its own recording session): an empirical upper-tail probability of the reference deviation distribution with the +1 correction, not a hypothesis-test p-value. OUTSIDE_REFERENCE_RANGE means p <= 0.05, equivalently a above the one-sided 95% upper reference limit (reference.cut); WITHIN_REFERENCE_RANGE means p > 0.05. STABLE means the category is unchanged under resampling of the reference sessions and +/-1 detector-window boundary shifts; BORDERLINE means it changes under at least one of them. These statements describe acoustic deviation relative to the PRISM reference corpus only; they are not normal/abnormal, anomaly, technique-quality or clinical classifications."
+  },
+  "category_gate": {
+    "preregistration": "results/final_assessment/stage9_preregistration.json",
+    "preregistration_sha256": "5b5cdf6ee4498ddb69b21be6b54546d1bd1fc0ec3ddde72ad519dc90c61801e6",
+    "outcome": "PASS",
+    "criteria": {
+      "K1": {
+        "rule": "outer-LOSO exceedance at alpha 0.05: 95% session-bootstrap interval contains 0.05 and point estimate <= 0.10",
+        "rate": 0.05345911949685535,
+        "ci_low": 0.007807301568441074,
+        "ci_high": 0.0897114074970884,
+        "n": 318,
+        "outside": 17,
+        "passed": true
+      },
+      "K2": {
+        "rule": "deployment reference: (c_hi - c_lo) / (2 c_alpha) <= 0.20",
+        "cut": 1.8297261539489305,
+        "band": [
+          1.6200762237720456,
+          1.9724145879667279
+        ],
+        "relative_half_width": 0.09628172047337866,
+        "passed": true
+      },
+      "K3": {
+        "rule": "OUTSIDE fraction non-decreasing over noise 30->20->10 dB and tilt 0.5->0.9; |gain - identity| <= 0.02",
+        "identity": 0.05345911949685535,
+        "noise_30_20_10": [
+          0.2861635220125786,
+          0.660377358490566,
+          0.9937106918238994
+        ],
+        "tilt_0.5_0.9": [
+          0.46540880503144655,
+          0.8081761006289309
+        ],
+        "tilt_-0.5": 0.24842767295597484,
+        "gain_minus_identity": {
+          "gain x0.5": 0.0,
+          "gain x0.707": 0.0,
+          "gain x1.41": 0.0,
+          "gain x2": 0.0,
+          "recording_gain x0.5": 0.0,
+          "recording_gain x2": 0.0
+        },
+        "passed": true
+      },
+      "K4": {
+        "rule": "a complete second run produces byte-identical CSV/JSON outputs",
+        "files_compared": 9,
+        "mismatches": [],
+        "passed": true
+      }
+    },
+    "scope": "held-out by recording session on the same PRISM corpus: an internal same-corpus consistency/calibration check, not external validation"
+  },
+  "output": {
+    "schema_file": "results/final_assessment/assessment_output.schema.json",
+    "categories": [
+      "WITHIN_REFERENCE_RANGE",
+      "OUTSIDE_REFERENCE_RANGE",
+      "CONTINUOUS_ONLY",
+      "NOT_ASSESSED"
+    ],
+    "reliability": [
+      "STABLE",
+      "BORDERLINE"
+    ],
+    "forbidden_derived_outputs": [
+      "NORMAL / ANOMALY labels (no validated threshold exists)",
+      "quality percentages or scores rescaled to 0-100",
+      "Correct / Incorrect or good / poor technique labels",
+      "technique error codes (e.g. too_short, too_fast, incomplete_breath)",
+      "clinical or alert states derived from anomaly_score"
+    ]
+  },
+  "conformance": {
+    "golden_manifest": "results/final_assessment/golden/golden_manifest.json",
+    "reference_implementation": "src/prism_assessment.py (python src/prism_assessment.py <wav>)"
+  },
+  "personalization": "not implemented: the data contain no user or device identifiers (sessions are inferred recording sittings); see PRISM_RESEARCH_LOG.md Entries 12-13",
+  "known_limitations": [
+    "No clinical or technique ground truth: OUTSIDE_REFERENCE_RANGE describes acoustic deviation relative to the PRISM reference corpus; it is not a normal/abnormal, anomaly, technique-quality or clinical classification.",
+    "Session dependence remains: per-session held-out exceedance at alpha 0.05 ranges 0.00-0.13 (overdispersion parametric p 0.058); calibration holds marginally over sessions, not per session (held-out by recording session on the same PRISM corpus).",
+    "Reference = 318 events from 18 inferred recording sittings of unknown subjects/devices; global, not personal.",
+    "V2 representation is DRAFT_NOT_FROZEN (G4c); PRISM hardware audio is not validated (baseline_domain_validated false) and needs a hardware reference study.",
+    "Same-corpus evaluation: the same 318 events informed the usability rule, feature selection, baseline strategy, V2 design, Stage 8 gate thresholds and Stage 9 conventions; the held-out-by-session check is an internal consistency/calibration check, not external validation, and there is no independent test set.",
+    "Not validated for new users, devices, microphones or PRISM hardware.",
+    "The detector is in-sample for about two-thirds of the reference recordings."
+  ]
+}

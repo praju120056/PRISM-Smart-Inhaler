@@ -1,0 +1,222 @@
+{
+  "contract_version": "prism-assessment-v1.0",
+  "inference_contract_version": "prism-inference-v2.0",
+  "reference_id": "prism-assessment-ref-2026-10-06",
+  "baseline_id": "prism-assessment-ref-2026-10-06/baseline",
+  "detector_model_sha256": "2e4e72d3ca040b15718ad6b09ae4ac3069c38f5c1a389327bf6b38c4e2903725",
+  "recording_status": "EVENTS_DETECTED",
+  "error": null,
+  "input": {
+    "sample_rate": 8000,
+    "n_samples": 96000,
+    "duration_s": 12.0,
+    "input_domain": "reference_dataset",
+    "recording_id": "rec2018-01-23_12h52m08.363s.wav",
+    "recorded_at": null
+  },
+  "baseline_domain_validated": true,
+  "feature_order": [
+    "spectral_centroid_mean",
+    "spectral_flatness_mean",
+    "spectral_centroid_std",
+    "spectral_rolloff_std"
+  ],
+  "reference": {
+    "alpha": 0.05,
+    "categorical": true,
+    "cut": 1.8297261539489305,
+    "band": [
+      1.6200762237720456,
+      1.9724145879667279
+    ],
+    "n_reference_events": 318,
+    "n_reference_sessions": 18,
+    "feature_center": {
+      "spectral_centroid_mean": 0.3705300390720367,
+      "spectral_flatness_mean": 0.13224149495363235,
+      "spectral_centroid_std": 0.039400866255164105,
+      "spectral_rolloff_std": 0.08070974424481385
+    },
+    "feature_scale": {
+      "spectral_centroid_mean": 0.027867408952116965,
+      "spectral_flatness_mean": 0.029707026135921476,
+      "spectral_centroid_std": 0.008977376704663007,
+      "spectral_rolloff_std": 0.016905980072915563
+    }
+  },
+  "n_events": 5,
+  "n_scoreable": 1,
+  "n_outside_reference_range": 1,
+  "events": [
+    {
+      "event_id": 0,
+      "start_time": 2.432,
+      "end_time": 3.208,
+      "duration_s": 0.7760000000000002,
+      "start_sample": 19456,
+      "end_sample": 25664,
+      "detector_confidence": 0.8902927128707662,
+      "detector_max_confidence": 0.9959061741828918,
+      "window_count": 34,
+      "scoreability": "SCOREABLE",
+      "not_scoreable_reasons": [],
+      "feature_values": {
+        "spectral_centroid_mean": 0.33501124382019043,
+        "spectral_flatness_mean": 0.052479423582553864,
+        "spectral_centroid_std": 0.01929681934416294,
+        "spectral_rolloff_std": 0.06317845731973648
+      },
+      "mean_rms": 0.1692865639925003,
+      "feature_deviations": {
+        "spectral_centroid_mean": -1.274563965127732,
+        "spectral_flatness_mean": -2.6849564478832466,
+        "spectral_centroid_std": -2.2394121993965976,
+        "spectral_rolloff_std": -1.0369873174737492
+      },
+      "aggregate_deviation": 1.9315676356032458,
+      "reference_tail_probability": 0.034482758620689655,
+      "assessment": "OUTSIDE_REFERENCE_RANGE",
+      "assessment_reliability": "BORDERLINE",
+      "segmentation_variants": 8,
+      "segmentation_deviation_range": [
+        1.9110175413310428,
+        2.0889670349354703
+      ],
+      "dominant_feature": "spectral_flatness_mean",
+      "dominant_share": 0.48305286217754606,
+      "reason": "deviation above the one-sided 95% upper reference limit (empirical reference-tail probability 0.034; largest deviation: spectral_flatness_mean)"
+    },
+    {
+      "event_id": 1,
+      "start_time": 3.7600000000000002,
+      "end_time": 4.248,
+      "duration_s": 0.488,
+      "start_sample": 30080,
+      "end_sample": 33984,
+      "detector_confidence": 0.6223810315132141,
+      "detector_max_confidence": 0.7070614099502563,
+      "window_count": 19,
+      "scoreability": "NOT_SCOREABLE",
+      "not_scoreable_reasons": [
+        "short_duration",
+        "close_neighbor"
+      ],
+      "feature_values": {
+        "spectral_centroid_mean": 0.3549921214580536,
+        "spectral_flatness_mean": 0.0831386148929596,
+        "spectral_centroid_std": 0.026188651099801064,
+        "spectral_rolloff_std": 0.08421185612678528
+      },
+      "mean_rms": 0.15112145245075226,
+      "feature_deviations": null,
+      "aggregate_deviation": null,
+      "reference_tail_probability": null,
+      "assessment": "NOT_ASSESSED",
+      "assessment_reliability": null,
+      "segmentation_variants": 0,
+      "segmentation_deviation_range": null,
+      "dominant_feature": null,
+      "dominant_share": null,
+      "reason": "not scoreable: short_duration, close_neighbor"
+    },
+    {
+      "event_id": 2,
+      "start_time": 4.32,
+      "end_time": 4.680000000000001,
+      "duration_s": 0.3600000000000003,
+      "start_sample": 34560,
+      "end_sample": 37441,
+      "detector_confidence": 0.6277933120727539,
+      "detector_max_confidence": 0.7131069898605347,
+      "window_count": 11,
+      "scoreability": "NOT_SCOREABLE",
+      "not_scoreable_reasons": [
+        "short_duration",
+        "close_neighbor"
+      ],
+      "feature_values": {
+        "spectral_centroid_mean": 0.33160144090652466,
+        "spectral_flatness_mean": 0.08162610977888107,
+        "spectral_centroid_std": 0.010238339193165302,
+        "spectral_rolloff_std": 0.041487522423267365
+      },
+      "mean_rms": 0.2068280577659607,
+      "feature_deviations": null,
+      "aggregate_deviation": null,
+      "reference_tail_probability": null,
+      "assessment": "NOT_ASSESSED",
+      "assessment_reliability": null,
+      "segmentation_variants": 0,
+      "segmentation_deviation_range": null,
+      "dominant_feature": null,
+      "dominant_share": null,
+      "reason": "not scoreable: short_duration, close_neighbor"
+    },
+    {
+      "event_id": 3,
+      "start_time": 8.368,
+      "end_time": 8.808,
+      "duration_s": 0.4399999999999995,
+      "start_sample": 66944,
+      "end_sample": 70464,
+      "detector_confidence": 0.8870213329792023,
+      "detector_max_confidence": 0.9880501627922058,
+      "window_count": 16,
+      "scoreability": "NOT_SCOREABLE",
+      "not_scoreable_reasons": [
+        "short_duration",
+        "close_neighbor"
+      ],
+      "feature_values": {
+        "spectral_centroid_mean": 0.37483999133110046,
+        "spectral_flatness_mean": 0.05450815334916115,
+        "spectral_centroid_std": 0.050101518630981445,
+        "spectral_rolloff_std": 0.120171457529068
+      },
+      "mean_rms": 0.08099877089262009,
+      "feature_deviations": null,
+      "aggregate_deviation": null,
+      "reference_tail_probability": null,
+      "assessment": "NOT_ASSESSED",
+      "assessment_reliability": null,
+      "segmentation_variants": 0,
+      "segmentation_deviation_range": null,
+      "dominant_feature": null,
+      "dominant_share": null,
+      "reason": "not scoreable: short_duration, close_neighbor"
+    },
+    {
+      "event_id": 4,
+      "start_time": 8.928,
+      "end_time": 10.088,
+      "duration_s": 1.1599999999999984,
+      "start_sample": 71424,
+      "end_sample": 80704,
+      "detector_confidence": 0.8298420642243057,
+      "detector_max_confidence": 0.9472222328186035,
+      "window_count": 61,
+      "scoreability": "NOT_SCOREABLE",
+      "not_scoreable_reasons": [
+        "close_neighbor"
+      ],
+      "feature_values": {
+        "spectral_centroid_mean": 0.3275027871131897,
+        "spectral_flatness_mean": 0.017114583402872086,
+        "spectral_centroid_std": 0.0188568364828825,
+        "spectral_rolloff_std": 0.02414185367524624
+      },
+      "mean_rms": 0.0747804120182991,
+      "feature_deviations": null,
+      "aggregate_deviation": null,
+      "reference_tail_probability": null,
+      "assessment": "NOT_ASSESSED",
+      "assessment_reliability": null,
+      "segmentation_variants": 0,
+      "segmentation_deviation_range": null,
+      "dominant_feature": null,
+      "dominant_share": null,
+      "reason": "not scoreable: close_neighbor"
+    }
+  ],
+  "interpretation": "aggregate_deviation a is the root-mean-square of robust z-scores of four spectral features relative to a global reference baseline. reference_tail_probability is the empirical reference-tail probability p = (1 + #{i : c_i >= a}) / (n + 1), where c_1..c_n are the reference deviations (n = n_reference_events; each reference inhalation scored by a baseline fitted without its own recording session): an empirical upper-tail probability of the reference deviation distribution with the +1 correction, not a hypothesis-test p-value. OUTSIDE_REFERENCE_RANGE means p <= 0.05, equivalently a above the one-sided 95% upper reference limit (reference.cut); WITHIN_REFERENCE_RANGE means p > 0.05. STABLE means the category is unchanged under resampling of the reference sessions and +/-1 detector-window boundary shifts; BORDERLINE means it changes under at least one of them. These statements describe acoustic deviation relative to the PRISM reference corpus only; they are not normal/abnormal, anomaly, technique-quality or clinical classifications."
+}
