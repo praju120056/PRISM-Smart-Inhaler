@@ -1,0 +1,79 @@
+{
+  "stage": "Stage 9 - final event-level assessment (reference calibration of the deviation score)",
+  "written": "2026-10-06, before any Stage 9 result was computed",
+  "status_of_inputs": {
+    "representation_V2": "spectral_centroid_mean, spectral_flatness_mean, spectral_centroid_std, spectral_rolloff_std; rms of robust z (Entry 10). DRAFT_NOT_FROZEN: Stage 8 gate failed on G4c only.",
+    "baseline": "per-feature median / 1.4826*MAD over usable events (Strategy C, Entry 7).",
+    "events": "318 usable / 364 detected events in 361 recordings (Stage 1, Entry 3); 18 sessions with usable events.",
+    "known_before_preregistration": [
+      "Held-out (LOSO) V2 rms_z of the 318 usable events: p05 0.42, median 1.00, p95 1.75 (Entry 10).",
+      "Held-out V2 session epsilon^2 0.130; session medians 0.64-1.31 (Entry 10).",
+      "V2 per-feature and aggregate responses to the Stage 6 perturbations, and the G4c failure (Entry 10).",
+      "Excluded-vs-usable separation under V2 is weak (Cliff's delta 0.406, Entry 10).",
+      "Stage 7 multivariate (MCD) gate failed for every 6-7-feature representation (Entry 9); V2's LOSO Spearman correlation shift is 0.113 (Entry 10, G3a)."
+    ],
+    "same_data_disclosure": "No new data exist. Every Stage 9 result uses the same 318 events used in Stages 2-8; any representation change is exploratory."
+  },
+  "questions": [
+    "Q1. Can the V2 deviation score be converted into a reference-calibrated, statistically interpretable event-level assessment without clinical labels?",
+    "Q2. Is that calibration valid on sessions not used to build the reference (leave-one-session-out)?",
+    "Q3. Does a categorical statement (inside / outside the reference range) meet pre-specified validity, stability, perturbation and reproducibility criteria, or must the output stay continuous?",
+    "Q4. Can V2 be repaired (G4c) or improved by a simple alternative using only existing features?",
+    "Q5. How reliable is each event's assessment with respect to reference sampling and segmentation?"
+  ],
+  "representations": {
+    "V2": "incumbent: score = sqrt(mean_j z_j^2) over the 4 V2 features.",
+    "V2_RC": "robust correlation-aware distance on the same 4 robust z: score = sqrt(z' R^-1 z / 4), R = per-fold correlation from the training events' Spearman rho via r = 2 sin(pi*rho/6). Admissible only if every LOSO fold passes the Stage 7 multivariate gate thresholds (>= 10 training events per feature, condition number of R <= 100, max |r_fold - r_pooled| <= 0.2); otherwise not compared.",
+    "V2_G4C": "G4c repair candidate: rms of robust z over spectral_centroid_mean and spectral_rolloff_std only (drops the two features that failed G4c)."
+  },
+  "representation_decision_rule": [
+    "An alternative replaces V2 only if (a) it passes every Stage 8 gate criterion recomputed in this run for that representation (G1a, G1b, G2a-c, G3a, G4a-d, G5a-b; G6 engineering criteria are not representation-specific) including G4c, AND (b) its held-out calibration passes K1 below.",
+    "If several qualify: lowest held-out session epsilon^2; ties -> fewer features.",
+    "Otherwise V2 is retained and the alternatives are reported as sensitivity analyses.",
+    "Any replacement is exploratory (same data) and is labelled as such."
+  ],
+  "assessment_method": {
+    "calibration_scores": "C = leave-one-session-out scores of the reference's usable events (each scored by a baseline fitted without its own session), so reference events are measured exactly as a new session's events are.",
+    "tail_probability": "p(s) = (1 + #{c in C : c >= s}) / (|C| + 1)  (conformal p-value; under exchangeability P(p <= alpha) <= alpha).",
+    "alpha": 0.05,
+    "alpha_rationale": "Convention: the central 95% reference interval of reference-interval methodology (e.g. CLSI EP28-A3c), applied one-sided to a non-negative distance. It defines the expected exceedance rate for reference-like events; it is not a detection threshold for any clinical condition. alpha = 0.01 and 0.10 are reported descriptively.",
+    "cut": "c_alpha = the (n - m)-th smallest calibration score, m = floor(alpha (n + 1) - 1); p(s) <= alpha iff s > c_alpha.",
+    "categories": {
+      "WITHIN_REFERENCE_RANGE": "scoreable event with p > alpha",
+      "OUTSIDE_REFERENCE_RANGE": "scoreable event with p <= alpha",
+      "NOT_ASSESSED": "event not scoreable (Stage 1 usability rule) - never assessed"
+    },
+    "if_category_gate_fails": "assessment = CONTINUOUS_ONLY for scoreable events (score and p are reported, no category)",
+    "deployment_reference": "baseline fitted on all usable events; C = LOSO scores of all usable events.",
+    "evaluation_reference_per_held_out_session_h": "baseline fitted on usable events of sessions != h; C_h = nested LOSO scores of those events (each scored by a baseline fitted on sessions not in {h, own}); held-out events of h are scored by the outer baseline and compared with C_h. No held-out event influences its own reference."
+  },
+  "reliability": {
+    "reference_band": "session bootstrap of the calibration set (resample sessions with replacement; B = 2000; seed 20261006): [c_lo, c_hi] = 5th-95th percentiles of the bootstrap c_alpha.",
+    "segmentation_variants": "event bounds moved by one detector stride (0.016 s) at the start and/or end: 8 variants (ds, de) in {-1,0,1}^2 \\ (0,0); a variant is used when it stays inside the recording and spans >= one detector window (0.2 s). Bounds use the reference float formula (index * stride, min(last * stride + window, duration)).",
+    "labels": {
+      "STABLE": "the event score and every variant score lie on the same side of the band: all > c_hi, or all <= c_lo",
+      "BORDERLINE": "otherwise",
+      "domain": "reported separately (baseline_domain_validated); PRISM hardware audio is not validated"
+    }
+  },
+  "category_gate": {
+    "K1_marginal_validity": "outer-LOSO exceedance rate at alpha = 0.05 over all held-out usable events: the 95% session-bootstrap interval (B = 2000) contains 0.05 AND the point estimate is <= 0.10.",
+    "K2_reference_stability": "deployment reference: (c_hi - c_lo) / (2 c_alpha) <= 0.20 (convention: a cut uncertain by more than +/-20% would make the category depend mainly on which reference sessions were sampled).",
+    "K3_perturbation_behaviour": "held-out usable events under the Stage 6/8 perturbations (perturbed_features.csv), each scored by its own outer-fold reference: the fraction OUTSIDE_REFERENCE_RANGE is non-decreasing over noise 30 -> 20 -> 10 dB SNR and over tilt a = 0.5 -> 0.9; and |fraction(gain) - fraction(identity)| <= 0.02 at every event and whole-recording gain level.",
+    "K4_reproducibility": "a complete second run produces byte-identical CSV/JSON outputs.",
+    "decision": "categorical assessment adopted iff K1-K4 all pass; otherwise CONTINUOUS_ONLY."
+  },
+  "reported_not_gated": [
+    "per-session exceedance with exact binomial 95% intervals; overdispersion (chi-square heterogeneity of per-session counts, parametric-bootstrap p under a common rate)",
+    "distribution of held-out p (PIT) and its KS distance from uniform; exceedance at alpha 0.01 and 0.10",
+    "event-removal influence on c_alpha (leave-one-event-out refit of baseline and calibration)",
+    "session-removal variation of c_alpha across the 18 outer folds",
+    "fraction of assessed events STABLE vs BORDERLINE",
+    "dominant feature of OUTSIDE events; leave-one-feature-out category agreement",
+    "natural extreme events: Stage 1-excluded events forced through the held-out assessment (diagnostic only; they are NOT_ASSESSED in production)",
+    "end-to-end runs of the canonical pipeline over all 361 recordings (deployment reference and LOSO references): counts, failures, non-finite values, edge cases, and agreement of the pipeline's LOSO outputs with the table-based computation"
+  ],
+  "personalization": "Not implemented unless genuine user/device identifiers exist; metadata audit only.",
+  "seed": 20261006,
+  "bootstrap_draws": 2000
+}
