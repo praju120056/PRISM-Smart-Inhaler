@@ -1,7 +1,7 @@
 # PRISM - Pulmonary Response and Inhaler System Monitor
 
-> Acoustic smart inhaler monitoring — real-time inhalation quality analysis using
-> on-device ML inference. No cloud audio processing. No continuous streaming.
+> Acoustic smart inhaler monitoring — inhalation-event detection and baseline-consistency
+> analysis using on-device ML inference. No cloud audio processing. No continuous streaming.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.x-red.svg)](https://pytorch.org/)
@@ -14,21 +14,22 @@
 PRISM is an end-to-end smart inhaler platform for pressurised Metered-Dose Inhalers
 (pMDI). It records inhalation audio from a custom ESP32-based hardware attachment,
 transmits it via Bluetooth Low Energy to a smartphone, and performs on-device ML
-inference to classify every 8 ms audio frame into one of four event classes:
+inference. The detector classifies overlapping 200 ms audio windows, one every
+16 ms, into four acoustic event classes:
 
 | Class | Description |
 |---|---|
-| **Drug** | Aerosol spray actuation (~300 ms broadband noise burst) |
+| **Drug** | Aerosol spray actuation (annotated median 0.47 s) |
 | **Inhale** | Sustained inward airflow through the inhaler |
-| **Exhale** | Patient exhaling prior to inhalation |
+| **Exhale** | Exhalation |
 | **Noise** | Ambient background, silence, handling sounds |
 
-The resulting event sequence enables per-session assessment of:
-- Medication delivery (Drug class detected?)
-- Inhalation duration and depth
-- Actuator-to-inhalation coordination delay
-- Pre-inhalation exhale technique
-- Longitudinal deviation from personal baseline
+Current state (details in `ARCHITECTURE.md` §1 and §9):
+- **Implemented:** inhalation events (times, durations) and whether each one is measurable ("scoreable").
+- **Experimental:** a distance of each inhalation from a global reference baseline (`anomaly_score`). It has no threshold and no NORMAL/ANOMALY label.
+- **Planned:** a personal baseline. It needs longitudinal user/device data.
+- **Not validated:** Drug/Exhale event analytics, such as actuation or coordination timing.
+- **Not supported:** technique-quality or clinical labels. The dataset has acoustic event annotations only.
 
 ---
 
@@ -259,6 +260,9 @@ venv/Scripts/python.exe src/v2_validation.py --reference-run <scratch dir>
 
 # Apply the inference contract to one recording (SCORE_ONLY JSON output)
 venv/Scripts/python.exe src/prism_inference.py data/<recording>.wav
+
+# Same, plus every intermediate stage (frame features, ONNX logits, diagnostic plot) for app parity checks
+venv/Scripts/python.exe results/recording_runs/run_recording.py data/<recording>.wav --input-domain reference_dataset
 ```
 
 This stage validates the 4-feature V2 representation against an acceptance
@@ -322,9 +326,15 @@ results/
 
 **XGBoost, 5-fold GroupKFold:** 89.0% ± 0.4%
 
-The Drug class achieves the highest F1 (~0.95) due to its spectrally distinctive
-broadband aerosol spray signature. Spectral Flatness is the single most discriminative
-feature (aerosol flatness ~0.7-1.0 vs breath sounds ~0.1-0.4).
+These are window-level metrics on held-out folds. The deployed ONNX model is the
+best of the 3 CNN folds (fold 1), trained on about two-thirds of the recordings;
+which recordings were in its training fold was not saved. Event agreement on the
+reference dataset is therefore mostly in-sample (`PRISM_RESEARCH_LOG.md` Entry 3).
+
+The Drug class has the highest F1 (~0.95). The saved XGBoost feature-importance
+figure ranks MFCC-derived features highest. Earlier claims that spectral flatness
+is the most discriminative feature are not supported by the saved artefacts
+(`ARCHITECTURE.md` §8.9).
 
 ---
 
@@ -356,8 +366,13 @@ PRISM smart inhaler/
     ├── train_cnn.py        # 1D CNN cross-validation + ONNX export
     ├── evaluate.py         # Metrics aggregation and analysis
     ├── visualize.py        # Confusion matrix and feature importance plots
-    └── run_pipeline.py     # Main entry point (orchestrates everything)
+    ├── run_pipeline.py     # Detector training entry point
+    ├── post_event.py       # ONNX wrapper, Inhale event grouping and measurement
+    ├── inhale_dataset.py … v2_validation.py  # Anomaly research Stages 1-8
+    └── prism_inference.py  # Inference contract V2 reference implementation
 ```
+
+The full layout is in `ARCHITECTURE.md` §12, and the module reference is in §14.
 
 ---
 
@@ -381,7 +396,7 @@ The end-to-end pipeline has three distinct phases:
 Audio → librosa features (124-dim, 8 ms frames) → Sliding window (25 frames = 200 ms) → 1D CNN / XGBoost → ONNX export
 
 ### Phase 2 — Mobile Application
-BLE audio → Native C++ DSP (identical feature parameters) → ONNX Runtime inference → Session analytics → Firebase sync
+BLE audio → Native C++ DSP (identical feature parameters) → ONNX Runtime inference → inference contract V2 (events, scoreability, score) → Firebase sync
 
 ### Phase 3 — Hardware
 INMP441 I2S microphone → ESP32 DMA → RMS energy detector → BLE binary packet transmission
@@ -397,12 +412,12 @@ INMP441 I2S microphone → ESP32 DMA → RMS energy detector → BLE binary pack
 | Feature | Dim | Description |
 |---|---|---|
 | MFCC | 40 | Mel-frequency cepstral coefficients (n_mels=128, fmin=50 Hz, fmax=4000 Hz) |
-| Delta-MFCC | 40 | HTK regression filter (width=9, half-width N=4) |
-| Delta²-MFCC | 40 | Second-order HTK regression |
+| Delta-MFCC | 40 | Savitzky–Golay derivative (librosa `delta`, width=9, edges `interp`) |
+| Delta²-MFCC | 40 | Second-order Savitzky–Golay derivative of the MFCCs (not delta of delta) |
 | Spectral Centroid | 1 | Weighted mean frequency / Nyquist → [0,1] |
-| Spectral Flatness | 1 | Geometric/arithmetic mean ratio → [0,1] |
+| Spectral Flatness | 1 | Geometric/arithmetic mean ratio of the power spectrum → [0,1] |
 | Spectral Rolloff | 1 | 85th percentile frequency / Nyquist → [0,1] |
-| ZCR | 1 | Zero crossing rate per frame |
+| ZCR | 1 | Zero crossing rate over 2048-sample frames (hop 64) |
 | **Total** | **124** | Per-frame float32 vector |
 
 Signal processing parameters (must match in mobile app):
@@ -414,9 +429,12 @@ N_MELS       = 128
 FMIN         = 50.0   # Hz
 FMAX         = 4000.0 # Hz (Nyquist)
 N_MFCC       = 40
-DELTA_WIDTH  = 9      # HTK regression filter
+DELTA_WIDTH  = 9      # Savitzky–Golay width
 ROLLOFF_PERC = 0.85
 ```
+
+There is no pre-emphasis. MFCCs are floored at 80 dB below the loudest value in
+the whole input buffer. The complete parity table is in `ARCHITECTURE.md` §6.
 
 Features are cached as `.npy` files in `data/extracted/<base>/features.npy`.
 Delete the cache directory to force re-extraction.
@@ -447,7 +465,8 @@ Drug oversampled to `min(3.0 x count(Inhale), count(Exhale))` using Gaussian jit
 
 ### Cross-Validation
 
-`GroupKFold(k=5)` with groups = recording index (0..360).
+`GroupKFold` with groups = recording index (0..360): k=5 for the classical
+models, k=3 for the CNN (`results/cv_results.csv`).
 All frames from one recording are always in the same fold — no data leakage.
 
 ### 1D CNN Architecture (InhalerCNN)
@@ -508,20 +527,24 @@ inference. Export `scaler_mean.npy` and `scaler_scale.npy` from `train.py` line 
 
 ### DSP Implementation Requirements
 
-The mobile C++ DSP module must replicate `librosa_extractor.py` **exactly** using
-the parameter table above. Feature distribution mismatch is the most common cause
-of accuracy degradation in deployment. Validate by:
+The mobile C++ DSP module must replicate `librosa_extractor.py` **exactly**,
+following the parity table in `ARCHITECTURE.md` §6. The input is 8 kHz only,
+with no resampling and no preprocessing. Feature distribution mismatch is the
+most common cause of accuracy degradation in deployment. Validate by:
 
-1. Running `python src/librosa_extractor.py` on a test WAV to get reference features
-2. Running the mobile DSP on the same audio
-3. Checking mean absolute error < 0.001 across all 124 feature dimensions
+1. Running `results/recording_runs/run_recording.py` on a test WAV to get reference
+   per-frame features (`frame_features.csv`), ONNX logits (`window_predictions.csv`)
+   and the contract output (`contract_output.json`)
+2. Running the mobile DSP and inference on the same audio
+3. Checking mean absolute error < 0.001 across all 124 feature dimensions, then the
+   golden vectors in `results/v2_validation/golden/` with the contract tolerances
 
 ### Frame Rate and Timing
 
 - Audio frame rate: `8000 / 64 = 125 fps`
 - Window duration: `25 / 125 = 200 ms`
 - Windows per second (stride=2): `125 / 2 = 62.5 windows/s`
-- Latency for 2 s segment: DSP <20 ms + inference <120 ms = **<200 ms total**
+- Latency target for 2 s segment (not yet measured): DSP <20 ms + inference <120 ms = **<200 ms total**
 
 ---
 
@@ -544,7 +567,14 @@ Bit handling:
 int32_t raw = dma_buffer[i];   // 32-bit DMA word
 int32_t s24 = raw >> 8;        // right-shift to get int24
 float   f   = (float)s24 / (float)(1 << 23);  // normalise to [-1, 1]
+int16_t pcm = (int16_t)(s24 >> 8);            // 16-bit PCM for the BLE packet (contract full-scale mapping)
 ```
+
+The inference contract imposes requirements on the firmware:
+- **Pre-trigger and post-offset audio.** Each clip needs audio before the onset and after the offset. Otherwise inhalations touch the clip edges and are not scored (`recording_boundary`).
+- **Packet field width.** The BLE `audio_len` field must be able to hold a 5 s clip.
+
+See `ARCHITECTURE.md` §4–§5.
 
 ### Inhalation Detector
 
@@ -572,8 +602,9 @@ format and fragmentation protocol.
 Firebase project setup:
 1. Enable Firestore, Authentication, Cloud Functions, Storage
 2. Deploy Firestore security rules: users can only read/write their own documents
-3. Cloud Functions: `aggregateDailyAdherence`, `detectTechniqueRegression`,
-   `notifyMissedDose`, `generateClinicianReport`
+3. Cloud Functions: `aggregateDailyAdherence`, `notifyMissedDose` (schedule-based),
+   `generateClinicianReport`. `detectTechniqueRegression` was withdrawn: there is no
+   validated technique measure or threshold.
 
 Session documents are written by the mobile app. See [ARCHITECTURE.md](ARCHITECTURE.md)
 Section 10 for the complete Firestore schema and session document format.

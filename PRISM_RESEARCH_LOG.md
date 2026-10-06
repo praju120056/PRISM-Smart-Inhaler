@@ -1881,3 +1881,74 @@ Tolerances: z and score ±0.01, features ±10⁻⁴ relative; event structure ex
    Any revised feature set should be tested on data not used to design it.
 3. **Engineering can start on the interface now** (hardware → audio → detector → events → scoreability → features → output schema, including `NO_INHALATION_DETECTED`), verified against the golden vectors.
 4. **Next scientific step:** reference recordings on PRISM hardware (same subjects, and ideally the dataset protocol, plus deliberate, documented variations). They are needed to quantify the domain shift the tilt results predict and to re-baseline for the device. Longitudinal user/device identifiers are still required for personalization (V3).
+
+---
+
+# Research Entry 11 — 2026-10-06: Per-Recording Reference Run and Documentation Audit (no new experiment)
+
+**No new experiment, threshold or NORMAL/ANOMALY output.** This entry records an engineering reference run and a documentation audit, both done for app-team synchronisation.
+
+## Question
+1. What exactly does the full pipeline (inference contract V2) output for one recording, stage by stage?
+2. Does `ARCHITECTURE.md`, last updated on 2026-08-23 and never revised after Stage 1, describe the implemented system?
+
+## Work Performed
+1. **Reference run on one recording.**
+   - `results/recording_runs/run_recording.py` (new) saves every stage a mobile re-implementation must reproduce: per-frame 124-dim features, raw ONNX logits and probabilities per window, the contract output, a summary and a diagnostic plot.
+   - It was run on `data/rec2018-01-22_17h41m49.809s.wav` (SHA-256 `72eebb44…56b5`, `input_domain = reference_dataset`).
+   - It calls the unchanged `prism_inference.analyze_recording`.
+2. **Documentation audit.** Every DSP, inference, baseline and interface statement in `ARCHITECTURE.md` was checked against:
+   - `src/` and the contract;
+   - librosa 0.11.0 source and defaults, inspected in the project venv;
+   - Entries 1–10.
+3. **Documentation fixes.**
+   - `ARCHITECTURE.md` rewritten to the current state.
+   - `README.md` corrected where it contradicted the same evidence.
+
+## Results
+**1. Reference run** (`results/recording_runs/rec2018-01-22_17h41m49.809s/`)
+- **Output:** `EVENTS_DETECTED` with one event at 0.688–2.232 s, `SCORE_ONLY`, `anomaly_score` 0.555 and `mean_rms` 0.177.
+- **Agreement with earlier results:** identical to the Stage 1 row and to the Stage 8 reproduction (start, end and confidence differences 0; feature differences ≤ 1.2×10⁻¹⁵ relative).
+- **Size of the intermediate stages:** 1,501 frames, 739 windows.
+- **In-sample score:** this event was in the deployment-baseline fit, so the contract score is in-sample. Refitted without its own session (309 events, 17 sessions) it scores 0.571. The held-out z-scores match the Stage 5 `C_loso_global` row to 6 digits.
+- **Context (not a threshold):** held-out V2 scores on unseen sessions are 0.42 / 1.00 / 1.75 (5th percentile / median / 95th percentile).
+
+**2. Discrepancies between `ARCHITECTURE.md` (2026-08-23) and the implementation or evidence**
+
+| Previous statement | Actual (verified) |
+|---|---|
+| Pre-emphasis y[n] = x[n] − 0.97·x[n−1] before the STFT | No pre-emphasis anywhere in the extractor |
+| MFCC = DCT(log(mel @ \|S\|)); "S shared for MFCC and all spectral features" | `librosa.feature.mfcc` computes its own **power** mel spectrogram from the waveform: Slaney scale and normalisation, then `power_to_db` with `top_db = 80` relative to the **maximum of the whole input buffer**, then DCT-II ortho. S is shared only by centroid, flatness and rolloff |
+| Deltas: HTK regression, mirror-padded edges; delta2 = delta(delta) | Savitzky–Golay, `mode="interp"`. The interior equals the regression filter, but the edges differ. Delta2 is a direct second-derivative filter (polyorder 2), not delta of delta |
+| Flatness = geomean(S) / mean(S) | Computed on the power spectrum: max(S², 1e-10) |
+| ZCR over the 256-sample frame | Uses librosa's default `frame_length = 2048`, centred with edge padding |
+| n_frames = ceil(n / 64) | 1 + ⌊n / 64⌋ (1,501 for 96,000 samples) |
+| "Resample BLE audio if needed" | The contract never resamples: a rate other than 8 kHz is `INPUT_ERROR` |
+| Frame-sequence reconstruction by majority vote, then session analytics (`coord_delay`, `insufficient_inhale` < 1.0 s, `late_actuation` > 0.5 s, `missed_dose`), then composite GOOD/POOR labels | Not implemented. The implemented flow is the V2 contract (window grouping, scoreability, features on the event segment, frozen baseline, `SCORE_ONLY`). The listed analytics and labels have no evidential basis or are forbidden by the contract |
+| §9 personalized engine (Mahalanobis, EMA, 1.5/3.0 bands) | Already recorded as legacy and not adopted (Entry 3); withdrawn from the document |
+| XGBoost importance: spectral flatness first | The saved `feature_importance_xgboost.png` labels all of its top 15 as MFCC-derived. `summary_report.txt` describes 7-frame / 868-feature windows, contradicting its own 3,100-feature input. The artefacts need regeneration before any importance claim |
+| Breath centroid ~0.1–0.3; Drug flatness 0.7–1.0 | The usable inhalation events have centroid_mean 0.33–0.42 (5–95%). No Drug/Exhale/Noise spectral measurements exist |
+| BLE `audio_len` `uint16` with a 5 s buffer | 5 s × 8 kHz × 2 bytes = 80,000 bytes > 65,535. Recorded as an open issue (ARCHITECTURE §5) |
+
+**3. Integration consequences recorded in `ARCHITECTURE.md` §4–§6.** These follow from the contract rules and are untested on hardware:
+- **Pre-trigger and post-offset audio:** clips need audio before the onset and after the offset, or inhalations touching the clip edges become `NOT_SCOREABLE` (`recording_boundary`).
+- **Whole-clip MFCCs:** because the 80 dB floor depends on the whole buffer, MFCCs must be computed over the whole clip in one pass.
+
+**4. Tests:** `python -m unittest discover tests` gives 173 tests, all passing. No `src/` code was changed.
+
+## Decision
+- **`ARCHITECTURE.md` updated to the current state** (revision 2026-10-06). It now uses the AGENTS.md status vocabulary and names the contract and code as authoritative.
+- **`README.md` corrected** where it contradicted the same evidence.
+- **Historical entries unchanged.** Entry 1 §7 ("shared magnitude spectrogram", "regression window") is superseded by the table above for the MFCC and delta details.
+
+## Limitations
+- **One recording, in-sample.** The reference run covers one reference-dataset recording, in-sample for the deployment baseline and possibly for the detector.
+- **librosa-version dependence.** The librosa internals were checked for the installed version 0.11.0. A different librosa version could change defaults; the contract's `frame_features` text and the golden vectors are the version-independent reference.
+
+## Next Step
+Unchanged from Entry 10:
+- the owner's decision on V2;
+- PRISM-hardware reference recordings;
+- longitudinal user/device data.
+
+Additional engineering item: regenerate the XGBoost importance artefacts, or remove them from documentation, before citing them.

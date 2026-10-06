@@ -1,0 +1,11 @@
+{
+  "file": "rec2018-01-22_17h41m49.809s.wav",
+  "sha256": "72eebb44b462aef096513cc323dc6698dc6f901ec5c92b608f72e6b0517756b5",
+  "sample_rate": 8000,
+  "n_samples": 96000,
+  "duration_s": 12.0,
+  "peak_abs": 0.85467529296875,
+  "rms": 0.08295638859272003,
+  "recorded_at": "2018-01-22T17:41:49.809000",
+  "input_domain": "reference_dataset"
+}

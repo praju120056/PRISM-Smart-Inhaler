@@ -1,0 +1,175 @@
+{
+  "input": {
+    "file": "rec2018-01-22_17h41m49.809s.wav",
+    "sha256": "72eebb44b462aef096513cc323dc6698dc6f901ec5c92b608f72e6b0517756b5",
+    "sample_rate": 8000,
+    "n_samples": 96000,
+    "duration_s": 12.0,
+    "peak_abs": 0.85467529296875,
+    "rms": 0.08295638859272003,
+    "recorded_at": "2018-01-22T17:41:49.809000",
+    "input_domain": "reference_dataset"
+  },
+  "contract": {
+    "contract_version": "prism-inference-v2.0",
+    "baseline_id": "prism-v2-global-2026-09-30",
+    "recording_status": "EVENTS_DETECTED",
+    "error": null,
+    "baseline_domain_validated": true,
+    "n_events": 1,
+    "n_scored": 1
+  },
+  "events": [
+    {
+      "event_id": 0,
+      "start_time": 0.6880000000000001,
+      "end_time": 2.232,
+      "duration_s": 1.544,
+      "detector_confidence": 0.9337995206608491,
+      "status": "SCORE_ONLY",
+      "not_scoreable_reasons": [],
+      "anomaly_score": 0.5554649595904608,
+      "feature_z_scores": {
+        "spectral_centroid_mean": 0.2925679512070199,
+        "spectral_flatness_mean": 0.8266781456279264,
+        "spectral_centroid_std": -0.017166863112932456,
+        "spectral_rolloff_std": -0.681819493421749
+      },
+      "mean_rms": 0.1774943321943283,
+      "iou_with_annotated_inhale": 0.9218762194646059
+    }
+  ],
+  "window_label_fractions": {
+    "Noise": 0.6468,
+    "Exhale": 0.1719,
+    "Inhale": 0.115,
+    "Drug": 0.0663
+  },
+  "class_segments_descriptive": {
+    "note": "Drug/Exhale windows grouped with the Inhale grouping rule for description only; the contract defines no Drug or Exhale events.",
+    "Drug": [
+      {
+        "start_s": 2.176,
+        "end_s": 3.144,
+        "duration_s": 0.968,
+        "mean_p": 0.9490428883202222,
+        "window_count": 49
+      }
+    ],
+    "Exhale": [
+      {
+        "start_s": 0.0,
+        "end_s": 0.29600000000000004,
+        "duration_s": 0.29600000000000004,
+        "mean_p": 0.8603455168860299,
+        "window_count": 7
+      },
+      {
+        "start_s": 3.84,
+        "end_s": 5.944,
+        "duration_s": 2.104,
+        "mean_p": 0.9815301845471064,
+        "window_count": 120
+      }
+    ],
+    "Inhale": [
+      {
+        "start_s": 0.6880000000000001,
+        "end_s": 2.232,
+        "duration_s": 1.544,
+        "mean_p": 0.9337995206608491,
+        "window_count": 85
+      }
+    ]
+  },
+  "annotations": [
+    {
+      "label": "Inhale",
+      "start_s": 0.630375,
+      "end_s": 2.1645
+    },
+    {
+      "label": "Drug",
+      "start_s": 2.286,
+      "end_s": 3.0455
+    },
+    {
+      "label": "Exhale",
+      "start_s": 3.9265,
+      "end_s": 5.8405
+    }
+  ],
+  "window_agreement_with_annotation": [
+    {
+      "label": "Inhale",
+      "start_s": 0.630375,
+      "end_s": 2.1645,
+      "n_windows": 96,
+      "frac_windows_same_label": 0.8854166666666666,
+      "window_label_counts": {
+        "Inhale": 85,
+        "Noise": 11
+      }
+    },
+    {
+      "label": "Drug",
+      "start_s": 2.286,
+      "end_s": 3.0455,
+      "n_windows": 48,
+      "frac_windows_same_label": 1.0,
+      "window_label_counts": {
+        "Drug": 48
+      }
+    },
+    {
+      "label": "Exhale",
+      "start_s": 3.9265,
+      "end_s": 5.8405,
+      "n_windows": 119,
+      "frac_windows_same_label": 1.0,
+      "window_label_counts": {
+        "Exhale": 119
+      }
+    }
+  ],
+  "stage1_comparison": {
+    "n_events_stage1": 1,
+    "n_events_contract": 1,
+    "events": [
+      {
+        "event_id": 0,
+        "abs_diff_start_s": 0.0,
+        "abs_diff_end_s": 0.0,
+        "abs_diff_confidence": 0.0,
+        "max_rel_diff_features": 1.2035735104136541e-15,
+        "usable_stage1": true,
+        "scored_contract": true
+      }
+    ]
+  },
+  "held_out_session_scores": {
+    "session": "2018-01-22#1",
+    "n_training_events": 309,
+    "n_training_sessions": 17,
+    "events": [
+      {
+        "event_id": 0,
+        "anomaly_score_held_out": 0.5712166990426181,
+        "feature_z_scores_held_out": {
+          "spectral_centroid_mean": 0.28949421451943735,
+          "spectral_flatness_mean": 0.8662274212218806,
+          "spectral_centroid_std": -0.01659186411045564,
+          "spectral_rolloff_std": -0.6860917821902436
+        },
+        "anomaly_score_contract": 0.5554649595904608
+      }
+    ]
+  },
+  "reference_context": {
+    "note": "Held-out V2 anomaly_score (rms_z) of the 318 usable reference events (Stage 8). Context only: no threshold exists.",
+    "p05": 0.4226016619777335,
+    "median": 0.9973248595448148,
+    "p95": 1.7451352621132326
+  },
+  "detector_note": "The ONNX detector was trained on about two-thirds of the reference recordings (training fold not saved), so agreement with annotations on a reference recording may be in-sample."
+}
