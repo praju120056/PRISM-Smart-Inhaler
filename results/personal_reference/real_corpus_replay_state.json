@@ -1,0 +1,1393 @@
+{
+  "audit": [
+    {
+      "at": "2018-01-22T17:41:33.475000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "config": {
+        "clip_c": 2.0,
+        "config_id": "prism-personal-v3-provisional-9of10",
+        "consensus_required": 9,
+        "consensus_window": 10,
+        "contract_version": "prism-personal-reference-v3.0-draft",
+        "eta": 0.3,
+        "event_sd": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "features": [
+          "spectral_centroid_mean",
+          "spectral_flatness_mean",
+          "spectral_centroid_std",
+          "spectral_rolloff_std"
+        ],
+        "max_gap_days": 14.0,
+        "min_events_per_sitting": 10,
+        "s_min": 10,
+        "sitting_gap_minutes": 25.0,
+        "trust_radius": 0.9
+      },
+      "config_sha256": "da563148e5d993a00a2f8dfc697c0a733e062090f189b221e4f052107409c277",
+      "contract_version": "prism-personal-reference-v3.0-draft",
+      "device_id": "prism-corpus-unknown-device",
+      "entry_sha256": "179231ad52d41473664131047c36df6ba5202e0fe4413800d2e3bf973d646081",
+      "kind": "initialized",
+      "population_reference_id": "prism-assessment-ref-2026-10-06",
+      "prev_entry_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "sequence": 0,
+      "state_id_after": "f9cd8b59e8578cf0",
+      "trust_radius": 0.9,
+      "user_id": "prism-corpus-pseudo-user"
+    },
+    {
+      "at": "2018-01-22T17:45:12.839000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "decision": "NOT_QUALIFYING",
+      "ended_at": "2018-01-22T17:45:12.839000",
+      "entry_sha256": "8d018c1daa7e4ac17307d9b60b819c39504f2f8f4a531d34aac321e8604b27b9",
+      "kind": "sitting_closed",
+      "n_events_total": 9,
+      "n_qualifying_events": 9,
+      "n_recordings": 9,
+      "prev_entry_sha256": "179231ad52d41473664131047c36df6ba5202e0fe4413800d2e3bf973d646081",
+      "sequence": 1,
+      "sitting_index": 0,
+      "sitting_median": null,
+      "started_at": "2018-01-22T17:41:33.475000",
+      "state_id_after": "f9cd8b59e8578cf0",
+      "state_id_before": "f9cd8b59e8578cf0"
+    },
+    {
+      "at": "2018-01-23T11:11:52.435000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "clipped": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "consensus_window_size": 1,
+      "days_since_previous_qualifying": null,
+      "decision": "NO_UPDATE",
+      "direction": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "ended_at": "2018-01-23T11:11:52.435000",
+      "entry_sha256": "b88f8cfef030c19280a214326e03e82f35e5fe2a36589b0b402af75bfc7a9b00",
+      "gap_reset": false,
+      "gate": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "innovation": [
+        0.6223002978637739,
+        0.6393090119124759,
+        -0.08813985688027515,
+        0.08895777195135865
+      ],
+      "kind": "sitting_closed",
+      "n_events_total": 53,
+      "n_negative": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "n_positive": [
+        1,
+        1,
+        0,
+        1
+      ],
+      "n_qualifying_after": 1,
+      "n_qualifying_events": 50,
+      "n_recordings": 52,
+      "prev_entry_sha256": "8d018c1daa7e4ac17307d9b60b819c39504f2f8f4a531d34aac321e8604b27b9",
+      "proposed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sequence": 2,
+      "sitting_index": 1,
+      "sitting_median": [
+        0.6223002978637739,
+        0.6393090119124759,
+        -0.08813985688027515,
+        0.08895777195135865
+      ],
+      "standard_error": [
+        0.17724538509055157,
+        0.17724538509055157,
+        0.17724538509055157,
+        0.17724538509055157
+      ],
+      "started_at": "2018-01-23T10:42:07.256000",
+      "state_id_after": "158e2f03ebd1466c",
+      "state_id_before": "f9cd8b59e8578cf0",
+      "status_after": "WARMUP",
+      "step": [
+        0.0,
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "trust_radius": 0.9,
+      "trust_region_capped": false,
+      "trust_region_distance_after": 0.0,
+      "weight": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "window_full": false
+    },
+    {
+      "at": "2018-01-23T12:05:05.795000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "clipped": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "consensus_window_size": 2,
+      "days_since_previous_qualifying": 0.027426921296296296,
+      "decision": "NO_UPDATE",
+      "direction": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "ended_at": "2018-01-23T12:05:05.795000",
+      "entry_sha256": "dda2e89f94449a8389180e6ae4431ba444616d916ee2e1c762746341dc7fabef",
+      "gap_reset": false,
+      "gate": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "innovation": [
+        -0.011429028795052346,
+        -0.04180291950030805,
+        0.1873519970855003,
+        -0.8615604449434991
+      ],
+      "kind": "sitting_closed",
+      "n_events_total": 29,
+      "n_negative": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "n_positive": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "n_qualifying_after": 2,
+      "n_qualifying_events": 27,
+      "n_recordings": 27,
+      "prev_entry_sha256": "b88f8cfef030c19280a214326e03e82f35e5fe2a36589b0b402af75bfc7a9b00",
+      "proposed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sequence": 3,
+      "sitting_index": 2,
+      "sitting_median": [
+        -0.011429028795052346,
+        -0.04180291950030805,
+        0.1873519970855003,
+        -0.8615604449434991
+      ],
+      "standard_error": [
+        0.2412004181860892,
+        0.2412004181860892,
+        0.2412004181860892,
+        0.2412004181860892
+      ],
+      "started_at": "2018-01-23T11:51:22.121000",
+      "state_id_after": "9d26964d371e4a61",
+      "state_id_before": "158e2f03ebd1466c",
+      "status_after": "WARMUP",
+      "step": [
+        -0.0,
+        -0.0,
+        0.0,
+        -0.0
+      ],
+      "trust_radius": 0.9,
+      "trust_region_capped": false,
+      "trust_region_distance_after": 0.0,
+      "weight": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "window_full": false
+    },
+    {
+      "at": "2018-01-23T12:57:37.371000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "clipped": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "consensus_window_size": 3,
+      "days_since_previous_qualifying": 0.022251516203703702,
+      "decision": "NO_UPDATE",
+      "direction": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "ended_at": "2018-01-23T12:57:37.371000",
+      "entry_sha256": "4702f2f6fa6ad84c6868d2d906f54d02dbbb126c7612676b5b497dbb2eb80f67",
+      "gap_reset": false,
+      "gate": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "innovation": [
+        0.1205881779640267,
+        0.2612932643731615,
+        -0.18753997588606053,
+        -0.03955145327731616
+      ],
+      "kind": "sitting_closed",
+      "n_events_total": 38,
+      "n_negative": [
+        1,
+        1,
+        2,
+        2
+      ],
+      "n_positive": [
+        2,
+        2,
+        1,
+        1
+      ],
+      "n_qualifying_after": 3,
+      "n_qualifying_events": 29,
+      "n_recordings": 29,
+      "prev_entry_sha256": "dda2e89f94449a8389180e6ae4431ba444616d916ee2e1c762746341dc7fabef",
+      "proposed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sequence": 4,
+      "sitting_index": 3,
+      "sitting_median": [
+        0.1205881779640267,
+        0.2612932643731615,
+        -0.18753997588606053,
+        -0.03955145327731616
+      ],
+      "standard_error": [
+        0.23273459257088183,
+        0.23273459257088183,
+        0.23273459257088183,
+        0.23273459257088183
+      ],
+      "started_at": "2018-01-23T12:37:08.326000",
+      "state_id_after": "f440ad9c30c818f8",
+      "state_id_before": "9d26964d371e4a61",
+      "status_after": "WARMUP",
+      "step": [
+        0.0,
+        0.0,
+        -0.0,
+        -0.0
+      ],
+      "trust_radius": 0.9,
+      "trust_region_capped": false,
+      "trust_region_distance_after": 0.0,
+      "weight": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "window_full": false
+    },
+    {
+      "at": "2018-02-01T17:40:59.475000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "decision": "NOT_QUALIFYING",
+      "ended_at": "2018-02-01T17:40:59.475000",
+      "entry_sha256": "97f0c4e53ce4e01a414f02ae4b5e41426b8028a6b643c2cbefb406911f7d76b1",
+      "kind": "sitting_closed",
+      "n_events_total": 2,
+      "n_qualifying_events": 2,
+      "n_recordings": 4,
+      "prev_entry_sha256": "4702f2f6fa6ad84c6868d2d906f54d02dbbb126c7612676b5b497dbb2eb80f67",
+      "sequence": 5,
+      "sitting_index": 4,
+      "sitting_median": null,
+      "started_at": "2018-02-01T17:15:26.949000",
+      "state_id_after": "f440ad9c30c818f8",
+      "state_id_before": "f440ad9c30c818f8"
+    },
+    {
+      "at": "2018-02-01T19:37:33.548000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "decision": "NOT_QUALIFYING",
+      "ended_at": "2018-02-01T19:37:33.548000",
+      "entry_sha256": "bdf0045080ac5afd0b1ea1f2af8236be456a9e7e68b4366fff475977d5b54b49",
+      "kind": "sitting_closed",
+      "n_events_total": 0,
+      "n_qualifying_events": 0,
+      "n_recordings": 9,
+      "prev_entry_sha256": "97f0c4e53ce4e01a414f02ae4b5e41426b8028a6b643c2cbefb406911f7d76b1",
+      "sequence": 6,
+      "sitting_index": 5,
+      "sitting_median": null,
+      "started_at": "2018-02-01T18:46:21.976000",
+      "state_id_after": "f440ad9c30c818f8",
+      "state_id_before": "f440ad9c30c818f8"
+    },
+    {
+      "at": "2018-02-01T21:06:14.970000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "decision": "NOT_QUALIFYING",
+      "ended_at": "2018-02-01T21:06:14.970000",
+      "entry_sha256": "92c767df9a96b92f592915ef9e3d27acfa59d8f7ac5507e7ca219e90dc15151d",
+      "kind": "sitting_closed",
+      "n_events_total": 0,
+      "n_qualifying_events": 0,
+      "n_recordings": 2,
+      "prev_entry_sha256": "bdf0045080ac5afd0b1ea1f2af8236be456a9e7e68b4366fff475977d5b54b49",
+      "sequence": 7,
+      "sitting_index": 6,
+      "sitting_median": null,
+      "started_at": "2018-02-01T20:53:49.957000",
+      "state_id_after": "f440ad9c30c818f8",
+      "state_id_before": "f440ad9c30c818f8"
+    },
+    {
+      "at": "2018-02-02T00:39:43.100000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "decision": "NOT_QUALIFYING",
+      "ended_at": "2018-02-02T00:39:43.100000",
+      "entry_sha256": "e4254bd91f19e8684efa670a3d86b7471648914db42061645244b5c31ec8a2e1",
+      "kind": "sitting_closed",
+      "n_events_total": 6,
+      "n_qualifying_events": 2,
+      "n_recordings": 7,
+      "prev_entry_sha256": "92c767df9a96b92f592915ef9e3d27acfa59d8f7ac5507e7ca219e90dc15151d",
+      "sequence": 8,
+      "sitting_index": 7,
+      "sitting_median": null,
+      "started_at": "2018-02-01T23:58:23.478000",
+      "state_id_after": "f440ad9c30c818f8",
+      "state_id_before": "f440ad9c30c818f8"
+    },
+    {
+      "at": "2018-02-02T02:09:32.913000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "decision": "NOT_QUALIFYING",
+      "ended_at": "2018-02-02T02:09:32.913000",
+      "entry_sha256": "08d87c18d192b4332216326cb9b288a31ab9ba2dc619006e7caa1b8619115e92",
+      "kind": "sitting_closed",
+      "n_events_total": 9,
+      "n_qualifying_events": 8,
+      "n_recordings": 12,
+      "prev_entry_sha256": "e4254bd91f19e8684efa670a3d86b7471648914db42061645244b5c31ec8a2e1",
+      "sequence": 9,
+      "sitting_index": 8,
+      "sitting_median": null,
+      "started_at": "2018-02-02T01:22:43.881000",
+      "state_id_after": "f440ad9c30c818f8",
+      "state_id_before": "f440ad9c30c818f8"
+    },
+    {
+      "at": "2018-02-02T11:02:35.820000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "decision": "NOT_QUALIFYING",
+      "ended_at": "2018-02-02T11:02:35.820000",
+      "entry_sha256": "0aa790763713b5022a21e6cbeecde33b1b2a0664a2a2c73e8be3e9850614cfe6",
+      "kind": "sitting_closed",
+      "n_events_total": 13,
+      "n_qualifying_events": 9,
+      "n_recordings": 11,
+      "prev_entry_sha256": "08d87c18d192b4332216326cb9b288a31ab9ba2dc619006e7caa1b8619115e92",
+      "sequence": 10,
+      "sitting_index": 9,
+      "sitting_median": null,
+      "started_at": "2018-02-02T10:27:54.823000",
+      "state_id_after": "f440ad9c30c818f8",
+      "state_id_before": "f440ad9c30c818f8"
+    },
+    {
+      "at": "2018-02-02T12:22:40.715000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "decision": "NOT_QUALIFYING",
+      "ended_at": "2018-02-02T12:22:40.715000",
+      "entry_sha256": "1d47dca1df2589417e6eaca9b3556e25b1d96d2e879b1d1ecdf433f02058111c",
+      "kind": "sitting_closed",
+      "n_events_total": 0,
+      "n_qualifying_events": 0,
+      "n_recordings": 1,
+      "prev_entry_sha256": "0aa790763713b5022a21e6cbeecde33b1b2a0664a2a2c73e8be3e9850614cfe6",
+      "sequence": 11,
+      "sitting_index": 10,
+      "sitting_median": null,
+      "started_at": "2018-02-02T12:22:40.715000",
+      "state_id_after": "f440ad9c30c818f8",
+      "state_id_before": "f440ad9c30c818f8"
+    },
+    {
+      "at": "2018-02-02T13:20:16.870000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "decision": "NOT_QUALIFYING",
+      "ended_at": "2018-02-02T13:20:16.870000",
+      "entry_sha256": "797db3edaf6e24288f042e2282d13e3a21f3e633245bcee3f4dc5472de53963a",
+      "kind": "sitting_closed",
+      "n_events_total": 0,
+      "n_qualifying_events": 0,
+      "n_recordings": 4,
+      "prev_entry_sha256": "1d47dca1df2589417e6eaca9b3556e25b1d96d2e879b1d1ecdf433f02058111c",
+      "sequence": 12,
+      "sitting_index": 11,
+      "sitting_median": null,
+      "started_at": "2018-02-02T13:14:14.265000",
+      "state_id_after": "f440ad9c30c818f8",
+      "state_id_before": "f440ad9c30c818f8"
+    },
+    {
+      "at": "2018-02-02T13:48:53.964000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "decision": "NOT_QUALIFYING",
+      "ended_at": "2018-02-02T13:48:53.964000",
+      "entry_sha256": "bd4c6e4494fd85b16e29378326617572978a7cf7583ce105b9423b8e0e0420bb",
+      "kind": "sitting_closed",
+      "n_events_total": 0,
+      "n_qualifying_events": 0,
+      "n_recordings": 2,
+      "prev_entry_sha256": "797db3edaf6e24288f042e2282d13e3a21f3e633245bcee3f4dc5472de53963a",
+      "sequence": 13,
+      "sitting_index": 12,
+      "sitting_median": null,
+      "started_at": "2018-02-02T13:47:01.461000",
+      "state_id_after": "f440ad9c30c818f8",
+      "state_id_before": "f440ad9c30c818f8"
+    },
+    {
+      "at": "2018-02-05T11:30:48.760000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "clipped": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "consensus_window_size": 4,
+      "days_since_previous_qualifying": 12.902511608796297,
+      "decision": "NO_UPDATE",
+      "direction": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "ended_at": "2018-02-05T11:30:48.760000",
+      "entry_sha256": "58ea6249ec6d69a974231d46c249e0433110a466921c1ac45727f6f872244e66",
+      "gap_reset": false,
+      "gate": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "innovation": [
+        -0.2890484477201137,
+        -0.1654046498269807,
+        -0.32240874831321154,
+        0.05321821225223653
+      ],
+      "kind": "sitting_closed",
+      "n_events_total": 30,
+      "n_negative": [
+        2,
+        2,
+        3,
+        2
+      ],
+      "n_positive": [
+        2,
+        2,
+        1,
+        2
+      ],
+      "n_qualifying_after": 4,
+      "n_qualifying_events": 27,
+      "n_recordings": 33,
+      "prev_entry_sha256": "bd4c6e4494fd85b16e29378326617572978a7cf7583ce105b9423b8e0e0420bb",
+      "proposed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sequence": 14,
+      "sitting_index": 13,
+      "sitting_median": [
+        -0.2890484477201137,
+        -0.1654046498269807,
+        -0.32240874831321154,
+        0.05321821225223653
+      ],
+      "standard_error": [
+        0.2412004181860892,
+        0.2412004181860892,
+        0.2412004181860892,
+        0.2412004181860892
+      ],
+      "started_at": "2018-02-05T10:37:14.374000",
+      "state_id_after": "2412a369513b00e8",
+      "state_id_before": "f440ad9c30c818f8",
+      "status_after": "WARMUP",
+      "step": [
+        -0.0,
+        -0.0,
+        -0.0,
+        0.0
+      ],
+      "trust_radius": 0.9,
+      "trust_region_capped": false,
+      "trust_region_distance_after": 0.0,
+      "weight": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "window_full": false
+    },
+    {
+      "at": "2018-02-06T10:32:43.911000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "decision": "NOT_QUALIFYING",
+      "ended_at": "2018-02-06T10:32:43.911000",
+      "entry_sha256": "4632496b5b213ada3e30b676e4ce97b264fd9238b8b892ca0a31ce1a34ee4a27",
+      "kind": "sitting_closed",
+      "n_events_total": 4,
+      "n_qualifying_events": 4,
+      "n_recordings": 4,
+      "prev_entry_sha256": "58ea6249ec6d69a974231d46c249e0433110a466921c1ac45727f6f872244e66",
+      "sequence": 15,
+      "sitting_index": 14,
+      "sitting_median": null,
+      "started_at": "2018-02-06T10:28:57.917000",
+      "state_id_after": "2412a369513b00e8",
+      "state_id_before": "2412a369513b00e8"
+    },
+    {
+      "at": "2018-02-06T11:39:13.131000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "decision": "NOT_QUALIFYING",
+      "ended_at": "2018-02-06T11:39:13.131000",
+      "entry_sha256": "06751acabda7eea7ac2b7f2f1eb868d545c768238eaad084919d0ecf1cb95fae",
+      "kind": "sitting_closed",
+      "n_events_total": 1,
+      "n_qualifying_events": 1,
+      "n_recordings": 1,
+      "prev_entry_sha256": "4632496b5b213ada3e30b676e4ce97b264fd9238b8b892ca0a31ce1a34ee4a27",
+      "sequence": 16,
+      "sitting_index": 15,
+      "sitting_median": null,
+      "started_at": "2018-02-06T11:39:13.131000",
+      "state_id_after": "2412a369513b00e8",
+      "state_id_before": "2412a369513b00e8"
+    },
+    {
+      "at": "2018-02-06T12:21:35.410000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "clipped": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "consensus_window_size": 5,
+      "days_since_previous_qualifying": 1.027319525462963,
+      "decision": "NO_UPDATE",
+      "direction": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "ended_at": "2018-02-06T12:21:35.410000",
+      "entry_sha256": "68fc1d79978fa58153f23346b9d6a44ea092f773ff0d958aabc397cc652c1b6c",
+      "gap_reset": false,
+      "gate": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "innovation": [
+        -0.6571782458947895,
+        0.2092809491907915,
+        0.7053506125700973,
+        -0.1626219157279641
+      ],
+      "kind": "sitting_closed",
+      "n_events_total": 22,
+      "n_negative": [
+        3,
+        2,
+        3,
+        3
+      ],
+      "n_positive": [
+        2,
+        3,
+        2,
+        2
+      ],
+      "n_qualifying_after": 5,
+      "n_qualifying_events": 13,
+      "n_recordings": 12,
+      "prev_entry_sha256": "06751acabda7eea7ac2b7f2f1eb868d545c768238eaad084919d0ecf1cb95fae",
+      "proposed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sequence": 17,
+      "sitting_index": 16,
+      "sitting_median": [
+        -0.6571782458947895,
+        0.2092809491907915,
+        0.7053506125700973,
+        -0.1626219157279641
+      ],
+      "standard_error": [
+        0.3476067989503809,
+        0.3476067989503809,
+        0.3476067989503809,
+        0.3476067989503809
+      ],
+      "started_at": "2018-02-06T12:10:09.167000",
+      "state_id_after": "87b87e6eda932319",
+      "state_id_before": "2412a369513b00e8",
+      "status_after": "WARMUP",
+      "step": [
+        -0.0,
+        0.0,
+        0.0,
+        -0.0
+      ],
+      "trust_radius": 0.9,
+      "trust_region_capped": false,
+      "trust_region_distance_after": 0.0,
+      "weight": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "window_full": false
+    },
+    {
+      "at": "2018-02-08T15:25:08.376000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "decision": "NOT_QUALIFYING",
+      "ended_at": "2018-02-08T15:25:08.376000",
+      "entry_sha256": "90e3471efca74349a08cb4ecddeecc74b1d6d027cde3ec096c167c7a22fcd05f",
+      "kind": "sitting_closed",
+      "n_events_total": 17,
+      "n_qualifying_events": 9,
+      "n_recordings": 13,
+      "prev_entry_sha256": "68fc1d79978fa58153f23346b9d6a44ea092f773ff0d958aabc397cc652c1b6c",
+      "sequence": 18,
+      "sitting_index": 17,
+      "sitting_median": null,
+      "started_at": "2018-02-08T14:33:35.005000",
+      "state_id_after": "87b87e6eda932319",
+      "state_id_before": "87b87e6eda932319"
+    },
+    {
+      "at": "2018-02-09T11:05:43.714000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "decision": "NOT_QUALIFYING",
+      "ended_at": "2018-02-09T11:05:43.714000",
+      "entry_sha256": "b7f96ff8a6119cd725610fa81e67e1c02d8fb2f07ffd1d414291f995d30fd883",
+      "kind": "sitting_closed",
+      "n_events_total": 5,
+      "n_qualifying_events": 4,
+      "n_recordings": 6,
+      "prev_entry_sha256": "90e3471efca74349a08cb4ecddeecc74b1d6d027cde3ec096c167c7a22fcd05f",
+      "sequence": 19,
+      "sitting_index": 18,
+      "sitting_median": null,
+      "started_at": "2018-02-09T10:38:01.449000",
+      "state_id_after": "87b87e6eda932319",
+      "state_id_before": "87b87e6eda932319"
+    },
+    {
+      "at": "2018-05-02T17:42:58.720000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "clipped": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "consensus_window_size": 1,
+      "days_since_previous_qualifying": 85.21641333333334,
+      "decision": "NO_UPDATE",
+      "direction": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "ended_at": "2018-05-02T17:42:58.720000",
+      "entry_sha256": "e171ce8db918276bb666a937d49a3cd2994bd35b91d39481184b7d4119b1cee7",
+      "gap_reset": true,
+      "gate": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "innovation": [
+        -0.5467721380306723,
+        -1.4666038795779435,
+        -0.09457097266664673,
+        0.06015317466006658
+      ],
+      "kind": "sitting_closed",
+      "n_events_total": 13,
+      "n_negative": [
+        1,
+        1,
+        1,
+        0
+      ],
+      "n_positive": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "n_qualifying_after": 6,
+      "n_qualifying_events": 11,
+      "n_recordings": 10,
+      "prev_entry_sha256": "b7f96ff8a6119cd725610fa81e67e1c02d8fb2f07ffd1d414291f995d30fd883",
+      "proposed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sequence": 20,
+      "sitting_index": 19,
+      "sitting_median": [
+        -0.5467721380306723,
+        -1.4666038795779435,
+        -0.09457097266664673,
+        0.06015317466006658
+      ],
+      "standard_error": [
+        0.3778884307203163,
+        0.3778884307203163,
+        0.3778884307203163,
+        0.3778884307203163
+      ],
+      "started_at": "2018-05-02T17:33:13.522000",
+      "state_id_after": "1aa98fe26d9b5c8a",
+      "state_id_before": "87b87e6eda932319",
+      "status_after": "WARMUP",
+      "step": [
+        -0.0,
+        -0.0,
+        -0.0,
+        0.0
+      ],
+      "trust_radius": 0.9,
+      "trust_region_capped": false,
+      "trust_region_distance_after": 0.0,
+      "weight": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "window_full": false
+    },
+    {
+      "at": "2018-05-03T09:33:56.681000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "decision": "NOT_QUALIFYING",
+      "ended_at": "2018-05-03T09:33:56.681000",
+      "entry_sha256": "b528461fdc6efec9b90d21ed4f42cf4db30481b789f78e2f1a3eaf64cdfbd9ea",
+      "kind": "sitting_closed",
+      "n_events_total": 4,
+      "n_qualifying_events": 4,
+      "n_recordings": 4,
+      "prev_entry_sha256": "e171ce8db918276bb666a937d49a3cd2994bd35b91d39481184b7d4119b1cee7",
+      "sequence": 21,
+      "sitting_index": 20,
+      "sitting_median": null,
+      "started_at": "2018-05-03T09:32:11.296000",
+      "state_id_after": "1aa98fe26d9b5c8a",
+      "state_id_before": "1aa98fe26d9b5c8a"
+    },
+    {
+      "at": "2018-05-03T11:52:35.208000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "clipped": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "consensus_window_size": 2,
+      "days_since_previous_qualifying": 0.7203630439814814,
+      "decision": "NO_UPDATE",
+      "direction": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "ended_at": "2018-05-03T11:52:35.208000",
+      "entry_sha256": "55f29f4700534d85dbdb985f1c2e1cec6a6875b55d2c6d1dcebc5ce76fcc3692",
+      "gap_reset": false,
+      "gate": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "innovation": [
+        -0.906425611490311,
+        -0.9018532764984294,
+        0.32345902280382005,
+        0.2628774271814829
+      ],
+      "kind": "sitting_closed",
+      "n_events_total": 57,
+      "n_negative": [
+        2,
+        2,
+        1,
+        0
+      ],
+      "n_positive": [
+        0,
+        0,
+        1,
+        2
+      ],
+      "n_qualifying_after": 7,
+      "n_qualifying_events": 57,
+      "n_recordings": 57,
+      "prev_entry_sha256": "b528461fdc6efec9b90d21ed4f42cf4db30481b789f78e2f1a3eaf64cdfbd9ea",
+      "proposed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sequence": 22,
+      "sitting_index": 21,
+      "sitting_median": [
+        -0.906425611490311,
+        -0.9018532764984294,
+        0.32345902280382005,
+        0.2628774271814829
+      ],
+      "standard_error": [
+        0.16600551284414414,
+        0.16600551284414414,
+        0.16600551284414414,
+        0.16600551284414414
+      ],
+      "started_at": "2018-05-03T11:00:18.087000",
+      "state_id_after": "af03ecff2504968c",
+      "state_id_before": "1aa98fe26d9b5c8a",
+      "status_after": "WARMUP",
+      "step": [
+        -0.0,
+        -0.0,
+        0.0,
+        0.0
+      ],
+      "trust_radius": 0.9,
+      "trust_region_capped": false,
+      "trust_region_distance_after": 0.0,
+      "weight": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "window_full": false
+    },
+    {
+      "at": "2018-05-03T15:49:02.235000",
+      "baseline_after": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "baseline_before": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "clipped": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "consensus_window_size": 3,
+      "days_since_previous_qualifying": 0.1451538425925926,
+      "decision": "NO_UPDATE",
+      "direction": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "ended_at": "2018-05-03T15:49:02.235000",
+      "entry_sha256": "3ead332d6e6536858bd0c2262028fec57d3fb5544bb8c255d7336546abcae1b0",
+      "gap_reset": false,
+      "gate": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "innovation": [
+        1.3395378922315,
+        0.26051828629426665,
+        0.029601474036707223,
+        0.03402763408440738
+      ],
+      "kind": "sitting_closed",
+      "n_events_total": 52,
+      "n_negative": [
+        2,
+        2,
+        1,
+        0
+      ],
+      "n_positive": [
+        1,
+        1,
+        2,
+        3
+      ],
+      "n_qualifying_after": 8,
+      "n_qualifying_events": 52,
+      "n_recordings": 52,
+      "prev_entry_sha256": "55f29f4700534d85dbdb985f1c2e1cec6a6875b55d2c6d1dcebc5ce76fcc3692",
+      "proposed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sequence": 23,
+      "sitting_index": 22,
+      "sitting_median": [
+        1.3395378922315,
+        0.26051828629426665,
+        0.029601474036707223,
+        0.03402763408440738
+      ],
+      "standard_error": [
+        0.17380339947519044,
+        0.17380339947519044,
+        0.17380339947519044,
+        0.17380339947519044
+      ],
+      "started_at": "2018-05-03T15:21:36.500000",
+      "state_id_after": "4d2bbef71121adea",
+      "state_id_before": "af03ecff2504968c",
+      "status_after": "WARMUP",
+      "step": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "trust_radius": 0.9,
+      "trust_region_capped": false,
+      "trust_region_distance_after": 0.0,
+      "weight": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "window_full": false
+    }
+  ],
+  "baseline": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "baseline_version": 0,
+  "config": {
+    "clip_c": 2.0,
+    "config_id": "prism-personal-v3-provisional-9of10",
+    "consensus_required": 9,
+    "consensus_window": 10,
+    "contract_version": "prism-personal-reference-v3.0-draft",
+    "eta": 0.3,
+    "event_sd": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "features": [
+      "spectral_centroid_mean",
+      "spectral_flatness_mean",
+      "spectral_centroid_std",
+      "spectral_rolloff_std"
+    ],
+    "max_gap_days": 14.0,
+    "min_events_per_sitting": 10,
+    "s_min": 10,
+    "sitting_gap_minutes": 25.0,
+    "trust_radius": 0.9
+  },
+  "contract_version": "prism-personal-reference-v3.0-draft",
+  "created_at": "2018-01-22T17:41:33.475000",
+  "device_id": "prism-corpus-unknown-device",
+  "last_qualifying_end": "2018-05-03T15:49:02.235000",
+  "last_recording_at": "2018-05-03T15:49:02.235000",
+  "n_capped_updates": 0,
+  "n_qualifying": 8,
+  "next_sitting_index": 23,
+  "open_sitting": null,
+  "population_reference_id": "prism-assessment-ref-2026-10-06",
+  "state_id": "4d2bbef71121adea",
+  "status": "WARMUP",
+  "trust_radius": 0.9,
+  "trust_region_distance": 0.0,
+  "user_id": "prism-corpus-pseudo-user",
+  "window": [
+    {
+      "ended_at": "2018-05-02T17:42:58.720000",
+      "median": [
+        -0.5467721380306723,
+        -1.4666038795779435,
+        -0.09457097266664673,
+        0.06015317466006658
+      ],
+      "n_events": 11,
+      "sitting_index": 19,
+      "started_at": "2018-05-02T17:33:13.522000"
+    },
+    {
+      "ended_at": "2018-05-03T11:52:35.208000",
+      "median": [
+        -0.906425611490311,
+        -0.9018532764984294,
+        0.32345902280382005,
+        0.2628774271814829
+      ],
+      "n_events": 57,
+      "sitting_index": 21,
+      "started_at": "2018-05-03T11:00:18.087000"
+    },
+    {
+      "ended_at": "2018-05-03T15:49:02.235000",
+      "median": [
+        1.3395378922315,
+        0.26051828629426665,
+        0.029601474036707223,
+        0.03402763408440738
+      ],
+      "n_events": 52,
+      "sitting_index": 22,
+      "started_at": "2018-05-03T15:21:36.500000"
+    }
+  ]
+}

@@ -365,6 +365,48 @@ See `PRISM_RESEARCH_LOG.md` Entries 12–13.
 | `e2e_loso_*.csv`, `e2e_deployment_*.csv` | End-to-end runs of the canonical pipeline over all recordings |
 | `representation_gate.csv`, `category_gate_results.json` | Representation comparison and category gate |
 
+### Personal Reference V3 (Stage 10) — separate channel, NOT validated
+
+```bash
+# Population (Stage 9, unchanged) + personal (V3) channel for one recording; state kept per user AND device
+venv/Scripts/python.exe src/personal_reference.py data/<recording>.wav --user <id> --device <id> \
+    --recorded-at 2026-01-05T08:00:00 --state-dir <state dir> --input-domain reference_dataset
+
+# Reproduce the Stage 10 PROXY/SYNTHETIC evaluation (empty output directory; README.md may be present)
+venv/Scripts/python.exe src/personal_reference_evaluation.py --output-dir <empty dir>
+```
+
+Stage 10 adds a **second, independent channel** next to Stage 9 (contract
+`prism-personal-reference-v3.0-draft`). Stage 9 is not modified, and its output is
+passed through byte for byte.
+
+**How the personal channel works.**
+- **Personal baseline:** B, a 4-vector in the frozen Stage 9 population-reference coordinates (z = (x − m0)/s0), kept per user and per device.
+  - It starts at the population median (B = 0).
+  - The scale and `mean_rms` are never adapted.
+- **Personal deviation:** sqrt(mean_j (z_j − B_j)²), computed against B from **before** the event's sitting. It is reported as a continuous value: no personal cut-off has been calibrated.
+- **When B moves:** only at sitting level, after the whole sitting has been assessed.
+  - A sitting has ≥ 10 scoreable events and counts as one unit of evidence (its per-feature median).
+  - The update is gated by a directional consensus: 9 of the last 10 qualifying sittings must lie on the same side (8 of 10 as a sensitivity configuration).
+  - The step is bounded: w = g·min(1, c·SE/|x − B|), with eta = 0.3 and c = 2.
+  - B is capped by a trust region, rms(B) ≤ 0.9; only an explicit re-enrollment can go beyond it.
+  - A gap of more than 14 days between qualifying sittings clears the consensus window.
+- **Bounds:**
+  - One sitting moves B by at most rms 0.238.
+  - One sitting alone can never open the gate.
+- **Warm-up:** `WARMUP` (population channel only) until 10 qualifying sittings exist.
+- **Audit:** every decision is written to a hash-chained audit log that replays bit for bit.
+
+**PROXY/SYNTHETIC evaluation only** (not personalization validation; `results/personal_reference/README.md`).
+- **Bounded influence:** isolated extreme events and single unusual sittings have bounded, mostly zero influence.
+- **Sustained shifts:** consistent shifts are adopted up to the trust region (+1.0: a median 0.835 of the shift after 50 sittings, of a reachable 0.90).
+- **Sustained noise or spectral tilt is absorbed as well:** the mechanism cannot tell behaviour from recording conditions.
+- **Real corpus:** a replay of the real corpus as one pseudo-user never leaves `WARMUP`, because only 8 of 23 sittings have ≥ 10 events.
+- **Not deployment-ready:** the sitting definition (≥ 10 scoreable events per sitting) comes from the corpus's recording sessions. Real inhaler use gives one or two inhalations per dose, so it must be redefined before any deployment; that has not been evaluated.
+
+The personal baseline is not a healthy, normal or correct-technique baseline, and V3
+does not identify correct or incorrect technique. See `PRISM_RESEARCH_LOG.md` Entry 15.
+
 ### Output
 
 ```
@@ -437,7 +479,8 @@ PRISM smart inhaler/
     ├── run_pipeline.py     # Detector training entry point
     ├── post_event.py       # ONNX wrapper, Inhale event grouping and measurement
     ├── inhale_dataset.py … v2_validation.py  # Research Stages 1-8 (baseline, deviation, V2)
-    └── prism_inference.py  # Inference contract V2 reference implementation
+    ├── prism_inference.py  # Inference contract V2 reference implementation
+    └── personal_reference*.py  # Stage 10 V3 personal channel + proxy evaluation (not validated)
 ```
 
 The full layout is in `ARCHITECTURE.md` §12, and the module reference is in §14.
@@ -718,13 +761,14 @@ Raw audio does not cross any system boundary:
 | Representation robustness / ablation study (Stage 7) | ✅ Implemented (V2 feature set proposed, not adopted) |
 | V2 validation + inference contract (Stage 8) | ✅ Implemented. Pre-registered gate **failed** (G4c only), so the contract is `DRAFT_NOT_FROZEN`: interface specified and verified; V2 representation not frozen |
 | Final event-level reference-range assessment (Stage 9) | ✅ Implemented. Empirical reference-tail probability and `WITHIN` / `OUTSIDE_REFERENCE_RANGE` against the one-sided 95% upper reference limit, with a `STABLE` / `BORDERLINE` label. The pre-registered gate passed (`CATEGORICAL_ASSESSMENT_ADOPTED`), held-out by recording session on the same PRISM corpus (not external validation); calibration holds marginally across sessions, not per session |
+| Personal reference V3, separate channel (Stage 10) | ✅ Implemented; mechanically verified on PROXY/SYNTHETIC data only; **not validated** as personalization; continuous output, no personal cut-off |
 | NORMAL / ANOMALY or technique-quality output | ⛔ Not supported (no ground truth); `OUTSIDE_REFERENCE_RANGE` is not an anomaly label |
 | ESP32 firmware | 🔲 Not started |
 | BLE protocol implementation | 🔲 Not started |
 | React Native mobile app | 🔲 Not started |
 | On-device DSP (native C++) | 🔲 Not started |
 | ONNX Runtime mobile integration | 🔲 Not started |
-| Personalized baseline engine | 🔲 Not started |
+| Personalized baseline engine (app/cloud integration) | 🔲 Not started (research module: Stage 10) |
 | Firebase backend | 🔲 Not started |
 | Doctor dashboard | 🔲 Not started |
 

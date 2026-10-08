@@ -941,7 +941,7 @@ regenerated before any feature-importance claim is made.
 PRISM evaluates an inhalation against a baseline (AGENTS.md §1, §10).
 - **The baseline:** a global V2 baseline. The representation is `DRAFT_NOT_FROZEN`.
 - **The final assessment:** a reference-range assessment for each scoreable event (Stage 9, §9.7). Its calibration was checked held-out by recording session on the same PRISM corpus; this is not external validation.
-- **Not personal:** the dataset has no user or device identifiers (Entries 2, 12).
+- **Not personal:** the Stage 9 reference is global; the dataset has no user or device identifiers (Entries 2, 12). A separate V3 personal channel (Stage 10, §9.8) is implemented and mechanically verified, but it is not validated as personalization.
 - **No labels:** NORMAL/ANOMALY and technique labels are not supported.
 
 ### 9.1 Research Stages and Status
@@ -958,7 +958,8 @@ PRISM evaluates an inhalation against a baseline (AGENTS.md §1, §10).
 | 8 | V2 validation against a pre-registered gate; inference contract | IMPLEMENTED. Gate **failed** on G4c only, so `DRAFT_NOT_FROZEN` | Entry 10 |
 | 9 | Final event-level reference-range assessment: empirical reference-tail probability against leave-one-session-out reference deviations; `WITHIN` / `OUTSIDE_REFERENCE_RANGE` against the one-sided 95% upper reference limit; `STABLE` / `BORDERLINE`; representation alternatives compared | IMPLEMENTED; pre-registered gate **passed** held-out by recording session on the same PRISM corpus, so `CATEGORICAL_ASSESSMENT_ADOPTED`; V2 retained | Entries 12–13, `results/final_assessment/` |
 | — | NORMAL / ANOMALY, technique-quality labels | NOT SUPPORTED (no ground truth) | Entries 2, 12 |
-| — | V3 personalized baseline; V4 adaptive personalization | PLANNED | Entries 3, 7, 8 |
+| 10 | V3 personal reference as a separate channel: a personal location baseline B per user and device in the frozen Stage 9 coordinates, moved only by a sitting-level, consensus-gated, bounded update inside a trust region. Stage 9 is unchanged | IMPLEMENTED; mechanically verified on PROXY/SYNTHETIC data only; NOT VALIDATED as personalization | Entry 15, `results/personal_reference/` |
+| — | Validated personalization (longitudinal user/device data); V4 | PLANNED | Entries 3, 7, 8, 15 |
 
 ### 9.2 Current Baseline (V2, global, frozen)
 
@@ -1010,6 +1011,7 @@ The contract lists these as `forbidden_derived_outputs`.
 | `anomaly_score`, `feature_z_scores` | No. They are internal and experimental while the contract is `DRAFT_NOT_FROZEN`, and they must not be presented as a health signal |
 | `assessment`, `reference_tail_probability`, `assessment_reliability` (Stage 9) | Not as a health or technique signal. Their calibration was checked only held-out by recording session on the same PRISM reference corpus. On PRISM hardware (`baseline_domain_validated = false`) they need a hardware reference before any user-facing use. If shown at all, phrase them as "acoustically within / outside the range of the reference recordings" |
 | `mean_rms` | No; it is uncalibrated loudness, for diagnostics only |
+| `personal` channel (Stage 10): `personal_deviation`, `personal_status`, baseline state | No. It is not validated as personalization and has no calibrated cut-off; research and diagnostics only |
 | `detector_confidence` | Diagnostics only |
 
 ### 9.5 Withdrawn Design (previous revision of this section)
@@ -1098,6 +1100,51 @@ it does not.
 - **Not a classification:** it is not a normal/abnormal, anomaly, technique-quality or clinical classification.
 - **It can reflect the recording context:** because calibration is marginal, OUTSIDE statements concentrate in recording contexts unlike the reference. Whether that is subject, device or placement is unknown.
 - **Same corpus only:** all earlier design decisions used the same 318 events. There is no external dataset, and the assessment is not validated for new users, devices, microphones or PRISM hardware (Entry 13).
+
+### 9.8 Personal Reference V3 (Stage 10, `prism-personal-reference-v3.0-draft`)
+
+**Status:** IMPLEMENTED and mechanically verified on PROXY/SYNTHETIC data only. It is NOT
+VALIDATED as personalization: no user or device identifiers exist (Entry 15). Stage 9 is
+unchanged and remains the population channel.
+
+**Interface.** `personal_reference.assess_recording_with_personal(audio, sr, reference, personal, recorded_at=...)` returns:
+
+```
+{"contract_version": "prism-personal-reference-v3.0-draft",
+ "population": <Stage 9 assess_recording output, byte-identical, never adapted>,
+ "personal":   {personal_status WARMUP|ESTABLISHED, state_id_used, baseline_used, trust_region_distance,
+                at_trust_region_boundary, reference_stale, closed_sitting, events: [{personal_assessment
+                POPULATION_ONLY|PERSONAL_DEVIATION|NOT_ASSESSED, personal_deviation, personal_feature_deviations}], ...}}
+```
+
+**Model.**
+- **Coordinates:** z = (x − m0)/s0 in the frozen Stage 9 coordinates. B ∈ R⁴ is kept per (user, device), with B₀ = 0.
+- **Personal deviation:** a_u = sqrt(mean (z − B)²), where B is the baseline from before the event's sitting.
+- **Sitting:** recordings at most 25 min apart. A sitting qualifies with ≥ 10 scoreable events and is summarised by its per-feature median x_k.
+- **Update, at sitting close only:**
+  - Gate: g_kj = 1 iff the window holds 10 qualifying sittings, ≥ 9 of them (8 in the sensitivity configuration) lie on one side of B_kj, and x_kj lies on that side too.
+  - w_kj = g_kj·min(1, 2·SE_kj/|x_kj − B_kj|), with SE_kj = sqrt(π/2)/sqrt(n_k).
+  - B ← Π_0.9(B + 0.3·w∘(x − B)), where Π is the radial projection onto rms(B) ≤ 0.9.
+  - A gap of more than 14 days between qualifying sittings clears the window.
+- **Warm-up:** `WARMUP` until 10 qualifying sittings exist.
+- **Reset and re-enrollment:** both are explicit and audited.
+- **State:** stored per (user, device) as JSON, with a hash-chained audit log that replays bit for bit.
+
+**Bounds (tested).**
+- **One update:** at most rms 0.238 at n = 10.
+- **One event:** it moves its sitting median by at most one order-statistic gap.
+- **One sitting** can never open the gate.
+- **Trust region:** rms(B) ≤ 0.9 always.
+
+**Known behaviour (proxy/synthetic, Entry 15).**
+- **Sustained shifts:** absorbed up to the trust region, including sustained noise and microphone-like tilt.
+- **Outliers:** isolated outliers have bounded, mostly zero influence.
+- **Temporary episodes:** short episodes have small influence; an episode of 9 sittings reaches the consensus threshold.
+- **Real corpus:** replayed as one pseudo-user, it never leaves `WARMUP` (8 of 23 sittings qualify).
+- **Sitting definition not realistic yet:** ≥ 10 events per sitting comes from the corpus's recording sessions. Real inhaler use gives one or two inhalations per dose, so the sitting must be redefined before deployment (not evaluated).
+
+The output is continuous only; no personal cut-off has been calibrated. Full contract:
+`results/personal_reference/README.md`.
 
 ---
 
@@ -1216,6 +1263,7 @@ PRISM smart inhaler/
 |   |-- representation_analysis/  <- Stage 7
 |   |-- v2_validation/       <- Stage 8: contract, baseline, schemas, golden vectors, gate
 |   |-- final_assessment/    <- Stage 9: assessment contract, reference, schema, golden vectors, LOSO evaluation
+|   |-- personal_reference/  <- Stage 10: V3 personal-channel config, contract, proxy/synthetic evaluation
 |   |-- recording_runs/      <- Per-recording stage checkpoints for app parity
 |   +-- phone_test/          <- Ad-hoc phone recording test (outside the contract domain)
 |
@@ -1243,7 +1291,9 @@ PRISM smart inhaler/
 |   |-- v2_validation.py              <- Stage 8 (gate, contract artefacts)
 |   |-- prism_inference.py            <- Inference contract V2 reference implementation
 |   |-- prism_assessment.py           <- Final assessment layer; canonical CLI (WAV -> final output)
-|   +-- assessment_validation.py      <- Stage 9 (calibration, gate, end-to-end runs, contract)
+|   |-- assessment_validation.py      <- Stage 9 (calibration, gate, end-to-end runs, contract)
+|   |-- personal_reference.py         <- Stage 10 V3 personal channel (separate; not validated)
+|   +-- personal_reference_evaluation.py <- Stage 10 proxy/synthetic evaluation
 |
 +-- tests/                   <- unittest suites (python -m unittest discover tests)
 ```
@@ -1427,6 +1477,8 @@ part of the contract.
 | `prism_inference.py` | Inference contract V2: `analyze_recording`, `load_baseline`, `validate_output`, `output_json_schema`; CLI `python src/prism_inference.py <wav>` | Entry 10 |
 | `prism_assessment.py` | Final assessment: `AssessmentReference`, `fit_reference`, `assess_recording`, `validate_assessment_output`, `output_json_schema`; canonical CLI `python src/prism_assessment.py <wav>` | Entry 12 |
 | `assessment_validation.py` | Stage 9: pre-registered representation comparison, LOSO calibration, K1–K4 gate, stability, perturbation, end-to-end runs, contract and golden vectors | Entry 12 |
+| `personal_reference.py` | Stage 10 V3 personal channel: `PersonalReferenceConfig`, `bounded_consensus_update`, `PersonalReference` (assess-before-adapt, sitting close, reset, re-enrollment, audit replay), `PersonalReferenceStore`, `assess_recording_with_personal`, `validate_personal_output`; CLI | Entry 15 |
+| `personal_reference_evaluation.py` | Stage 10 PROXY/SYNTHETIC evaluation (scenarios A–J, real-corpus replay as one pseudo-user) | Entry 15 |
 
 ---
 
@@ -1544,7 +1596,8 @@ Phase 5 - Personalized Baseline (after Phase 1 data items)
 | Inference contract V2 reference implementation | IMPLEMENTED | Exact reproduction of the Stage 1 events (G6b); 9 golden vectors |
 | Final event-level reference-range assessment (`prism-assessment-v1.0`) | IMPLEMENTED; calibration checked held-out by recording session on the same PRISM corpus | Stage 9 gate passed; marginal (not per-session) calibration; not external validation; 0 failures over 361 recordings |
 | NORMAL / ANOMALY, technique-quality labels | NOT SUPPORTED | No ground truth; `OUTSIDE_REFERENCE_RANGE` is not an anomaly label |
-| Personalized baseline (V3/V4) | PLANNED | Needs longitudinal user/device data |
+| V3 personal reference (separate channel, `prism-personal-reference-v3.0-draft`) | IMPLEMENTED; NOT VALIDATED | Mechanically verified on proxy/synthetic data (Entry 15); continuous output only; the PRISM corpus replay never leaves WARMUP |
+| Validated personalization (V3 validation / V4) | PLANNED | Needs longitudinal user/device data |
 | Drug/Exhale event analytics (coordination, actuation) | NOT VALIDATED | Detector windows only; no event grouping or evaluation |
 | Technique-quality / clinical labels | NOT SUPPORTED | No ground truth (Entry 2) |
 | ESP32 firmware | PLANNED | Phase 3 |

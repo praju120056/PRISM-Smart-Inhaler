@@ -1,0 +1,140 @@
+{
+  "contract_version": "prism-personal-reference-v3.0-draft",
+  "status": "IMPLEMENTED_MECHANICALLY_VERIFIED_NOT_VALIDATED",
+  "status_meaning": "implemented and mechanically verified on proxy/synthetic data; not validated as personalization; no personal cut-off calibrated (continuous output only)",
+  "population_channel": "Stage 9 prism-assessment-v1.0 output, passed through unchanged and never adapted",
+  "coordinates": "z = (x - m0) / s0 with the frozen Stage 9 V2 median m0 and 1.4826*MAD scale s0; s0 is never adapted; mean_rms is not used",
+  "personal_baseline": "B in R^4 per (user_id, device_id), initialised at B_0 = 0 (the population median)",
+  "personal_deviation": "a_u = sqrt(mean_j (z_j - B_j)^2), B taken from before the event's sitting",
+  "sitting": "consecutive recordings at most sitting_gap_minutes apart; qualifying if >= min_events_per_sitting scoreable events; summarised by the per-feature median x_k; one sitting = one unit of evidence",
+  "consensus_gate": "g_kj = 1 iff the window holds consensus_window qualifying sittings (none before a gap > max_gap_days), >= consensus_required of their medians lie strictly on one side of B_kj, and the current sitting lies strictly on that side; else 0",
+  "update": "w_kj = g_kj * min(1, clip_c * SE_kj / |x_kj - B_kj|) (w = g when x_kj = B_kj), SE_kj = sqrt(pi/2) * event_sd_j / sqrt(n_k); B_k+1 = Pi_rho(B_k + eta * w_k * (x_k - B_k)), Pi_rho = radial projection onto rms(B) <= rho",
+  "bounds": {
+    "one_sitting": "rms(B_k+1 - B_k) <= eta * clip_c * rms(SE_k) <= sitting_bound(min_events_per_sitting)",
+    "one_event": "moves its sitting median by at most one order-statistic gap; cannot change any assessment of its own sitting",
+    "trust_region": "rms(B) <= trust_radius always; only reenroll() with an explicit trust_radius can exceed the configured radius",
+    "sitting_bound_at_min_events": 0.2377996378563606
+  },
+  "ordering": [
+    "snapshot B before the sitting",
+    "assess every event of every recording against the snapshot",
+    "emit the assessment with state_id_used",
+    "then add the events to the sitting buffer",
+    "at sitting close decide and apply the update",
+    "log the decision in the hash-chained audit"
+  ],
+  "warmup": "personal_status WARMUP while fewer than s_min qualifying sittings exist since creation, reset or re-enrollment: events get POPULATION_ONLY and no personal deviation",
+  "long_gap": "a gap > max_gap_days between qualifying sittings clears the consensus window; reference_stale reports a current gap > max_gap_days",
+  "statuses": [
+    "WARMUP",
+    "ESTABLISHED"
+  ],
+  "event_assessments": [
+    "POPULATION_ONLY",
+    "PERSONAL_DEVIATION",
+    "NOT_ASSESSED"
+  ],
+  "decisions": [
+    "NOT_QUALIFYING",
+    "NO_UPDATE",
+    "UPDATED"
+  ],
+  "output_keys": [
+    "contract_version",
+    "population",
+    "personal"
+  ],
+  "personal_keys": [
+    "contract_version",
+    "config_id",
+    "config_sha256",
+    "user_id",
+    "device_id",
+    "population_reference_id",
+    "recording_id",
+    "recorded_at",
+    "sitting_index",
+    "closed_sitting",
+    "personal_status",
+    "state_id_used",
+    "baseline_version_used",
+    "baseline_used",
+    "n_qualifying_sittings",
+    "s_min",
+    "consensus_window_size",
+    "trust_radius",
+    "trust_region_distance",
+    "at_trust_region_boundary",
+    "reference_stale",
+    "n_events",
+    "n_personal_assessed",
+    "events",
+    "interpretation"
+  ],
+  "event_keys": [
+    "event_id",
+    "personal_assessment",
+    "personal_deviation",
+    "personal_feature_deviations"
+  ],
+  "interpretation": "personal_deviation is the root-mean-square over the four V2 spectral features of (z - B): z are the event's robust z-scores in the frozen Stage 9 population-reference coordinates and B is the personal baseline of this user and device, initialised at the population median (B = 0) and moved only by the sitting-level, consensus-gated, bounded update after a qualifying sitting has been fully assessed. It measures deviation from the personal reference (consistency with this user's own earlier qualifying sittings on this device); larger means less consistent. It is continuous: no personal cut-off has been calibrated, so no categorical personal statement is made. During WARMUP (fewer than s_min qualifying sittings) no personal deviation is reported and only the population channel applies. The personal baseline is not a healthy, normal or correct-technique baseline; these statements are not technique-quality, normal/abnormal or clinical classifications. Evaluated on proxy/synthetic data only; not validated as personalization.",
+  "config": {
+    "contract_version": "prism-personal-reference-v3.0-draft",
+    "config_id": "prism-personal-v3-provisional-9of10",
+    "features": [
+      "spectral_centroid_mean",
+      "spectral_flatness_mean",
+      "spectral_centroid_std",
+      "spectral_rolloff_std"
+    ],
+    "sitting_gap_minutes": 25.0,
+    "min_events_per_sitting": 10,
+    "consensus_window": 10,
+    "consensus_required": 9,
+    "eta": 0.3,
+    "clip_c": 2.0,
+    "event_sd": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "trust_radius": 0.9,
+    "max_gap_days": 14.0,
+    "s_min": 10
+  },
+  "config_sha256": "da563148e5d993a00a2f8dfc697c0a733e062090f189b221e4f052107409c277",
+  "sensitivity_config": {
+    "contract_version": "prism-personal-reference-v3.0-draft",
+    "config_id": "prism-personal-v3-provisional-8of10",
+    "features": [
+      "spectral_centroid_mean",
+      "spectral_flatness_mean",
+      "spectral_centroid_std",
+      "spectral_rolloff_std"
+    ],
+    "sitting_gap_minutes": 25.0,
+    "min_events_per_sitting": 10,
+    "consensus_window": 10,
+    "consensus_required": 8,
+    "eta": 0.3,
+    "clip_c": 2.0,
+    "event_sd": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "trust_radius": 0.9,
+    "max_gap_days": 14.0,
+    "s_min": 10
+  },
+  "known_limitations": [
+    "no user or device identifiers exist in the PRISM corpus: personalization is not validated",
+    "a sustained acoustic change is absorbed whatever its cause (behaviour, noise, microphone, device); the mechanism cannot tell these apart",
+    "parameters (K, k, eta, c, event_sd, rho, G_max, s_min, n_min) are provisional implementation values",
+    "sitting medians assume independent events within a sitting; real within-sitting correlation makes SE optimistic (tighter clipping, slower adaptation)",
+    "real inhaler use may give far fewer than min_events_per_sitting inhalations per sitting",
+    "on the PRISM corpus only 8 of the 23 inferred sittings (18 contain a scoreable event) have >= 10 scoreable events, so a replay of the corpus as one pseudo-user never leaves WARMUP"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "contract_version": "prism-personal-reference-v3.0-draft",
+  "config_id": "prism-personal-v3-provisional-8of10",
+  "features": [
+    "spectral_centroid_mean",
+    "spectral_flatness_mean",
+    "spectral_centroid_std",
+    "spectral_rolloff_std"
+  ],
+  "sitting_gap_minutes": 25.0,
+  "min_events_per_sitting": 10,
+  "consensus_window": 10,
+  "consensus_required": 8,
+  "eta": 0.3,
+  "clip_c": 2.0,
+  "event_sd": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+  ],
+  "trust_radius": 0.9,
+  "max_gap_days": 14.0,
+  "s_min": 10
+}

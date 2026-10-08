@@ -2399,3 +2399,247 @@ Running Stage 9 into the populated `results/final_assessment` now stops immediat
 
 ## Status
 The output-directory contamination issue is resolved: a Stage 9 run can only write into a directory that contains nothing but the pre-registration, so K4 compares exactly the files produced by the current run.
+
+---
+
+# Research Entry 15 — 2026-10-07: Stage 10 — V3 Personal Reference as a Separate Channel (implementation + PROXY/SYNTHETIC evaluation)
+
+**Status: IMPLEMENTED and mechanically verified on PROXY/SYNTHETIC data. NOT VALIDATED as personalization.**
+- **Stage 9 is unchanged:** no Stage 9 code, reference, contract or result was modified (verified by SHA-256, §J).
+- **No commit** was made in this entry.
+
+## A. Research question
+
+**Hypothesis to formalize.** A user's baseline should move slowly toward consistent, repeated behaviour, while isolated outliers and single unusual recordings have very limited influence. A sustained shift should eventually be able to move it.
+
+**What Stage 10 can answer on this corpus.** Does the implemented mechanism behave as designed? Specifically:
+- the bounded influence of one event and one sitting;
+- no movement from temporary changes;
+- eventual movement under sustained shifts;
+- trust-region capping and long-gap resets;
+- strict assess-before-adapt ordering;
+- reproducibility.
+
+**What it cannot answer** (no user or device identifiers, no longitudinal personal labels, no technique labels):
+- whether B represents a person;
+- whether the personal deviation detects real within-user change;
+- whether a sustained shift reflects behaviour, noise, microphone, device or environment.
+
+## B. Design rationale (from the design discussion of this session)
+- **Population channel kept frozen.** Stage 9 is the anchor. Adaptation can therefore never hide a deviation from the population reference.
+- **Location only, in Stage 9 coordinates.** The scale is never adapted (Stage 5: sitting-scale estimates are unreliable at 8–9 events; a single sitting is too narrow). The representation stays V2; `mean_rms` is not used.
+- **Sitting-level evidence.** Events inside one sitting are correlated, so a sitting (its per-feature median) is one unit of evidence. At least 10 events are required, the smallest Stage 5 warm-up size that gave a gain.
+- **Directional consensus gate, not "close to the baseline".** A gate that requires agreement with the current baseline never adopts a large persistent shift (a permanent freeze). A directional gate keeps opening under a persistent shift.
+- **Bounded (Huber-type) weight, trust region and long-gap reset.** These bound the influence of one sitting, anchor B to the population, and prevent stale evidence from opening the gate.
+- **Design-phase probes (exploratory, not evidence here).** The design was informed by read-only probes in a scratch directory. They suggested two things:
+  - event-level "k of 10" counts are inflated by within-sitting correlation;
+  - on this corpus a sitting's offset was not predicted by earlier sittings.
+
+  Those probes were **not saved to `results/` and are not used as evidence in this entry**. They must be re-run reproducibly before being cited.
+
+## C. Implementation (`src/personal_reference.py`, contract `prism-personal-reference-v3.0-draft`)
+
+**Coordinates.**
+- z = (x − m0) / s0, with m0 and s0 the frozen Stage 9 V2 median and 1.4826·MAD (`assessment_reference_v1.json`), on the four V2 features.
+- B ∈ R⁴ is kept per (user_id, device_id), with B₀ = 0. s0 and `mean_rms` are untouched.
+
+**Personal deviation.** a_u = sqrt(mean_j (z_j − B_j)²), with B from before the event's sitting.
+
+**Sitting.**
+- Recordings of one user/device at most 25 min apart (the Stage 2 rule).
+- Qualifying if it has ≥ 10 scoreable events; summarised by the per-feature median x_k.
+
+**Update, per qualifying sitting k and feature j.**
+```
+window    = last K qualifying sittings incl. k (cleared when the gap to the previous qualifying sitting > G_max)
+direction = +1 if >= k_req window medians > B_kj; -1 if >= k_req < B_kj; else 0
+g_kj      = 1 iff |window| = K and direction != 0 and sign(x_kj - B_kj) = direction
+SE_kj     = sqrt(pi/2) * event_sd_j / sqrt(n_k)
+w_kj      = g_kj * min(1, c * SE_kj / |x_kj - B_kj|)     (no division when x_kj = B_kj; step = 0)
+B_k+1     = Pi_rho(B_k + eta * w_k * (x_k - B_k)),   Pi_rho(b) = b * rho / rms(b) if rms(b) > rho
+```
+
+**Parameters.**
+
+| Configuration | K / k_req | eta | c | event_sd | rho | G_max | S_min | n_min | gap |
+|---|---|---|---|---|---|---|---|---|---|
+| Primary `prism-personal-v3-provisional-9of10` | 10 / 9 | 0.3 | 2.0 | (1,1,1,1) | 0.9 (rms) | 14 days | 10 | 10 | 25 min |
+| Sensitivity `prism-personal-v3-provisional-8of10` | 10 / 8 | same | | | | | | | |
+
+These are implementation parameters to be evaluated, not validated values.
+
+**Bounds.**
+- **One sitting:** rms(ΔB) ≤ eta·c·rms(SE_k) ≤ 0.238 at n = 10. This is a Euclidean bound; the radial projection is non-expansive, but it can shrink a feature whose gate is closed.
+- **One event:** it moves its sitting median by at most one order-statistic gap.
+- **Trust region:** rms(B) ≤ rho always. Only `reenroll(..., trust_radius=...)` can exceed the configured rho.
+
+**Warm-up.** `WARMUP` until S_min qualifying sittings have accumulated since creation, reset or re-enrollment. During warm-up, events get `POPULATION_ONLY` and no personal deviation.
+
+**Ordering.**
+1. The state is snapshotted when a sitting opens.
+2. Every event is assessed against the snapshot and the output emitted (`state_id_used`).
+3. The events are then buffered.
+4. The update is decided and applied only at sitting close.
+
+**State, persistence and audit.**
+- **State:** one JSON file per (user, device) in `PersonalReferenceStore`. It refuses any directory inside `results/final_assessment/`.
+- **Audit:** a SHA-256 hash-chained log of every initialisation, closed sitting (qualifying or not), reset and re-enrollment, holding all inputs and intermediate quantities.
+- **Replay:** `PersonalReference.replay(audit)` re-derives every entry bit for bit. Loading a state verifies the chain and the replay.
+
+**Both channels.** `assess_recording_with_personal` calls Stage 9 `assess_recording` unchanged and passes its output through. The personal channel only reads it, and refuses a population output produced with another reference.
+
+**Output.** Continuous only: no personal cut-off has been calibrated, so no categorical personal statement is made. Statuses: `WARMUP` / `ESTABLISHED`. Event assessments: `POPULATION_ONLY` / `PERSONAL_DEVIATION` / `NOT_ASSESSED`.
+
+## D. Tests (`tests/test_personal_reference.py`, 33 tests, all passing; full suite 242)
+
+| Required check | Test(s) |
+|---|---|
+| 1 initialization | `test_initial_state_is_the_population_reference` |
+| 2 one-event outlier | `test_one_event_outlier_has_bounded_magnitude_free_influence`: influence ≤ eta × the largest order-statistic gap; identical for 1e3, 1e9 and 1e300 |
+| 3 one-sitting outlier | `test_one_sitting_outlier_with_closed_gate_has_zero_influence` (B bit-identical); `..._with_open_gate_is_capped` (ΔB = eta·c·SE exactly; rms = bound) |
+| 4 sustained shift convergence | `test_sustained_shift_converges_monotonically`: +0.6, error < 1e-3, monotone, first update at the 10th qualifying sitting |
+| 5 no-change jitter | `test_no_change_jitter_stays_small`: 300 sittings of N(0,1) events; max rms(B) < 0.25, update rate < 0.15 (independent-null gate rate ≈ 0.078) |
+| 6 consensus gate | `test_nine_of_ten_in_one_direction_opens_the_gate`, `test_gate_is_per_feature_and_directional_not_closeness`, `test_zero_innovation_and_zero_offsets_are_safe` |
+| 7 8-of-10 sensitivity | `test_eight_of_ten_sensitivity_configuration` |
+| 8 one sitting cannot open the gate | `test_one_sitting_cannot_open_the_gate` (three configurations; a non-full window never opens) |
+| 9 trust-region bound | `test_baseline_never_leaves_the_trust_region`, `test_reenrollment_is_the_only_way_beyond_the_trust_region`, `test_open_sitting_blocks_reset` |
+| 10 long-gap reset | `test_long_gap_clears_stale_consensus`: 9 agreeing sittings, a 21-day gap, then no update until 10 post-gap sittings; `reference_stale` set |
+| 11 assess-before-adapt | `test_assess_before_adapt`, with multi-recording sittings |
+| 12 mutation / self-normalization | `test_current_sitting_cannot_change_its_own_assessments`: later recordings of sitting 12 mutated (+3, 1e9); its earlier output and the snapshot are identical, while B after the sitting differs |
+| 13 deterministic replay | `test_deterministic_replay_and_persistence`: identical bytes; save and reload after every recording gives an identical result |
+| 14 audit-log correctness | `test_audit_log_is_complete_and_tamper_evident`: chain, B continuity, version count, tampering detected, a rehashed forgery rejected by replay |
+| 15 population output byte-identical | `test_population_output_is_byte_identical_to_stage9` (stub detector); `test_real_recording_population_channel_equals_the_stage9_golden_vector` (real WAV + ONNX: byte-identical to Stage 9, which equals the Stage 9 golden vector) |
+| 16 never modifies Stage 9 | `test_personal_reference_never_modifies_stage9_files` (SHA-256 of `results/final_assessment/` and the Stage 9 sources; the store refuses the Stage 9 directory) |
+| 17 extreme event cannot move B arbitrarily | `test_extreme_values_cannot_arbitrarily_move_the_baseline` |
+| 18 sustained shift eventually moves B | `test_sustained_large_shift_eventually_moves_the_baseline`: +3 reached with rho = 10 in bounded steps; the boundary is reached with rho = 0.9 |
+
+Additional tests: configuration validation and files; warm-up; unscoreable events; output aliasing; chronological order and sitting boundaries; one recording per sitting equals one recording per event; per-user/device separation.
+
+## E. PROXY/SYNTHETIC evaluation — set-up (`src/personal_reference_evaluation.py`, `results/personal_reference/`)
+
+**This is not personalization validation.**
+
+**Population channel input.**
+- The Stage 9 deployment outputs (`results/final_assessment/e2e_deployment_*.csv`).
+- Their z-values equal the reference's z of the measured features exactly (max |Δ| = 0).
+- The Stage 8 perturbed features enter as perturbation effects added to these z-values (identity difference = 0).
+
+**Proxy user.**
+- **Length:** 80 sittings, one per day.
+- **Sittings:** each is a bootstrap resample, of its own size, of one randomly chosen real inferred sitting with ≥ 10 scoreable events. There are 8 such sittings: 2018-01-23#1/#2/#3, 2018-02-05#1, 2018-02-06#3, 2018-05-02#1 and 2018-05-03#2/#3, with 11–57 events.
+- **Replicates:** 200 per scenario and configuration (seed 20261007), with uniforms shared across scenarios, so the comparisons are paired.
+- **Onset:** the change begins at sitting 30.
+- **Feeding:** each sitting is fed as one recording. A test shows this is identical to feeding the events one by one.
+
+**Scenarios** (their ground truth comes from the construction):
+
+| ID | Scenario |
+|---|---|
+| N0 | no change |
+| A1 / A2 | one extreme event (z = +1000) in N0 / during the +1.0 shift (gate normally open) |
+| B1 | one extreme event in each of 5 sittings |
+| B2 | one sitting replaced by its 10 dB-noise version |
+| B3 | one sitting of extreme events during the +1.0 shift |
+| C / D / E | +0.5 / +1.0 / +2.0 on every feature from the onset |
+| F | 20 dB white noise from the onset |
+| G / G2 | tilt a = 0.9 / 0.5 from the onset |
+| H | 20 dB noise for 3 / 5 / 9 sittings only |
+| I | D with a 16-day interval (> G_max) before shifted sitting 6 |
+| J | Jan–Feb 2018 sittings, then May 2018 sittings (a distribution switch of unknown cause; shift rms 0.47) |
+
+**Metrics:**
+- the final and maximum rms(B);
+- the number of updates;
+- the fraction of the constructed shift absorbed: (B − B_onset)·Δ / |Δ|², compared with the trust-region-limited reachable fraction;
+- sittings to 50% and 90% of the reachable fraction;
+- influence: max_k rms(B − B_clean) against the paired clean stream;
+- trust-region capping;
+- step / bound;
+- the population OUTSIDE share and the median personal deviation, before the onset and in the last 10 sittings.
+
+## F. Results (PROXY/SYNTHETIC; full tables in `results/personal_reference/README.md` and `proxy_summary.csv`)
+
+All numbers are medians over 200 replicates, for 9 of 10 (8 of 10 in brackets).
+
+**Bounds.**
+- **Largest step / per-update bound:** 1.0000000000000004 over all 7,200 streams, so ≤ 1 up to rounding.
+- **rms(B):** never above 0.9 (maximum 0.9000000000000002).
+
+**No change (N0).**
+- **Updates:** in 6.2% (22.7%) of sittings.
+- **Final rms(B):** 0.080 (0.124). The largest value seen was 0.30 (0.41).
+
+**Outliers.**
+
+| Scenario | Runs with any influence | Largest influence |
+|---|---|---|
+| A1 one extreme event | 3.5% (12.5%) | 0.104 |
+| B1 five isolated extreme events | 19.5% (59%) | 0.104 |
+| B2 one 10 dB-noise sitting | 34% (74%) | 0.154; 95th percentile 0.104 |
+| B3 one extreme sitting with the gate open | — | median 0.031, 95th percentile 0.257, largest 0.414 |
+
+B3 can exceed the 0.238 per-update bound because the sitting stays one vote in the window for the next 9 decisions.
+
+**Sustained shifts** (fraction absorbed after 50 sittings, against the reachable fraction):
+
+| Scenario | Absorbed (reachable) | Sittings to 50% / 90% |
+|---|---|---|
+| C +0.5 | 0.73 (1.0) | 23.5 / 32; only 25 of 200 runs reached 90% |
+| D +1.0 | 0.835 (0.90) | 13 / 34 |
+| E +2.0 | 0.447 (0.45) | 10 / 13 |
+| F 20 dB noise | 0.517 (0.525) | at the boundary in 100% of runs |
+| G tilt 0.9 | 0.441 (0.448) | at the boundary in 100% of runs |
+| G2 tilt 0.5 | 0.633 (0.639) | at the boundary in 99.5% of runs |
+| J switch | 0.43 (8 of 10: 1.02) | — |
+
+**Temporary noise (H, 3 / 5 / 9 sittings).** The influence at the end of the stream was 0.013 / 0.041 / 0.098 (median).
+
+**Long gap (I).** The window was reset in 200 of 200 runs, which delayed the 50% point from 13 to 21 sittings.
+
+**Both channels.** In the last 10 sittings, the population OUTSIDE share was 17.7% for D, 62.6% for F and 79.7% for G, against 3.7% before the onset. The personal deviation was 0.94, 1.41 and 1.52, against 0.90.
+
+**Real-corpus replay.**
+- All 361 recordings were processed (322 with events), forming 23 sittings that match the Stage 2 sessions one to one.
+- Only 8 sittings qualify, so the channel stays in `WARMUP` throughout, B = 0, and every scoreable event is `POPULATION_ONLY`.
+
+**Reproducibility.**
+- Two runs were byte-identical in all 12 result files; only the runtime in `analysis_summary.json` differed.
+- A vectorised per-event deviation and a cached config hash cut the runtime from 2,084 s to 641 s and left every result file byte-identical. Only the real-corpus recording counts in `analysis_summary.json` changed, as follows.
+- **Summary fix:** in a first run, the field `n_recordings` was mislabelled. It counted the 322 recordings with events; it now reports 361, plus `n_recordings_processed` (361) and `n_recordings_with_events` (322).
+
+## G. Interpretation and failure cases
+
+The mechanism does what it was designed to do:
+- isolated events and single sittings have bounded, mostly zero influence;
+- sustained shifts move B up to the trust region;
+- a long gap resets the evidence;
+- assessment always precedes adaptation.
+
+It also absorbs sustained noise and microphone-like tilt exactly as it absorbs a genuine shift. "Convergence under a sustained shift" and "not redefining the baseline under a sustained abnormal pattern" cannot both be decided from the acoustics.
+
+**Failure cases:**
+1. Absorption of sustained condition changes.
+2. Partial absorption of a distribution switch of unknown cause.
+3. Short temporary episodes are not fully blocked.
+4. One sitting's downstream influence can exceed the per-update bound.
+5. Adaptation happens with no change: 6.2% of sittings, 22.7% at 8 of 10.
+6. Small shifts (+0.5) are slow under 9 of 10.
+7. The real corpus never leaves `WARMUP`.
+8. ≥ 10 inhalations per sitting is unrealistic for real inhaler use.
+9. The proxy users are in-sample with respect to the Stage 9 reference.
+
+**8 of 10 against 9 of 10:** about 3.6× more adaptation with no change, and faster absorption.
+
+## H. Stage 9 unchanged
+- The SHA-256 of all 38 Stage 9 files (`results/final_assessment/**`, the Stage 9 sources and tests, the perturbed features and the ONNX model) is identical before and after this entry.
+- There is no git diff in any Stage 9 file.
+- The Stage 9 tests pass.
+- The population channel is byte-identical to Stage 9, and equals the Stage 9 golden vector on a real recording.
+
+## I. Decision and next step
+- **Status:** V3 is `IMPLEMENTED_MECHANICALLY_VERIFIED_NOT_VALIDATED`. Its output is continuous only, with no personal cut-off. It is not integrated into the app, and nothing was committed.
+- **Before any validation:**
+  - collect longitudinal data with user and device IDs;
+  - redefine the sitting for real use (one or two inhalations per dose);
+  - pre-register K, k, eta, c, rho, G_max and S_min against that data;
+  - re-run the design-phase probes reproducibly.

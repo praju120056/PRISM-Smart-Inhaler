@@ -1,0 +1,4109 @@
+{
+  "stage": "Stage 10 - V3 personal reference: PROXY/SYNTHETIC evaluation (not personalization validation)",
+  "contract_version": "prism-personal-reference-v3.0-draft",
+  "question": "Does the implemented sitting-level, consensus-gated, bounded update behave as designed: limited influence of isolated outliers and single unusual sittings, eventual movement under a sustained shift, no movement from temporary changes, gap resets and trust-region capping?",
+  "not_answered": "whether B represents a person, whether personal deviation detects real within-user change, and whether a sustained shift reflects behaviour, noise, microphone or device",
+  "parameters": {
+    "seed": 20261007,
+    "replicates": 200,
+    "n_sittings": 80,
+    "onset": 30,
+    "late_window": 10,
+    "extreme_z": 1000.0,
+    "outlier_sitting": 40,
+    "isolated_outlier_sittings": [
+      25,
+      35,
+      45,
+      55,
+      65
+    ],
+    "open_gate_sitting": 50,
+    "gap_after": 6,
+    "temporary_durations": [
+      3,
+      5,
+      9
+    ],
+    "sitting_spacing": "1 day",
+    "perturbations": {
+      "noise20": [
+        "noise",
+        20.0
+      ],
+      "noise10": [
+        "noise",
+        10.0
+      ],
+      "tilt0.9": [
+        "tilt",
+        0.9
+      ],
+      "tilt0.5": [
+        "tilt",
+        0.5
+      ]
+    },
+    "pool_prefixes": {
+      "A": [
+        "2018-01",
+        "2018-02"
+      ],
+      "B": [
+        "2018-05"
+      ]
+    }
+  },
+  "configs": {
+    "prism-personal-v3-provisional-9of10": {
+      "config": {
+        "contract_version": "prism-personal-reference-v3.0-draft",
+        "config_id": "prism-personal-v3-provisional-9of10",
+        "features": [
+          "spectral_centroid_mean",
+          "spectral_flatness_mean",
+          "spectral_centroid_std",
+          "spectral_rolloff_std"
+        ],
+        "sitting_gap_minutes": 25.0,
+        "min_events_per_sitting": 10,
+        "consensus_window": 10,
+        "consensus_required": 9,
+        "eta": 0.3,
+        "clip_c": 2.0,
+        "event_sd": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "trust_radius": 0.9,
+        "max_gap_days": 14.0,
+        "s_min": 10
+      },
+      "sha256": "da563148e5d993a00a2f8dfc697c0a733e062090f189b221e4f052107409c277",
+      "one_sitting_bound_at_min_events": 0.2377996378563606
+    },
+    "prism-personal-v3-provisional-8of10": {
+      "config": {
+        "contract_version": "prism-personal-reference-v3.0-draft",
+        "config_id": "prism-personal-v3-provisional-8of10",
+        "features": [
+          "spectral_centroid_mean",
+          "spectral_flatness_mean",
+          "spectral_centroid_std",
+          "spectral_rolloff_std"
+        ],
+        "sitting_gap_minutes": 25.0,
+        "min_events_per_sitting": 10,
+        "consensus_window": 10,
+        "consensus_required": 8,
+        "eta": 0.3,
+        "clip_c": 2.0,
+        "event_sd": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "trust_radius": 0.9,
+        "max_gap_days": 14.0,
+        "s_min": 10
+      },
+      "sha256": "2d1cbedb7cd11002b2b4cc97347366e6c25950620ed0f119ec7ca9d428b015a9",
+      "one_sitting_bound_at_min_events": 0.2377996378563606
+    }
+  },
+  "scenarios": {
+    "N0_null": "no change: every sitting resampled from a random real sitting",
+    "A1_extreme_event": "one event (z = +1000 on all features) in sitting 40 of N0",
+    "A2_extreme_event_gate_open": "one extreme event in sitting ONSET+20 of D (consensus gate normally open)",
+    "B1_isolated_outliers": "one extreme event in each of sittings 25, 35, 45, 55, 65 of N0",
+    "B2_outlier_sitting_noise10": "sitting 40 of N0 replaced by its 10 dB-SNR white-noise version",
+    "B3_extreme_sitting_gate_open": "every event of sitting ONSET+20 of D set to +1000",
+    "C_shift_0.5": "persistent +0.5 on every feature from sitting ONSET",
+    "D_shift_1.0": "persistent +1.0 on every feature from sitting ONSET",
+    "E_shift_2.0": "persistent +2.0 on every feature from sitting ONSET",
+    "F_noise_20dB": "every event from sitting ONSET replaced by its 20 dB-SNR white-noise version (Stage 6/8)",
+    "G_tilt_0.9": "every event from sitting ONSET passed through y[n] = x[n] - 0.9 x[n-1] (microphone-like tilt)",
+    "G2_tilt_0.5": "as G with a = 0.5",
+    "H_temporary_noise_3": "20 dB noise in sittings ONSET..ONSET+2 only",
+    "H_temporary_noise_5": "20 dB noise in sittings ONSET..ONSET+4 only",
+    "H_temporary_noise_9": "20 dB noise in sittings ONSET..ONSET+8 only",
+    "I_long_gap_shift_1.0": "D with a gap of max_gap_days + 1 days before shifted sitting ONSET+6",
+    "J0_pool_A_null": "no change: sittings resampled from the Jan-Feb 2018 sittings only",
+    "J_user_device_switch": "Jan-Feb sittings before ONSET, May 2018 sittings from ONSET (unknown cause)"
+  },
+  "clean_pairs": {
+    "A1_extreme_event": "N0_null",
+    "B1_isolated_outliers": "N0_null",
+    "B2_outlier_sitting_noise10": "N0_null",
+    "H_temporary_noise_3": "N0_null",
+    "H_temporary_noise_5": "N0_null",
+    "H_temporary_noise_9": "N0_null",
+    "A2_extreme_event_gate_open": "D_shift_1.0",
+    "B3_extreme_sitting_gate_open": "D_shift_1.0",
+    "I_long_gap_shift_1.0": "D_shift_1.0",
+    "J_user_device_switch": "J0_pool_A_null"
+  },
+  "data_checks": {
+    "z_vs_reference_max_abs_diff": 0.0,
+    "perturbed_identity_vs_deployment_max_abs_diff": 0.0,
+    "n_scoreable_events": 318,
+    "n_sittings": 18,
+    "source_sittings": {
+      "2018-01-23#1": 50,
+      "2018-01-23#2": 27,
+      "2018-01-23#3": 29,
+      "2018-02-05#1": 27,
+      "2018-02-06#3": 13,
+      "2018-05-02#1": 11,
+      "2018-05-03#2": 57,
+      "2018-05-03#3": 52
+    },
+    "pools": {
+      "all": [
+        "2018-01-23#1",
+        "2018-01-23#2",
+        "2018-01-23#3",
+        "2018-02-05#1",
+        "2018-02-06#3",
+        "2018-05-02#1",
+        "2018-05-03#2",
+        "2018-05-03#3"
+      ],
+      "A": [
+        "2018-01-23#1",
+        "2018-01-23#2",
+        "2018-01-23#3",
+        "2018-02-05#1",
+        "2018-02-06#3"
+      ],
+      "B": [
+        "2018-05-02#1",
+        "2018-05-03#2",
+        "2018-05-03#3"
+      ]
+    }
+  },
+  "real_corpus_replay": {
+    "n_recordings": 361,
+    "n_recordings_processed": 361,
+    "n_recordings_with_events": 322,
+    "n_events": 364,
+    "n_scoreable_events": 318,
+    "n_sittings": 23,
+    "sittings_match_stage2_sessions_one_to_one": true,
+    "n_qualifying_sittings": 8,
+    "qualifying_sitting_sizes": [
+      50,
+      27,
+      29,
+      27,
+      13,
+      11,
+      57,
+      52
+    ],
+    "decisions": {
+      "NOT_QUALIFYING": 15,
+      "NO_UPDATE": 8
+    },
+    "final_status": {
+      "prism-personal-v3-provisional-9of10": "WARMUP",
+      "prism-personal-v3-provisional-8of10": "WARMUP"
+    },
+    "final_baseline": {
+      "prism-personal-v3-provisional-9of10": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "prism-personal-v3-provisional-8of10": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "personal_assessments": {
+      "POPULATION_ONLY": 318,
+      "NOT_ASSESSED": 46
+    }
+  },
+  "key_results": {
+    "prism-personal-v3-provisional-9of10": {
+      "N0_null": {
+        "b_end_rms": {
+          "median": 0.08007542490189554,
+          "p05": 0.0006277560055029598,
+          "p95": 0.19317032749920507,
+          "mean": 0.08985441991381027,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 4.0,
+          "p05": 0.9500000000000011,
+          "p95": 9.0,
+          "mean": 4.48,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 3.0,
+          "p05": 0.0,
+          "p95": 7.049999999999983,
+          "mean": 3.095,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "absorbable_fraction": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "influence_max_rms": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "extra_updates": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.5,
+          "p05": 0.005902889988571966,
+          "p95": 0.7071067811865475,
+          "mean": 0.4487691270223644,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.040752751572327044,
+          "p05": 0.01357389370350487,
+          "p95": 0.06838863750628457,
+          "mean": 0.041243042444641186,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9003767173013572,
+          "p05": 0.8104825224725593,
+          "p95": 0.9933203443514359,
+          "mean": 0.9003618628922709,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9067385753865908,
+          "p05": 0.7911274804594037,
+          "p95": 1.003258062277949,
+          "mean": 0.9029017357624076,
+          "n_finite": 200.0
+        }
+      },
+      "C_shift_0.5": {
+        "b_end_rms": {
+          "median": 0.4130160682996258,
+          "p05": 0.3306426343657059,
+          "p95": 0.4943501808130199,
+          "mean": 0.4132275428714643,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 14.0,
+          "p05": 9.950000000000001,
+          "p95": 19.049999999999983,
+          "mean": 14.065,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 12.0,
+          "p05": 8.0,
+          "p95": 18.0,
+          "mean": 12.68,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.7322835210619889,
+          "p05": 0.5312006885317342,
+          "p95": 0.9994939264544003,
+          "mean": 0.7420120680909545,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 1.0,
+          "p05": 1.0,
+          "p95": 1.0,
+          "mean": 1.0,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 23.5,
+          "p05": 11.0,
+          "p95": 43.0,
+          "mean": 24.505208333333332,
+          "n_finite": 192.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 32.0,
+          "p05": 20.6,
+          "p95": 49.8,
+          "mean": 33.72,
+          "n_finite": 25.0
+        },
+        "influence_max_rms": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "extra_updates": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.7071067811865474,
+          "p05": 0.5,
+          "p95": 0.8084294438105465,
+          "mean": 0.6462915080985627,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.08183327975999143,
+          "p05": 0.030823055028463,
+          "p95": 0.13473420805447928,
+          "mean": 0.08105249872501559,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9003767173013572,
+          "p05": 0.8104825224725593,
+          "p95": 0.9933203443514359,
+          "mean": 0.9003618628922709,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9262408282320332,
+          "p05": 0.806166163075498,
+          "p95": 1.0662657519366325,
+          "mean": 0.929316157897392,
+          "n_finite": 200.0
+        }
+      },
+      "D_shift_1.0": {
+        "b_end_rms": {
+          "median": 0.8665119997616552,
+          "p05": 0.7416098534174224,
+          "p95": 0.9,
+          "mean": 0.8483379311796423,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 21.0,
+          "p05": 15.0,
+          "p95": 27.049999999999983,
+          "mean": 20.955,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 19.0,
+          "p05": 14.0,
+          "p95": 26.0,
+          "mean": 19.57,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.8348934824173806,
+          "p05": 0.6741327655180096,
+          "p95": 0.9197845016993162,
+          "mean": 0.8231079537559006,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.9,
+          "p05": 0.8516960258006605,
+          "p95": 0.9481434936849565,
+          "mean": 0.8977747573963899,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 13.0,
+          "p05": 11.0,
+          "p95": 22.0,
+          "mean": 14.4,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 34.0,
+          "p05": 19.0,
+          "p95": 48.0,
+          "mean": 33.798449612403104,
+          "n_finite": 129.0
+        },
+        "influence_max_rms": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "extra_updates": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 6.049999999999983,
+          "mean": 1.14,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 1.0,
+          "mean": 0.325,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.8660254037844387,
+          "p05": 0.7071067811865477,
+          "p95": 1.0000000000000002,
+          "mean": 0.8518103717081589,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.17697722567287782,
+          "p05": 0.10184697855750487,
+          "p95": 0.25838312236286914,
+          "mean": 0.17812465352548748,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9003767173013572,
+          "p05": 0.8104825224725593,
+          "p95": 0.9933203443514359,
+          "mean": 0.9003618628922709,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.936883654962779,
+          "p05": 0.8078405873951932,
+          "p95": 1.0814966779539672,
+          "mean": 0.9437481226438876,
+          "n_finite": 200.0
+        }
+      },
+      "E_shift_2.0": {
+        "b_end_rms": {
+          "median": 0.9,
+          "p05": 0.8999999999999999,
+          "p95": 0.9000000000000001,
+          "mean": 0.9000000000000002,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 46.0,
+          "p05": 44.0,
+          "p95": 50.0,
+          "mean": 46.58,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 45.0,
+          "p05": 43.0,
+          "p95": 48.0,
+          "mean": 45.195,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.44651973459678795,
+          "p05": 0.42077620844581887,
+          "p95": 0.47568901870486796,
+          "mean": 0.4456245793783943,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.45,
+          "p05": 0.42724818154682187,
+          "p95": 0.47584526660681065,
+          "mean": 0.4495072288047622,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 10.0,
+          "p05": 9.0,
+          "p95": 11.049999999999983,
+          "mean": 10.335,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 13.0,
+          "p05": 12.0,
+          "p95": 14.0,
+          "mean": 12.945,
+          "n_finite": 200.0
+        },
+        "influence_max_rms": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "extra_updates": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "n_capped": {
+          "median": 37.0,
+          "p05": 36.0,
+          "p95": 39.0,
+          "mean": 37.445,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 1.0,
+          "p05": 1.0,
+          "p95": 1.0,
+          "mean": 1.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 1.0000000000000002,
+          "p05": 1.0,
+          "p95": 1.0000000000000002,
+          "mean": 0.9984754035084425,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.7457107843137255,
+          "p05": 0.623605193751268,
+          "p95": 0.8412472766884531,
+          "mean": 0.7426368680302642,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9003767173013572,
+          "p05": 0.8104825224725593,
+          "p95": 0.9933203443514359,
+          "mean": 0.9003618628922709,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 1.4694806140553769,
+          "p05": 1.2844176922067325,
+          "p95": 1.6188017691143977,
+          "mean": 1.468588928038978,
+          "n_finite": 200.0
+        }
+      },
+      "F_noise_20dB": {
+        "b_end_rms": {
+          "median": 0.9,
+          "p05": 0.8999999999999999,
+          "p95": 0.9000000000000001,
+          "mean": 0.9000000000000002,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 44.0,
+          "p05": 36.0,
+          "p95": 48.0,
+          "mean": 43.54,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 43.0,
+          "p05": 35.0,
+          "p95": 46.0,
+          "mean": 42.155,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.5170515416964776,
+          "p05": 0.4753042755605993,
+          "p95": 0.5363203861480297,
+          "mean": 0.5121510505323249,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.5246108036910119,
+          "p05": 0.4895302639006681,
+          "p95": 0.5405927826937944,
+          "mean": 0.5213303723470192,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 13.0,
+          "p05": 11.0,
+          "p95": 15.0,
+          "mean": 12.795,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 18.0,
+          "p05": 15.0,
+          "p95": 20.049999999999983,
+          "mean": 17.925,
+          "n_finite": 200.0
+        },
+        "influence_max_rms": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "extra_updates": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "n_capped": {
+          "median": 31.0,
+          "p05": 24.0,
+          "p95": 34.0,
+          "mean": 30.115,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 1.0,
+          "p05": 1.0,
+          "p95": 1.0,
+          "mean": 1.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.7071067811865477,
+          "p05": 0.7071067811865474,
+          "p95": 0.8660254037844387,
+          "mean": 0.7374240141386569,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.6261007204715814,
+          "p05": 0.4799063156194476,
+          "p95": 0.7576630713918849,
+          "mean": 0.6252727009856387,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9003767173013572,
+          "p05": 0.8104825224725593,
+          "p95": 0.9933203443514359,
+          "mean": 0.9003618628922709,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 1.4105675899430097,
+          "p05": 1.2044830982650738,
+          "p95": 1.5938043968128357,
+          "mean": 1.4060656608113744,
+          "n_finite": 200.0
+        }
+      },
+      "G_tilt_0.9": {
+        "b_end_rms": {
+          "median": 0.9,
+          "p05": 0.8999999999999999,
+          "p95": 0.9000000000000001,
+          "mean": 0.9000000000000002,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 45.0,
+          "p05": 43.0,
+          "p95": 49.04999999999998,
+          "mean": 45.67,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 44.0,
+          "p05": 43.0,
+          "p95": 46.04999999999998,
+          "mean": 44.285,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.44061250942079194,
+          "p05": 0.41921235795723016,
+          "p95": 0.4965023057224217,
+          "mean": 0.44573092222471755,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.4475773431503756,
+          "p05": 0.44243904042180937,
+          "p95": 0.5014390413436126,
+          "mean": 0.45649381854485305,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 12.0,
+          "p05": 10.0,
+          "p95": 14.0,
+          "mean": 12.31,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 17.0,
+          "p05": 14.0,
+          "p95": 19.0,
+          "mean": 16.965,
+          "n_finite": 200.0
+        },
+        "influence_max_rms": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "extra_updates": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "n_capped": {
+          "median": 33.0,
+          "p05": 31.0,
+          "p95": 36.0,
+          "mean": 33.47,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 1.0,
+          "p05": 1.0,
+          "p95": 1.0,
+          "mean": 1.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.7071067811865478,
+          "p05": 0.7071067811865476,
+          "p95": 0.8660254037844387,
+          "mean": 0.7480212099355823,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.7973856209150327,
+          "p05": 0.6642053086024944,
+          "p95": 0.895797239759213,
+          "mean": 0.7904661396502484,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9003767173013572,
+          "p05": 0.8104825224725593,
+          "p95": 0.9933203443514359,
+          "mean": 0.9003618628922709,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 1.5192508699807261,
+          "p05": 1.3122833985532503,
+          "p95": 1.6384880530371944,
+          "mean": 1.500006206245061,
+          "n_finite": 200.0
+        }
+      },
+      "G2_tilt_0.5": {
+        "b_end_rms": {
+          "median": 0.9,
+          "p05": 0.8999999999999999,
+          "p95": 0.9000000000000001,
+          "mean": 0.8999966648419234,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 32.0,
+          "p05": 21.0,
+          "p95": 43.0,
+          "mean": 31.67,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 30.0,
+          "p05": 20.0,
+          "p95": 41.0,
+          "mean": 30.285,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.6332968134751074,
+          "p05": 0.6055112601022057,
+          "p95": 0.7023277181916505,
+          "mean": 0.6400931047120537,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.6392507310142073,
+          "p05": 0.6139312674370432,
+          "p95": 0.7071211859878325,
+          "mean": 0.647377317746923,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 12.0,
+          "p05": 10.0,
+          "p95": 14.0,
+          "mean": 12.095,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 18.0,
+          "p05": 15.0,
+          "p95": 25.049999999999983,
+          "mean": 18.375,
+          "n_finite": 200.0
+        },
+        "influence_max_rms": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "extra_updates": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "n_capped": {
+          "median": 17.0,
+          "p05": 6.0,
+          "p95": 30.0,
+          "mean": 17.655,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 1.0,
+          "p05": 1.0,
+          "p95": 1.0,
+          "mean": 0.995,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.8660254037844386,
+          "p05": 0.7071067811865477,
+          "p95": 1.0,
+          "mean": 0.8717148185387249,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.45371649626968774,
+          "p05": 0.2991215118122721,
+          "p95": 0.5951071698520677,
+          "mean": 0.453198073046581,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9003767173013572,
+          "p05": 0.8104825224725593,
+          "p95": 0.9933203443514359,
+          "mean": 0.9003618628922709,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 1.1191639876910842,
+          "p05": 1.0129557217005167,
+          "p95": 1.2133457040852709,
+          "mean": 1.1166538813592606,
+          "n_finite": 200.0
+        }
+      },
+      "J0_pool_A_null": {
+        "b_end_rms": {
+          "median": 0.10554378108866727,
+          "p05": 0.04432432640376503,
+          "p95": 0.17124518653241694,
+          "mean": 0.10485523883697119,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 5.0,
+          "p05": 1.0,
+          "p95": 11.0,
+          "mean": 5.295,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 3.0,
+          "p05": 0.0,
+          "p95": 9.0,
+          "mean": 3.585,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "absorbable_fraction": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "influence_max_rms": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "extra_updates": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.5,
+          "p05": 0.23470403061362285,
+          "p95": 0.543258058193282,
+          "mean": 0.4644803742730707,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.01898897115612353,
+          "p05": 0.0031403265824245575,
+          "p95": 0.04406424240453858,
+          "mean": 0.021292915254171155,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.8019836722981346,
+          "p05": 0.7285983183449216,
+          "p95": 0.8853272487919965,
+          "mean": 0.8025695631714259,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.8116826693054793,
+          "p05": 0.7176189931021111,
+          "p95": 0.8704078086412439,
+          "mean": 0.8042748562553456,
+          "n_finite": 200.0
+        }
+      },
+      "A1_extreme_event": {
+        "b_end_rms": {
+          "median": 0.08007542490189554,
+          "p05": 0.0006277560055029598,
+          "p95": 0.19317032749920507,
+          "mean": 0.0903266338539124,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 4.0,
+          "p05": 0.9500000000000011,
+          "p95": 9.0,
+          "mean": 4.5,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 3.0,
+          "p05": 0.0,
+          "p95": 7.049999999999983,
+          "mean": 3.115,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "absorbable_fraction": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "influence_max_rms": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0015086869059696615,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.02,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.5,
+          "p05": 0.005902889988571966,
+          "p95": 0.7071067811865475,
+          "mean": 0.45087966558626336,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.040752751572327044,
+          "p05": 0.01357389370350487,
+          "p95": 0.06838863750628457,
+          "mean": 0.041243042444641186,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9003767173013572,
+          "p05": 0.8104825224725593,
+          "p95": 0.9933203443514359,
+          "mean": 0.9003618628922709,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9067385753865908,
+          "p05": 0.8043989345904046,
+          "p95": 1.003258062277949,
+          "mean": 0.9033533169861184,
+          "n_finite": 200.0
+        }
+      },
+      "A2_extreme_event_gate_open": {
+        "b_end_rms": {
+          "median": 0.8660100915981244,
+          "p05": 0.7416098534174224,
+          "p95": 0.9,
+          "mean": 0.8485181626960525,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 21.0,
+          "p05": 15.0,
+          "p95": 27.049999999999983,
+          "mean": 20.965,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 19.5,
+          "p05": 14.0,
+          "p95": 26.0,
+          "mean": 19.58,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.8348934824173806,
+          "p05": 0.6740993296445313,
+          "p95": 0.9197845016993162,
+          "mean": 0.8233316665088571,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.9,
+          "p05": 0.8516960258006605,
+          "p95": 0.9481434936849565,
+          "mean": 0.8977747573963899,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 13.0,
+          "p05": 11.0,
+          "p95": 22.0,
+          "mean": 14.4,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 34.0,
+          "p05": 19.0,
+          "p95": 48.0,
+          "mean": 33.853846153846156,
+          "n_finite": 130.0
+        },
+        "influence_max_rms": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.027889945772008536,
+          "mean": 0.003927772956333195,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.01,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 7.0,
+          "mean": 1.16,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 1.0,
+          "mean": 0.325,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.8660254037844387,
+          "p05": 0.7071067811865477,
+          "p95": 1.0000000000000002,
+          "mean": 0.8521934377645886,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.17697722567287782,
+          "p05": 0.10184697855750487,
+          "p95": 0.25838312236286914,
+          "mean": 0.17812465352548748,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9003767173013572,
+          "p05": 0.8104825224725593,
+          "p95": 0.9933203443514359,
+          "mean": 0.9003618628922709,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.936883654962779,
+          "p05": 0.8078405873951932,
+          "p95": 1.0814966779539672,
+          "mean": 0.9435546537370282,
+          "n_finite": 200.0
+        }
+      },
+      "B1_isolated_outliers": {
+        "b_end_rms": {
+          "median": 0.08137456087184672,
+          "p05": 0.0006277560055029598,
+          "p95": 0.1932173014918465,
+          "mean": 0.0896069756075703,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 4.0,
+          "p05": 0.9500000000000011,
+          "p95": 9.0,
+          "mean": 4.48,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 3.0,
+          "p05": 0.0,
+          "p95": 7.049999999999983,
+          "mean": 3.1,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "absorbable_fraction": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "influence_max_rms": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0499186221527089,
+          "mean": 0.007196845381848741,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 0.0,
+          "p05": -1.0,
+          "p95": 1.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.5,
+          "p05": 0.005902889988571966,
+          "p95": 0.7071067811865475,
+          "mean": 0.44685393116567695,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.040752751572327044,
+          "p05": 0.01357389370350487,
+          "p95": 0.06838863750628457,
+          "mean": 0.041243042444641186,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.900768382877495,
+          "p05": 0.8175606998390593,
+          "p95": 0.9953194192807517,
+          "mean": 0.9014836905100156,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9073220476063769,
+          "p05": 0.7911274804594037,
+          "p95": 1.003394106894541,
+          "mean": 0.9032792219278934,
+          "n_finite": 200.0
+        }
+      },
+      "B2_outlier_sitting_noise10": {
+        "b_end_rms": {
+          "median": 0.07871920248728267,
+          "p05": 0.0006277560055029598,
+          "p95": 0.18976190162592943,
+          "mean": 0.08896134412498262,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 4.0,
+          "p05": 0.9500000000000011,
+          "p95": 9.0,
+          "mean": 4.435,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 3.0,
+          "p05": 0.0,
+          "p95": 7.049999999999983,
+          "mean": 3.05,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "absorbable_fraction": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "influence_max_rms": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.10448639601387344,
+          "mean": 0.022546237089059194,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 0.0,
+          "p05": -2.0,
+          "p95": 2.0,
+          "mean": -0.045,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.5,
+          "p05": 0.005902889988571966,
+          "p95": 0.7071067811865475,
+          "mean": 0.45447617682044367,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.040752751572327044,
+          "p05": 0.01357389370350487,
+          "p95": 0.06838863750628457,
+          "mean": 0.041243042444641186,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9003767173013572,
+          "p05": 0.8104825224725593,
+          "p95": 0.9933203443514359,
+          "mean": 0.9003618628922709,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9049182045509538,
+          "p05": 0.8028797596460919,
+          "p95": 1.0022908002593836,
+          "mean": 0.9030923140054867,
+          "n_finite": 200.0
+        }
+      },
+      "B3_extreme_sitting_gate_open": {
+        "b_end_rms": {
+          "median": 0.8790772290054453,
+          "p05": 0.7410920099206489,
+          "p95": 0.9,
+          "mean": 0.853656224265546,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 21.0,
+          "p05": 16.0,
+          "p95": 28.0,
+          "mean": 21.205,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 20.0,
+          "p05": 14.0,
+          "p95": 26.0,
+          "mean": 19.82,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.8482078080523807,
+          "p05": 0.6795575063710991,
+          "p95": 0.9223275543934412,
+          "mean": 0.8294673045897534,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.9,
+          "p05": 0.8516960258006605,
+          "p95": 0.9481434936849565,
+          "mean": 0.8977747573963899,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 13.0,
+          "p05": 11.0,
+          "p95": 21.049999999999983,
+          "mean": 14.36,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 31.0,
+          "p05": 19.0,
+          "p95": 48.0,
+          "mean": 32.30434782608695,
+          "n_finite": 138.0
+        },
+        "influence_max_rms": {
+          "median": 0.03092022952392373,
+          "p05": 0.0,
+          "p95": 0.2570669916743487,
+          "mean": 0.056145651514401144,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 0.0,
+          "p05": -2.0,
+          "p95": 3.0,
+          "mean": 0.25,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 7.049999999999983,
+          "mean": 1.495,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 1.0,
+          "mean": 0.39,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.8660254037844387,
+          "p05": 0.7071067811865477,
+          "p95": 1.0000000000000002,
+          "mean": 0.853798036590054,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.17697722567287782,
+          "p05": 0.10184697855750487,
+          "p95": 0.25838312236286914,
+          "mean": 0.17812465352548748,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9003767173013572,
+          "p05": 0.8104825224725593,
+          "p95": 0.9933203443514359,
+          "mean": 0.9003618628922709,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9323564867127999,
+          "p05": 0.8078405873951932,
+          "p95": 1.0786049081038358,
+          "mean": 0.9411074146323049,
+          "n_finite": 200.0
+        }
+      },
+      "H_temporary_noise_3": {
+        "b_end_rms": {
+          "median": 0.08511676036598265,
+          "p05": 0.004177554142245454,
+          "p95": 0.19322639731220564,
+          "mean": 0.09172246146313152,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 4.0,
+          "p05": 1.0,
+          "p95": 10.0,
+          "mean": 4.91,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 3.0,
+          "p05": 0.0,
+          "p95": 8.049999999999983,
+          "mean": 3.525,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.002631635819937612,
+          "p05": -0.0407851465419426,
+          "p95": 0.04872042126839438,
+          "mean": 0.006236131074499825,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.5246108036910119,
+          "p05": 0.4895302639006681,
+          "p95": 0.5405927826937944,
+          "mean": 0.5213303723470192,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "influence_max_rms": {
+          "median": 0.0495188770340061,
+          "p05": 0.0,
+          "p95": 0.12458390739559251,
+          "mean": 0.046548546609138146,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 0.0,
+          "p05": -2.0,
+          "p95": 4.0,
+          "mean": 0.43,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.5,
+          "p05": 0.0980933882491576,
+          "p95": 0.7071067811865475,
+          "mean": 0.46857295459459164,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.040752751572327044,
+          "p05": 0.01357389370350487,
+          "p95": 0.06838863750628457,
+          "mean": 0.041243042444641186,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9003767173013572,
+          "p05": 0.8104825224725593,
+          "p95": 0.9933203443514359,
+          "mean": 0.9003618628922709,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9049182045509538,
+          "p05": 0.7983116648199515,
+          "p95": 1.000782244447508,
+          "mean": 0.9023147129587343,
+          "n_finite": 200.0
+        }
+      },
+      "H_temporary_noise_5": {
+        "b_end_rms": {
+          "median": 0.08938788391987904,
+          "p05": 0.00922077164749127,
+          "p95": 0.20580655992431177,
+          "mean": 0.09495999183923452,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 5.0,
+          "p05": 1.0,
+          "p95": 11.0,
+          "mean": 5.635,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 4.0,
+          "p05": 0.0,
+          "p95": 9.0,
+          "mean": 4.25,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.008733880869697654,
+          "p05": -0.031097532412211536,
+          "p95": 0.06981125015314707,
+          "mean": 0.013670865643545605,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.5246108036910119,
+          "p05": 0.4895302639006681,
+          "p95": 0.5405927826937944,
+          "mean": 0.5213303723470192,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "influence_max_rms": {
+          "median": 0.07236012545582676,
+          "p05": 0.0,
+          "p95": 0.1682456397976819,
+          "mean": 0.07774466417178248,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 1.0,
+          "p05": -2.0,
+          "p95": 5.0,
+          "mean": 1.155,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.5,
+          "p05": 0.16180533847365539,
+          "p95": 0.7071067811865476,
+          "mean": 0.49120934078871414,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.040752751572327044,
+          "p05": 0.01357389370350487,
+          "p95": 0.06838863750628457,
+          "mean": 0.041243042444641186,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9003767173013572,
+          "p05": 0.8104825224725593,
+          "p95": 0.9933203443514359,
+          "mean": 0.9003618628922709,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9062682910806343,
+          "p05": 0.7902141776158047,
+          "p95": 0.9957080988635735,
+          "mean": 0.9017190866072022,
+          "n_finite": 200.0
+        }
+      },
+      "H_temporary_noise_9": {
+        "b_end_rms": {
+          "median": 0.12093171910534473,
+          "p05": 0.05847254281334954,
+          "p95": 0.21505480553444303,
+          "mean": 0.12635791514517128,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 10.0,
+          "p05": 5.0,
+          "p95": 16.0,
+          "mean": 10.17,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 8.0,
+          "p05": 3.950000000000001,
+          "p95": 14.0,
+          "mean": 8.785,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.04500492254132493,
+          "p05": -0.03601070881319792,
+          "p95": 0.09217003226961308,
+          "mean": 0.0391737119929831,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.5246108036910119,
+          "p05": 0.4895302639006681,
+          "p95": 0.5405927826937944,
+          "mean": 0.5213303723470192,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 10.0,
+          "p05": 10.0,
+          "p95": 10.0,
+          "mean": 10.0,
+          "n_finite": 1.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "influence_max_rms": {
+          "median": 0.24230250155316307,
+          "p05": 0.11736284207465632,
+          "p95": 0.3960529835027731,
+          "mean": 0.2417481134667139,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 6.0,
+          "p05": 0.9500000000000011,
+          "p95": 11.0,
+          "mean": 5.69,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.7071067811865475,
+          "p05": 0.5,
+          "p95": 0.7785423141498063,
+          "mean": 0.6587742002208841,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.040752751572327044,
+          "p05": 0.01357389370350487,
+          "p95": 0.06838863750628457,
+          "mean": 0.041243042444641186,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9003767173013572,
+          "p05": 0.8104825224725593,
+          "p95": 0.9933203443514359,
+          "mean": 0.9003618628922709,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9107552543790335,
+          "p05": 0.7854181446958265,
+          "p95": 1.001916379036366,
+          "mean": 0.9043794524886535,
+          "n_finite": 200.0
+        }
+      },
+      "I_long_gap_shift_1.0": {
+        "b_end_rms": {
+          "median": 0.8413635083855119,
+          "p05": 0.7111930039288282,
+          "p95": 0.9,
+          "mean": 0.8295370479737794,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 18.0,
+          "p05": 13.950000000000001,
+          "p95": 24.0,
+          "mean": 18.53,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 17.0,
+          "p05": 12.0,
+          "p95": 23.0,
+          "mean": 17.145,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.8165545601299,
+          "p05": 0.6530588710627252,
+          "p95": 0.9171280319743502,
+          "mean": 0.8008697153171059,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.9,
+          "p05": 0.8516960258006605,
+          "p95": 0.9481434936849565,
+          "mean": 0.8977747573963899,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 21.0,
+          "p05": 18.0,
+          "p95": 28.0,
+          "mean": 21.55,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 39.0,
+          "p05": 26.65,
+          "p95": 48.349999999999994,
+          "mean": 37.99122807017544,
+          "n_finite": 114.0
+        },
+        "influence_max_rms": {
+          "median": 0.5466199162256036,
+          "p05": 0.39340737755296823,
+          "p95": 0.699908092912997,
+          "mean": 0.5446866036264392,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": -2.0,
+          "p05": -7.0,
+          "p95": 2.0,
+          "mean": -2.425,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 4.0,
+          "mean": 0.63,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 1.0,
+          "mean": 0.2,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.8796840851996577,
+          "p05": 0.723156858495125,
+          "p95": 1.0000000000000002,
+          "mean": 0.9091895025585416,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.17697722567287782,
+          "p05": 0.10184697855750487,
+          "p95": 0.25838312236286914,
+          "mean": 0.17812465352548748,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9003767173013572,
+          "p05": 0.8104825224725593,
+          "p95": 0.9933203443514359,
+          "mean": 0.9003618628922709,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9487340876464898,
+          "p05": 0.8173911539045808,
+          "p95": 1.1007933278010225,
+          "mean": 0.9542668636617683,
+          "n_finite": 200.0
+        }
+      },
+      "J_user_device_switch": {
+        "b_end_rms": {
+          "median": 0.22436659197647246,
+          "p05": 0.049718694877925074,
+          "p95": 0.5715181665591023,
+          "mean": 0.2745354331354461,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 8.0,
+          "p05": 2.0,
+          "p95": 15.0,
+          "mean": 8.245,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 6.0,
+          "p05": 2.0,
+          "p95": 12.049999999999983,
+          "mean": 6.535,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.43384663883342034,
+          "p05": 0.03201902187187831,
+          "p95": 1.1285202271011299,
+          "mean": 0.5204177175775647,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 1.0,
+          "p05": 1.0,
+          "p95": 1.0,
+          "mean": 1.0,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 28.0,
+          "p05": 10.0,
+          "p95": 49.0,
+          "mean": 28.896907216494846,
+          "n_finite": 97.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 32.5,
+          "p05": 14.0,
+          "p95": 48.0,
+          "mean": 31.24,
+          "n_finite": 50.0
+        },
+        "influence_max_rms": {
+          "median": 0.28562461755163776,
+          "p05": 0.08320320310275792,
+          "p95": 0.6521741117631463,
+          "mean": 0.34587452854003375,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 3.0,
+          "p05": -5.0,
+          "p95": 9.0,
+          "mean": 2.95,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.7071067811865475,
+          "p05": 0.4086077951188798,
+          "p95": 0.7797497229753978,
+          "mean": 0.6282311951435842,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.06464600076540375,
+          "p05": 0.04077551020408163,
+          "p95": 0.08746425419240951,
+          "mean": 0.06381810592042994,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.8019836722981346,
+          "p05": 0.7285983183449216,
+          "p95": 0.8853272487919965,
+          "mean": 0.8025695631714259,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 1.0084768960154298,
+          "p05": 0.8266415818638949,
+          "p95": 1.1474612072713801,
+          "mean": 1.0009721900201303,
+          "n_finite": 200.0
+        }
+      }
+    },
+    "prism-personal-v3-provisional-8of10": {
+      "N0_null": {
+        "b_end_rms": {
+          "median": 0.12445663801493737,
+          "p05": 0.05303915252462348,
+          "p95": 0.24789987348946899,
+          "mean": 0.1352200526694096,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 16.0,
+          "p05": 9.0,
+          "p95": 24.0,
+          "mean": 16.145,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 11.0,
+          "p05": 6.0,
+          "p95": 17.0,
+          "mean": 11.345,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "absorbable_fraction": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "influence_max_rms": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "extra_updates": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.5646908106175332,
+          "p05": 0.5,
+          "p95": 0.7480783743486557,
+          "mean": 0.6027633762043231,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.040752751572327044,
+          "p05": 0.01357389370350487,
+          "p95": 0.06838863750628457,
+          "mean": 0.041243042444641186,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9031710602102028,
+          "p05": 0.8140691622600856,
+          "p95": 1.0074019812414394,
+          "mean": 0.9045952421296215,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.91262586307044,
+          "p05": 0.7973671612408886,
+          "p95": 1.0081358326246648,
+          "mean": 0.907706124543077,
+          "n_finite": 200.0
+        }
+      },
+      "C_shift_0.5": {
+        "b_end_rms": {
+          "median": 0.4813908878469329,
+          "p05": 0.4054024958623098,
+          "p95": 0.5788981389376943,
+          "mean": 0.48418311866407776,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 23.0,
+          "p05": 17.0,
+          "p95": 30.049999999999983,
+          "mean": 23.535,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 19.0,
+          "p05": 13.0,
+          "p95": 24.0,
+          "mean": 18.735,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.9288946420054379,
+          "p05": 0.7094356832271308,
+          "p95": 1.1904160122012806,
+          "mean": 0.9321967866915881,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 1.0,
+          "p05": 1.0,
+          "p95": 1.0,
+          "mean": 1.0,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 12.0,
+          "p05": 8.950000000000001,
+          "p95": 26.0,
+          "mean": 13.815,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 28.0,
+          "p05": 13.0,
+          "p95": 46.0,
+          "mean": 29.068493150684933,
+          "n_finite": 146.0
+        },
+        "influence_max_rms": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "extra_updates": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.7071067811865477,
+          "p05": 0.5857474378327379,
+          "p95": 0.8660254037844388,
+          "mean": 0.7421121428762251,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.08183327975999143,
+          "p05": 0.030823055028463,
+          "p95": 0.13473420805447928,
+          "mean": 0.08105249872501559,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9031710602102028,
+          "p05": 0.8140691622600856,
+          "p95": 1.0074019812414394,
+          "mean": 0.9045952421296215,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9116492150327625,
+          "p05": 0.7953346155350359,
+          "p95": 1.0144246190952542,
+          "mean": 0.9117445203204148,
+          "n_finite": 200.0
+        }
+      },
+      "D_shift_1.0": {
+        "b_end_rms": {
+          "median": 0.9,
+          "p05": 0.8624707285385854,
+          "p95": 0.9000000000000001,
+          "mean": 0.8946005693404938,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 31.0,
+          "p05": 23.0,
+          "p95": 41.0,
+          "mean": 31.295,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 26.0,
+          "p05": 19.0,
+          "p95": 35.0,
+          "mean": 26.495,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.8836327507813975,
+          "p05": 0.7937612213198845,
+          "p95": 0.9877413164705205,
+          "mean": 0.8867903971530916,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.8996685297822549,
+          "p05": 0.8225438386222654,
+          "p95": 0.9931075536674194,
+          "mean": 0.8998719616778021,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 11.0,
+          "p05": 9.0,
+          "p95": 13.049999999999983,
+          "mean": 10.77,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 21.0,
+          "p05": 14.0,
+          "p95": 38.14999999999998,
+          "mean": 22.68686868686869,
+          "n_finite": 198.0
+        },
+        "influence_max_rms": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "extra_updates": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "n_capped": {
+          "median": 8.0,
+          "p05": 0.9500000000000011,
+          "p95": 19.049999999999983,
+          "mean": 8.7,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 1.0,
+          "p05": 0.0,
+          "p95": 1.0,
+          "mean": 0.835,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.896698457344771,
+          "p05": 0.7091675483285733,
+          "p95": 1.0000000000000002,
+          "mean": 0.9047686930563296,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.17697722567287782,
+          "p05": 0.10184697855750487,
+          "p95": 0.25838312236286914,
+          "mean": 0.17812465352548748,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9031710602102028,
+          "p05": 0.8140691622600856,
+          "p95": 1.0074019812414394,
+          "mean": 0.9045952421296215,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9150689374349799,
+          "p05": 0.8041409595068905,
+          "p95": 1.0297911436218372,
+          "mean": 0.9181700628546394,
+          "n_finite": 200.0
+        }
+      },
+      "E_shift_2.0": {
+        "b_end_rms": {
+          "median": 0.9,
+          "p05": 0.8999999999999999,
+          "p95": 0.9000000000000001,
+          "mean": 0.9000000000000002,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 52.0,
+          "p05": 48.0,
+          "p95": 57.0,
+          "mean": 51.845,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 47.0,
+          "p05": 45.0,
+          "p95": 49.0,
+          "mean": 47.045,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.44966776311888834,
+          "p05": 0.4127314081632859,
+          "p95": 0.49966841550602625,
+          "mean": 0.4515188445511993,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.45114498824833005,
+          "p05": 0.4131287192260241,
+          "p95": 0.4997281731677874,
+          "mean": 0.4527482445362574,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 9.0,
+          "p05": 8.0,
+          "p95": 10.0,
+          "mean": 8.855,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 11.0,
+          "p05": 10.0,
+          "p95": 13.0,
+          "mean": 11.46,
+          "n_finite": 200.0
+        },
+        "influence_max_rms": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "extra_updates": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "n_capped": {
+          "median": 39.0,
+          "p05": 37.95,
+          "p95": 40.0,
+          "mean": 39.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 1.0,
+          "p05": 1.0,
+          "p95": 1.0,
+          "mean": 1.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 1.0000000000000002,
+          "p05": 1.0,
+          "p95": 1.0000000000000002,
+          "mean": 0.9982270327967951,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.7457107843137255,
+          "p05": 0.623605193751268,
+          "p95": 0.8412472766884531,
+          "mean": 0.7426368680302642,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9031710602102028,
+          "p05": 0.8140691622600856,
+          "p95": 1.0074019812414394,
+          "mean": 0.9045952421296215,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 1.4653723865999515,
+          "p05": 1.2760510170744654,
+          "p95": 1.6176583221977476,
+          "mean": 1.4634758149904405,
+          "n_finite": 200.0
+        }
+      },
+      "F_noise_20dB": {
+        "b_end_rms": {
+          "median": 0.9,
+          "p05": 0.8999999999999999,
+          "p95": 0.9000000000000001,
+          "mean": 0.9000000000000002,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 50.0,
+          "p05": 46.95,
+          "p95": 56.0,
+          "mean": 50.78,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 46.0,
+          "p05": 43.95,
+          "p95": 49.0,
+          "mean": 45.98,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.5106788917770484,
+          "p05": 0.4419626299753906,
+          "p95": 0.5713028702109488,
+          "mean": 0.5079091985869134,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.5234384584234586,
+          "p05": 0.463474259956857,
+          "p95": 0.5790617692317158,
+          "mean": 0.5208663112752165,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 11.0,
+          "p05": 9.0,
+          "p95": 13.0,
+          "mean": 10.89,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 16.0,
+          "p05": 13.0,
+          "p95": 19.049999999999983,
+          "mean": 15.97,
+          "n_finite": 200.0
+        },
+        "influence_max_rms": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "extra_updates": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "n_capped": {
+          "median": 35.0,
+          "p05": 31.0,
+          "p95": 37.0,
+          "mean": 34.41,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 1.0,
+          "p05": 1.0,
+          "p95": 1.0,
+          "mean": 1.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.8585932547718417,
+          "p05": 0.7071067811865476,
+          "p95": 0.8683579987058806,
+          "mean": 0.8061230034212961,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.6261007204715814,
+          "p05": 0.4799063156194476,
+          "p95": 0.7576630713918849,
+          "mean": 0.6252727009856387,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9031710602102028,
+          "p05": 0.8140691622600856,
+          "p95": 1.0074019812414394,
+          "mean": 0.9045952421296215,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 1.4047438626675715,
+          "p05": 1.182404011540867,
+          "p95": 1.59980680345132,
+          "mean": 1.400985334701199,
+          "n_finite": 200.0
+        }
+      },
+      "G_tilt_0.9": {
+        "b_end_rms": {
+          "median": 0.9,
+          "p05": 0.8999999999999999,
+          "p95": 0.9000000000000001,
+          "mean": 0.9000000000000001,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 51.0,
+          "p05": 47.0,
+          "p95": 57.0,
+          "mean": 51.415,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 47.0,
+          "p05": 44.0,
+          "p95": 49.0,
+          "mean": 46.615,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.4520766063721195,
+          "p05": 0.41296583675124604,
+          "p95": 0.5277148947498775,
+          "mean": 0.4573740657223079,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.4682441878038358,
+          "p05": 0.43424901284713535,
+          "p95": 0.5376365175228924,
+          "mean": 0.4749127289275995,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 11.0,
+          "p05": 8.0,
+          "p95": 13.0,
+          "mean": 10.785,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 16.0,
+          "p05": 13.0,
+          "p95": 19.0,
+          "mean": 15.755,
+          "n_finite": 200.0
+        },
+        "influence_max_rms": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "extra_updates": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "n_capped": {
+          "median": 36.0,
+          "p05": 32.0,
+          "p95": 38.0,
+          "mean": 35.365,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 1.0,
+          "p05": 1.0,
+          "p95": 1.0,
+          "mean": 1.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.7632938457918887,
+          "p05": 0.7071067811865477,
+          "p95": 0.8661651053384379,
+          "mean": 0.7869042258304826,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.7973856209150327,
+          "p05": 0.6642053086024944,
+          "p95": 0.895797239759213,
+          "mean": 0.7904661396502484,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9031710602102028,
+          "p05": 0.8140691622600856,
+          "p95": 1.0074019812414394,
+          "mean": 0.9045952421296215,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 1.5246282559668058,
+          "p05": 1.326201894567447,
+          "p95": 1.6665183643217858,
+          "mean": 1.5160526101539478,
+          "n_finite": 200.0
+        }
+      },
+      "G2_tilt_0.5": {
+        "b_end_rms": {
+          "median": 0.9,
+          "p05": 0.8999999999999999,
+          "p95": 0.9000000000000001,
+          "mean": 0.8998518918560703,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 46.0,
+          "p05": 36.95,
+          "p95": 54.0,
+          "mean": 46.155,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 42.0,
+          "p05": 33.0,
+          "p95": 47.0,
+          "mean": 41.355,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.6502240460256221,
+          "p05": 0.588239886662631,
+          "p95": 0.7621661587834732,
+          "mean": 0.6586887764331394,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.658395347196729,
+          "p05": 0.5930262015481712,
+          "p95": 0.7601763158358156,
+          "mean": 0.6672210123438306,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 10.0,
+          "p05": 8.0,
+          "p95": 12.0,
+          "mean": 10.25,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 15.0,
+          "p05": 12.0,
+          "p95": 18.0,
+          "mean": 15.035,
+          "n_finite": 200.0
+        },
+        "influence_max_rms": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "extra_updates": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "n_capped": {
+          "median": 30.0,
+          "p05": 20.0,
+          "p95": 36.0,
+          "mean": 29.305,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 1.0,
+          "p05": 1.0,
+          "p95": 1.0,
+          "mean": 0.99,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.8660254037844389,
+          "p05": 0.8072582391388642,
+          "p95": 1.0,
+          "mean": 0.8997697675518757,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.45371649626968774,
+          "p05": 0.2991215118122721,
+          "p95": 0.5951071698520677,
+          "mean": 0.453198073046581,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9031710602102028,
+          "p05": 0.8140691622600856,
+          "p95": 1.0074019812414394,
+          "mean": 0.9045952421296215,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 1.1260258246045232,
+          "p05": 0.9958393887604596,
+          "p95": 1.2177854023189525,
+          "mean": 1.119106578435832,
+          "n_finite": 200.0
+        }
+      },
+      "J0_pool_A_null": {
+        "b_end_rms": {
+          "median": 0.13272213073731748,
+          "p05": 0.07586643213391049,
+          "p95": 0.22526716542275046,
+          "mean": 0.13755252948819846,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 16.0,
+          "p05": 10.0,
+          "p95": 26.0,
+          "mean": 16.685,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 11.0,
+          "p05": 5.950000000000001,
+          "p95": 19.0,
+          "mean": 11.46,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "absorbable_fraction": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "influence_max_rms": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "extra_updates": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.5236546148798409,
+          "p05": 0.5,
+          "p95": 0.7071067811865477,
+          "mean": 0.5756211276120468,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.01898897115612353,
+          "p05": 0.0031403265824245575,
+          "p95": 0.04406424240453858,
+          "mean": 0.021292915254171155,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.8110570403532009,
+          "p05": 0.7367472266782151,
+          "p95": 0.8888247973053579,
+          "mean": 0.8118225891433118,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.8140697518552988,
+          "p05": 0.72950865009722,
+          "p95": 0.8746259975644775,
+          "mean": 0.8113541827551819,
+          "n_finite": 200.0
+        }
+      },
+      "A1_extreme_event": {
+        "b_end_rms": {
+          "median": 0.12521662201459086,
+          "p05": 0.05303915252462348,
+          "p95": 0.2429501082868358,
+          "mean": 0.1352488719020986,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 16.0,
+          "p05": 9.0,
+          "p95": 24.0,
+          "mean": 16.07,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 11.0,
+          "p05": 6.0,
+          "p95": 17.0,
+          "mean": 11.27,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "absorbable_fraction": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "influence_max_rms": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.038926880341160375,
+          "mean": 0.0052711817750037485,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 0.0,
+          "p05": -0.049999999999998934,
+          "p95": 0.0,
+          "mean": -0.075,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.5671617786046854,
+          "p05": 0.5,
+          "p95": 0.7480783743486557,
+          "mean": 0.6034178032524158,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.040752751572327044,
+          "p05": 0.01357389370350487,
+          "p95": 0.06838863750628457,
+          "mean": 0.041243042444641186,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9031710602102028,
+          "p05": 0.8140691622600856,
+          "p95": 1.0074019812414394,
+          "mean": 0.9045952421296215,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9134376613025058,
+          "p05": 0.7973671612408886,
+          "p95": 1.0081358326246648,
+          "mean": 0.9077923747414023,
+          "n_finite": 200.0
+        }
+      },
+      "A2_extreme_event_gate_open": {
+        "b_end_rms": {
+          "median": 0.9,
+          "p05": 0.8635169045704324,
+          "p95": 0.9000000000000001,
+          "mean": 0.894783471876996,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 31.0,
+          "p05": 23.0,
+          "p95": 40.04999999999998,
+          "mean": 31.355,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 26.0,
+          "p05": 19.0,
+          "p95": 35.0,
+          "mean": 26.555,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.8836327507813975,
+          "p05": 0.7951329833439534,
+          "p95": 0.987760980663057,
+          "mean": 0.8868767775036036,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.8996685297822549,
+          "p05": 0.8225438386222654,
+          "p95": 0.9931075536674194,
+          "mean": 0.8998719616778021,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 11.0,
+          "p05": 9.0,
+          "p95": 13.049999999999983,
+          "mean": 10.77,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 21.0,
+          "p05": 14.0,
+          "p95": 37.14999999999998,
+          "mean": 22.555555555555557,
+          "n_finite": 198.0
+        },
+        "influence_max_rms": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.06263336229800424,
+          "mean": 0.009465820476481196,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 0.0,
+          "p05": -1.0,
+          "p95": 1.0,
+          "mean": 0.06,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 8.0,
+          "p05": 0.9500000000000011,
+          "p95": 20.049999999999983,
+          "mean": 8.8,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 1.0,
+          "p05": 0.0,
+          "p95": 1.0,
+          "mean": 0.83,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.896698457344771,
+          "p05": 0.7091675483285733,
+          "p95": 1.0000000000000002,
+          "mean": 0.9047686930563296,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.17697722567287782,
+          "p05": 0.10184697855750487,
+          "p95": 0.25838312236286914,
+          "mean": 0.17812465352548748,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9031710602102028,
+          "p05": 0.8140691622600856,
+          "p95": 1.0074019812414394,
+          "mean": 0.9045952421296215,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9172675826325671,
+          "p05": 0.804138582615129,
+          "p95": 1.0298097650793083,
+          "mean": 0.9184056382649775,
+          "n_finite": 200.0
+        }
+      },
+      "B1_isolated_outliers": {
+        "b_end_rms": {
+          "median": 0.11916880231937216,
+          "p05": 0.05350783857090952,
+          "p95": 0.2444633784860054,
+          "mean": 0.1348372853944664,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 16.0,
+          "p05": 9.0,
+          "p95": 24.0,
+          "mean": 16.2,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 11.0,
+          "p05": 6.0,
+          "p95": 17.0,
+          "mean": 11.375,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "absorbable_fraction": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "influence_max_rms": {
+          "median": 0.006631492148900565,
+          "p05": 0.0,
+          "p95": 0.090988780617902,
+          "mean": 0.025303648981084743,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 0.0,
+          "p05": -2.0,
+          "p95": 2.0,
+          "mean": 0.055,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.5587310411631228,
+          "p05": 0.5,
+          "p95": 0.7604464614868399,
+          "mean": 0.6025872844174407,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.040752751572327044,
+          "p05": 0.01357389370350487,
+          "p95": 0.06838863750628457,
+          "mean": 0.041243042444641186,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9039189142650326,
+          "p05": 0.8205083995184864,
+          "p95": 1.0074019812414394,
+          "mean": 0.905614049672252,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.913907997126816,
+          "p05": 0.8010768161671905,
+          "p95": 1.0065630379098462,
+          "mean": 0.9067946319730544,
+          "n_finite": 200.0
+        }
+      },
+      "B2_outlier_sitting_noise10": {
+        "b_end_rms": {
+          "median": 0.12230821241386061,
+          "p05": 0.04814948949384532,
+          "p95": 0.24374406748145735,
+          "mean": 0.13360202755121167,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 16.0,
+          "p05": 8.0,
+          "p95": 24.0,
+          "mean": 15.94,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 11.0,
+          "p05": 5.0,
+          "p95": 17.0,
+          "mean": 11.14,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "absorbable_fraction": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "influence_max_rms": {
+          "median": 0.05437495469577396,
+          "p05": 0.0,
+          "p95": 0.13283930125856672,
+          "mean": 0.05678291034478134,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 0.0,
+          "p05": -3.0,
+          "p95": 3.0,
+          "mean": -0.205,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.5660838886724487,
+          "p05": 0.5,
+          "p95": 0.7604464614868399,
+          "mean": 0.6045628016159796,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.040752751572327044,
+          "p05": 0.01357389370350487,
+          "p95": 0.06838863750628457,
+          "mean": 0.041243042444641186,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9031710602102028,
+          "p05": 0.8140691622600856,
+          "p95": 1.0074019812414394,
+          "mean": 0.9045952421296215,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9109082762572931,
+          "p05": 0.7969418699304175,
+          "p95": 1.008203779123108,
+          "mean": 0.9066810982710587,
+          "n_finite": 200.0
+        }
+      },
+      "B3_extreme_sitting_gate_open": {
+        "b_end_rms": {
+          "median": 0.9,
+          "p05": 0.8617407717767743,
+          "p95": 0.9,
+          "mean": 0.8945059660267612,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 32.0,
+          "p05": 23.0,
+          "p95": 41.04999999999998,
+          "mean": 31.96,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 27.0,
+          "p05": 19.0,
+          "p95": 35.0,
+          "mean": 27.16,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.8848866521860144,
+          "p05": 0.799714111817347,
+          "p95": 0.9862888365161628,
+          "mean": 0.886707679618477,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.8996685297822549,
+          "p05": 0.8225438386222654,
+          "p95": 0.9931075536674194,
+          "mean": 0.8998719616778021,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 11.0,
+          "p05": 9.0,
+          "p95": 13.049999999999983,
+          "mean": 10.77,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 21.0,
+          "p05": 14.0,
+          "p95": 36.0,
+          "mean": 21.747474747474747,
+          "n_finite": 198.0
+        },
+        "influence_max_rms": {
+          "median": 0.06119419871284292,
+          "p05": 0.0,
+          "p95": 0.1683374723040874,
+          "mean": 0.06701007610775676,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 0.0,
+          "p05": -2.0,
+          "p95": 5.0,
+          "mean": 0.665,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 9.0,
+          "p05": 1.0,
+          "p95": 21.0,
+          "mean": 9.855,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 1.0,
+          "p05": 0.0,
+          "p95": 1.0,
+          "mean": 0.815,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.9007585603015557,
+          "p05": 0.7091675483285733,
+          "p95": 1.0000000000000002,
+          "mean": 0.9069557826627991,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.17697722567287782,
+          "p05": 0.10184697855750487,
+          "p95": 0.25838312236286914,
+          "mean": 0.17812465352548748,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9031710602102028,
+          "p05": 0.8140691622600856,
+          "p95": 1.0074019812414394,
+          "mean": 0.9045952421296215,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9132780595302288,
+          "p05": 0.8007729811489129,
+          "p95": 1.0307572891211272,
+          "mean": 0.9176423059749018,
+          "n_finite": 200.0
+        }
+      },
+      "H_temporary_noise_3": {
+        "b_end_rms": {
+          "median": 0.11886162060484025,
+          "p05": 0.04618750856351816,
+          "p95": 0.24346183210603115,
+          "mean": 0.13148608880096788,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 17.0,
+          "p05": 9.0,
+          "p95": 25.0,
+          "mean": 16.76,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 12.0,
+          "p05": 6.0,
+          "p95": 19.0,
+          "mean": 11.96,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.004890581588075886,
+          "p05": -0.08667879659977838,
+          "p95": 0.08134216935886338,
+          "mean": 0.0014793473411125982,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.5234384584234586,
+          "p05": 0.463474259956857,
+          "p95": 0.5790617692317158,
+          "mean": 0.5208663112752165,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "influence_max_rms": {
+          "median": 0.11518052419159318,
+          "p05": 0.015156080412246316,
+          "p95": 0.21557631837244798,
+          "mean": 0.11717305207062757,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 1.0,
+          "p05": -5.0,
+          "p95": 5.049999999999983,
+          "mean": 0.615,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.6057395681540348,
+          "p05": 0.5,
+          "p95": 0.7899393977339026,
+          "mean": 0.6163921439746264,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.040752751572327044,
+          "p05": 0.01357389370350487,
+          "p95": 0.06838863750628457,
+          "mean": 0.041243042444641186,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9031710602102028,
+          "p05": 0.8140691622600856,
+          "p95": 1.0074019812414394,
+          "mean": 0.9045952421296215,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9118615961443172,
+          "p05": 0.7835628248025801,
+          "p95": 1.0045878612080488,
+          "mean": 0.9059151874897027,
+          "n_finite": 200.0
+        }
+      },
+      "H_temporary_noise_5": {
+        "b_end_rms": {
+          "median": 0.1163405379352047,
+          "p05": 0.04855683901560281,
+          "p95": 0.24704981271156487,
+          "mean": 0.13189110517883001,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 18.0,
+          "p05": 10.0,
+          "p95": 26.0,
+          "mean": 18.35,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 13.0,
+          "p05": 7.950000000000001,
+          "p95": 20.0,
+          "mean": 13.55,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.006791796082483802,
+          "p05": -0.08542863333595074,
+          "p95": 0.08646630092540054,
+          "mean": 0.0028847185568515697,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.5234384584234586,
+          "p05": 0.463474259956857,
+          "p95": 0.5790617692317158,
+          "mean": 0.5208663112752165,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "influence_max_rms": {
+          "median": 0.17210747261893466,
+          "p05": 0.06247274156980532,
+          "p95": 0.31040741654446374,
+          "mean": 0.17677910735320637,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 2.0,
+          "p05": -4.0,
+          "p95": 9.0,
+          "mean": 2.205,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.7071067811865474,
+          "p05": 0.5,
+          "p95": 0.8586942280627382,
+          "mean": 0.6520919033359942,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.040752751572327044,
+          "p05": 0.01357389370350487,
+          "p95": 0.06838863750628457,
+          "mean": 0.041243042444641186,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9031710602102028,
+          "p05": 0.8140691622600856,
+          "p95": 1.0074019812414394,
+          "mean": 0.9045952421296215,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9090024406217374,
+          "p05": 0.7927356474263906,
+          "p95": 0.9983737407940272,
+          "mean": 0.9061439172322099,
+          "n_finite": 200.0
+        }
+      },
+      "H_temporary_noise_9": {
+        "b_end_rms": {
+          "median": 0.12181493180902664,
+          "p05": 0.055709400343034836,
+          "p95": 0.24132308768001043,
+          "mean": 0.13260097566558277,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 24.0,
+          "p05": 15.950000000000001,
+          "p95": 32.0,
+          "mean": 23.63,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 19.0,
+          "p05": 13.0,
+          "p95": 26.0,
+          "mean": 18.83,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.010575117973679451,
+          "p05": -0.08263894566650225,
+          "p95": 0.08722972782779262,
+          "mean": 0.00744219386956089,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.5234384584234586,
+          "p05": 0.463474259956857,
+          "p95": 0.5790617692317158,
+          "mean": 0.5208663112752165,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 9.0,
+          "p05": 8.0,
+          "p95": 11.199999999999996,
+          "mean": 9.297297297297296,
+          "n_finite": 37.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": null,
+          "p05": null,
+          "p95": null,
+          "mean": null,
+          "n_finite": 0.0
+        },
+        "influence_max_rms": {
+          "median": 0.4035191456294166,
+          "p05": 0.25192371974763966,
+          "p95": 0.5933421423007466,
+          "mean": 0.4084646712913455,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 7.5,
+          "p05": -0.049999999999998934,
+          "p95": 14.0,
+          "mean": 7.485,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.7071067811865477,
+          "p05": 0.7071067811865474,
+          "p95": 0.8660254037844387,
+          "mean": 0.7593535289553046,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.040752751572327044,
+          "p05": 0.01357389370350487,
+          "p95": 0.06838863750628457,
+          "mean": 0.041243042444641186,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9031710602102028,
+          "p05": 0.8140691622600856,
+          "p95": 1.0074019812414394,
+          "mean": 0.9045952421296215,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9079626904304576,
+          "p05": 0.7977271435823984,
+          "p95": 0.9931821083404605,
+          "mean": 0.9044906391857974,
+          "n_finite": 200.0
+        }
+      },
+      "I_long_gap_shift_1.0": {
+        "b_end_rms": {
+          "median": 0.9,
+          "p05": 0.849935190556147,
+          "p95": 0.9000000000000001,
+          "mean": 0.8924521475948086,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 27.0,
+          "p05": 19.0,
+          "p95": 36.0,
+          "mean": 27.525,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 22.0,
+          "p05": 16.0,
+          "p95": 30.0,
+          "mean": 22.725,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 0.8879118898178624,
+          "p05": 0.7838109176894006,
+          "p95": 0.9909968491655524,
+          "mean": 0.8836261268015164,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 0.8996685297822549,
+          "p05": 0.8225438386222654,
+          "p95": 0.9931075536674194,
+          "mean": 0.8998719616778021,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 19.0,
+          "p05": 17.0,
+          "p95": 21.0,
+          "mean": 18.935,
+          "n_finite": 200.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 28.0,
+          "p05": 22.0,
+          "p95": 42.25,
+          "mean": 29.668367346938776,
+          "n_finite": 196.0
+        },
+        "influence_max_rms": {
+          "median": 0.6095862378239039,
+          "p05": 0.44977526417649355,
+          "p95": 0.7854491403569549,
+          "mean": 0.6181450903190341,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": -4.0,
+          "p05": -9.049999999999999,
+          "p95": 1.049999999999983,
+          "mean": -3.77,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 5.5,
+          "p05": 0.0,
+          "p95": 15.0,
+          "mean": 6.35,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 1.0,
+          "p05": 0.0,
+          "p95": 1.0,
+          "mean": 0.78,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.9906368793721019,
+          "p05": 0.7482520017112635,
+          "p95": 1.0000000000000002,
+          "mean": 0.9355690053606568,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.17697722567287782,
+          "p05": 0.10184697855750487,
+          "p95": 0.25838312236286914,
+          "mean": 0.17812465352548748,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.9031710602102028,
+          "p05": 0.8140691622600856,
+          "p95": 1.0074019812414394,
+          "mean": 0.9045952421296215,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9163553728421654,
+          "p05": 0.8001048027248631,
+          "p95": 1.0309201019164986,
+          "mean": 0.9198221591297303,
+          "n_finite": 200.0
+        }
+      },
+      "J_user_device_switch": {
+        "b_end_rms": {
+          "median": 0.5070919818377244,
+          "p05": 0.22296191166049487,
+          "p95": 0.6150671810011045,
+          "mean": 0.4766191494695755,
+          "n_finite": 200.0
+        },
+        "n_updates": {
+          "median": 20.0,
+          "p05": 12.0,
+          "p95": 29.0,
+          "mean": 20.595,
+          "n_finite": 200.0
+        },
+        "n_updates_from_onset": {
+          "median": 15.0,
+          "p05": 8.0,
+          "p95": 22.049999999999983,
+          "mean": 15.37,
+          "n_finite": 200.0
+        },
+        "absorbed_end": {
+          "median": 1.0205606062327885,
+          "p05": 0.4905419816033518,
+          "p95": 1.3080115273176107,
+          "mean": 0.9805504440452469,
+          "n_finite": 200.0
+        },
+        "absorbable_fraction": {
+          "median": 1.0,
+          "p05": 1.0,
+          "p95": 1.0,
+          "mean": 1.0,
+          "n_finite": 200.0
+        },
+        "sittings_to_50pct_of_reachable": {
+          "median": 19.0,
+          "p05": 9.0,
+          "p95": 46.0,
+          "mean": 22.742105263157896,
+          "n_finite": 190.0
+        },
+        "sittings_to_90pct_of_reachable": {
+          "median": 28.0,
+          "p05": 12.65,
+          "p95": 46.0,
+          "mean": 27.850649350649352,
+          "n_finite": 154.0
+        },
+        "influence_max_rms": {
+          "median": 0.6380088429061214,
+          "p05": 0.31749203678552157,
+          "p95": 0.7655249202885003,
+          "mean": 0.6022117253398477,
+          "n_finite": 200.0
+        },
+        "extra_updates": {
+          "median": 4.0,
+          "p05": -6.0,
+          "p95": 14.0,
+          "mean": 3.91,
+          "n_finite": 200.0
+        },
+        "n_capped": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "ends_at_boundary": {
+          "median": 0.0,
+          "p05": 0.0,
+          "p95": 0.0,
+          "mean": 0.0,
+          "n_finite": 200.0
+        },
+        "max_step_over_bound": {
+          "median": 0.7071067811865477,
+          "p05": 0.5839438672466446,
+          "p95": 0.8660254037844386,
+          "mean": 0.7251850747425675,
+          "n_finite": 200.0
+        },
+        "population_outside_late": {
+          "median": 0.06464600076540375,
+          "p05": 0.04077551020408163,
+          "p95": 0.08746425419240951,
+          "mean": 0.06381810592042994,
+          "n_finite": 200.0
+        },
+        "personal_deviation_pre_median": {
+          "median": 0.8110570403532009,
+          "p05": 0.7367472266782151,
+          "p95": 0.8888247973053579,
+          "mean": 0.8118225891433118,
+          "n_finite": 200.0
+        },
+        "personal_deviation_late_median": {
+          "median": 0.9841337459413984,
+          "p05": 0.7660104373820686,
+          "p95": 1.2568305530222803,
+          "mean": 0.9974201236454932,
+          "n_finite": 200.0
+        }
+      }
+    }
+  },
+  "inputs": {
+    "results/final_assessment/e2e_deployment_events.csv": "52d2a23af7e59342fd28f32ad64f287616fdab6dea19aae150e2e6dad34ea534",
+    "results/final_assessment/e2e_deployment_recordings.csv": "850bb7fe9cc65d654e57bba3ec9d87ef306ed089f4611f164969082cfa0fb66f",
+    "results/v2_validation/perturbed_features.csv": "b3f430de7d8ccfe7ada62603f3d209a73802a334e8b6cc0182fed743cd379728",
+    "results/final_assessment/assessment_reference_v1.json": "32ada36c21fc66c331618a9182d79f1d81d7b18a65a4dc73022a044a11cdcca8"
+  },
+  "provenance": {
+    "git": {
+      "head": "dd16db3377e0c3cb83b7160e088608a321177b08",
+      "dirty": true
+    },
+    "python": "3.13.5",
+    "numpy": "2.4.6",
+    "pandas": "3.0.3"
+  },
+  "runtime_seconds": 641.5
+}
